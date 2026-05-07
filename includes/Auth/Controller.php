@@ -457,7 +457,7 @@ final class Controller {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name from class constant via TokenManager::table(), not user input.
 		$row = $wpdb->get_row(
-			$wpdb->prepare( 'SELECT user_id FROM ' . TokenManager::table() . ' WHERE selector = %s', $selector )
+			$wpdb->prepare( 'SELECT user_id FROM ' . TokenManager::table() . ' WHERE selector = %s', $selector ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 
 		$current_id = (int) get_current_user_id();

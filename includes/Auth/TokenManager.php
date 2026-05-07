@@ -273,10 +273,9 @@ final class TokenManager {
 		}
 
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE user_id = %d AND consumed_at IS NULL',
+				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE user_id = %d AND consumed_at IS NULL', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				current_time( 'mysql', true ),
 				$user_id
 			)
@@ -295,10 +294,9 @@ final class TokenManager {
 		}
 
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE email_hmac = %s AND consumed_at IS NULL',
+				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE email_hmac = %s AND consumed_at IS NULL', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				current_time( 'mysql', true ),
 				$email_hmac
 			)
@@ -314,10 +312,9 @@ final class TokenManager {
 	 */
 	public static function invalidate_all_outstanding(): int {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
-				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE consumed_at IS NULL',
+				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE consumed_at IS NULL', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				current_time( 'mysql', true )
 			)
 		);
@@ -341,10 +338,9 @@ final class TokenManager {
 		}
 
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT selector, created_at, expires_at, consumed_at FROM ' . self::table() . ' WHERE user_id = %d ORDER BY created_at DESC',
+				'SELECT selector, created_at, expires_at, consumed_at FROM ' . self::table() . ' WHERE user_id = %d ORDER BY created_at DESC', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$user->ID
 			)
 		);
@@ -400,10 +396,9 @@ final class TokenManager {
 		}
 
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$deleted = $wpdb->query(
 			$wpdb->prepare(
-				'DELETE FROM ' . self::table() . ' WHERE user_id = %d',
+				'DELETE FROM ' . self::table() . ' WHERE user_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				$user->ID
 			)
 		);
