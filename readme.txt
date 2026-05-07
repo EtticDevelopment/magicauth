@@ -32,12 +32,16 @@ MagicAuth lets your users sign in without a password. Each sign-in email contain
 * IPs are HMAC-truncated, never stored as plaintext.
 * All response paths emit a uniform generic error and a 50 to 150 ms timing jitter.
 
-= What MagicAuth does NOT do =
+= Out of scope for v1.0 =
 
-* No SMS, phone OTP, QR codes, or third-party SSO.
-* No user registration.
-* No reCAPTCHA / Turnstile / hCaptcha.
-* No REST API, WP-CLI, or multisite-network mode in v1.0.
+To keep the surface area small and the security model easy to reason about, a few things are intentionally not included in v1.0:
+
+* SMS, phone OTP, QR codes, and third-party SSO — email-based auth only.
+* User registration — MagicAuth signs existing users in; account creation stays with core or your registration plugin.
+* CAPTCHA providers (reCAPTCHA, Turnstile, hCaptcha) — built-in throttling covers abuse; pair with a dedicated plugin if you need more.
+* REST API, WP-CLI, and multisite network mode — deferred; the shortcode and `wp-login.php` replacement cover v1.0 use cases.
+
+Some of these may land in a future version. Telemetry and phone-based auth won't.
 
 == Installation ==
 

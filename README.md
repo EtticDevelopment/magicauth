@@ -105,20 +105,20 @@ wp plugin check magicauth \
 
 Should report **"No errors found."**
 
-## What MagicAuth does NOT do (v1.0)
+## Out of scope for v1.0
 
-By design, the following are out of scope. They are not coming.
+MagicAuth aims to do one thing well: passwordless sign-in for a single WordPress site. To keep the surface area small and the security model easy to reason about, the following are intentionally not included in v1.0:
 
-* No SMS, no phone OTP, no QR codes.
-* No user registration. MagicAuth is a sign-in plugin, not an identity plugin.
-* No third-party integrations (WooCommerce, Easy Digital Downloads, Elementor, FluentCRM).
-* No reCAPTCHA, hCaptcha, or Cloudflare Turnstile.
-* No REST API endpoints, no WP-CLI commands, no Gutenberg block.
-* No multisite network mode in v1.0.
-* No audit log, no event-stream export.
-* No telemetry, no analytics, no license checks. Zero outbound HTTP from the plugin.
+* **SMS, phone OTP, QR codes** — email-based auth only.
+* **User registration** — MagicAuth signs existing users in; account creation stays with WordPress core or your registration plugin of choice.
+* **Third-party integrations** (WooCommerce, Easy Digital Downloads, Elementor, FluentCRM) — MagicAuth works with any plugin that uses the standard WordPress login, but ships no bespoke integrations.
+* **CAPTCHA providers** (reCAPTCHA, hCaptcha, Turnstile) — built-in throttling handles abuse; pair with a dedicated CAPTCHA plugin if you need more.
+* **REST API endpoints, WP-CLI commands, Gutenberg block** — deferred; the shortcode and `wp-login.php` replacement cover v1.0 use cases.
+* **Multisite network mode** — single-site only for now.
+* **Audit log / event-stream export** — out of scope for v1.0.
+* **Telemetry, analytics, license checks** — zero outbound HTTP from the plugin, and that's a permanent design choice.
 
-If you need any of the above, MagicAuth is not the right plugin and we'd rather you use something else than try to bend MagicAuth into doing it.
+Some of these may land in a future version; others (telemetry, phone-based auth) won't. If you're working on a contribution that touches one of these areas, open an issue first so we can talk through fit before you invest the time.
 
 ## Contributing
 
