@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  php-lint:
+    name: PHP Lint (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Lint all PHP files
+        run: |
+          find . -type f -name '*.php' \
+            -not -path './build/*' \
+            -not -path './.git/*' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -print0 | xargs -0 -n1 -P4 php -l
+
+  plugin-check:
+    name: WordPress Plugin Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          ignore-warnings: true
+          exclude-directories: 'build,tests'
+
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.json') }}
+          restore-keys: composer-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.1', '8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ matrix.php }}-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --colors=never
+
+  version-consistency:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Compare version strings
+        run: |
+          set -euo pipefail
+
+          header_version=$(grep -E '^\s*\*\s*Version:' magicauth.php | head -1 | sed -E 's/.*Version:\s*//' | tr -d '[:space:]')
+          constant_version=$(grep -E "define\(\s*'MAGICAUTH_VERSION'" magicauth.php | sed -E "s/.*'MAGICAUTH_VERSION',[[:space:]]*'([^']+)'.*/\1/")
+          readme_version=$(grep -E '^Stable tag:' readme.txt | sed -E 's/Stable tag:\s*//' | tr -d '[:space:]')
+
+          echo "magicauth.php header:  $header_version"
+          echo "MAGICAUTH_VERSION:     $constant_version"
+          echo "readme.txt Stable tag: $readme_version"
+
+          if [[ -z "$header_version" || -z "$constant_version" || -z "$readme_version" ]]; then
+            echo "::error::Could not extract one or more version strings."
+            exit 1
+          fi
+
+          if [[ "$header_version" != "$constant_version" || "$header_version" != "$readme_version" ]]; then
+            echo "::error::Version mismatch: header=$header_version, constant=$constant_version, readme=$readme_version"
+            exit 1
+          fi
+
+          echo "OK: all versions match ($header_version)"

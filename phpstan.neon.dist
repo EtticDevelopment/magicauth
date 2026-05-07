@@ -1,0 +1,15 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - includes
+    bootstrapFiles:
+        - magicauth.php
+    excludePaths:
+        - includes/.gitkeep
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - identifier: missingType.iterableValue
+        - '#Access to an undefined property object::\$[A-Za-z_]+\.#'

@@ -1,0 +1,448 @@
+/* MagicAuth front-end styles. Scoped under .magicauth-. Customize via :root tokens below. */
+
+:root {
+	--magicauth-color-primary: #2271b1;
+	--magicauth-color-primary-text: #ffffff;
+	--magicauth-color-page: #eeeeee;
+	--magicauth-color-surface: #ffffff;
+	--magicauth-color-code-bg: #ffffff;
+	--magicauth-color-text: #101517;
+	--magicauth-color-text-muted: #50575e;
+	--magicauth-color-border: #d8dde5;
+	--magicauth-color-border-strong: #b4b9c1;
+	--magicauth-color-divider: #e9ecef;
+	--magicauth-color-error: #b32d2e;
+	--magicauth-color-focus-ring: var(--magicauth-color-primary);
+	--magicauth-card-max-width: 480px;
+	--magicauth-card-padding: 56px 48px;
+	--magicauth-card-padding-mobile: 32px 24px;
+	--magicauth-radius: 4px;
+	--magicauth-radius-card: 6px;
+	--magicauth-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	--magicauth-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+	--magicauth-font-size-h1: 26px;
+	--magicauth-font-size-body: 16px;
+	--magicauth-font-size-small: 14px;
+	--magicauth-font-size-code: 22px;
+	--magicauth-input-height: 52px;
+	--magicauth-logo-max-height: 40px;
+}
+
+.magicauth-card {
+	box-sizing: border-box;
+	max-width: var(--magicauth-card-max-width);
+	margin: 0 auto;
+	padding: var(--magicauth-card-padding);
+	background: var(--magicauth-color-surface);
+	border-radius: var(--magicauth-radius-card);
+	color: var(--magicauth-color-text);
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-body);
+	line-height: 1.5;
+	text-align: left;
+}
+
+@media (max-width: 480px) {
+	.magicauth-card {
+		padding: var(--magicauth-card-padding-mobile);
+	}
+}
+
+/* Agency-credit footer — transparent strip under the card. */
+.magicauth-credit {
+	box-sizing: border-box;
+	max-width: var(--magicauth-card-max-width);
+	margin: 16px auto 0;
+	padding: 0;
+	color: var(--magicauth-color-text-muted);
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-small);
+	line-height: 1.4;
+	text-align: center;
+}
+
+.magicauth-credit__link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: inherit;
+	text-decoration: none;
+	transition: color 120ms ease;
+}
+
+.magicauth-credit__link:hover,
+.magicauth-credit__link:focus-visible {
+	color: var(--magicauth-color-text);
+}
+
+.magicauth-credit__link:focus-visible {
+	outline: 2px solid var(--magicauth-color-focus-ring);
+	outline-offset: 4px;
+	border-radius: 2px;
+}
+
+.magicauth-credit__icon {
+	display: block;
+	width: 16px;
+	height: 16px;
+	flex: 0 0 16px;
+	border-radius: 2px;
+}
+
+.magicauth-credit__brand {
+	font-weight: 600;
+	color: var(--magicauth-color-text);
+}
+
+.magicauth-logo {
+	margin: 0 0 32px;
+}
+
+.magicauth-logo img {
+	display: block;
+	max-width: 100%;
+	max-height: var(--magicauth-logo-max-height);
+	height: auto;
+	width: auto;
+}
+
+/* Specificity bump to beat wp-login.css `.login h1`/`.login p` without !important. */
+.magicauth-card .magicauth-heading {
+	margin: 0 0 32px;
+	font-size: var(--magicauth-font-size-h1);
+	line-height: 1.2;
+	font-weight: 700;
+	color: var(--magicauth-color-text);
+	text-align: left;
+	letter-spacing: -0.01em;
+	overflow-wrap: break-word;
+}
+
+.magicauth-card .magicauth-helper {
+	margin: 0 0 24px;
+	color: var(--magicauth-color-text-muted);
+	text-align: left;
+}
+
+.magicauth-helper strong {
+	color: var(--magicauth-color-text);
+	font-weight: 600;
+}
+
+.magicauth-helper--small {
+	font-size: var(--magicauth-font-size-small);
+}
+
+.magicauth-helper--lead {
+	margin: 0 0 32px;
+	color: var(--magicauth-color-text);
+}
+
+.magicauth-form {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.magicauth-field {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Remember-me row: checkbox + label inline. */
+.magicauth-form .magicauth-field--inline {
+	flex-direction: row;
+	align-items: center;
+	gap: 8px;
+	margin: 4px 0 4px;
+}
+
+.magicauth-form .magicauth-field--inline input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	flex-shrink: 0;
+	accent-color: var(--magicauth-color-primary);
+}
+
+.magicauth-form .magicauth-field--inline span {
+	color: var(--magicauth-color-text);
+}
+
+.magicauth-form input[type="email"],
+.magicauth-form input[type="text"],
+.magicauth-form input[type="password"] {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: var(--magicauth-input-height);
+	padding: 14px 16px;
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-body);
+	color: var(--magicauth-color-text);
+	background: var(--magicauth-color-surface);
+	border: 1px solid var(--magicauth-color-border-strong);
+	border-radius: var(--magicauth-radius);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.magicauth-form input[type="email"]:hover,
+.magicauth-form input[type="text"]:hover,
+.magicauth-form input[type="password"]:hover {
+	border-color: var(--magicauth-color-text-muted);
+}
+
+#magicauth-code {
+	font-family: var(--magicauth-font-mono);
+	min-height: var(--magicauth-input-height);
+	text-align: center;
+}
+
+/* State B: tighten button gap when code field is the only input. */
+.magicauth-form .magicauth-field--code + .magicauth-button {
+	margin-top: -4px;
+}
+
+/* Typed code gets uppercase + letter-spacing; placeholder stays in UI font. */
+#magicauth-code:not(:placeholder-shown) {
+	font-size: var(--magicauth-font-size-code);
+	letter-spacing: 4px;
+	text-transform: uppercase;
+}
+
+#magicauth-code::placeholder {
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-body);
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--magicauth-color-text-muted);
+	text-align: center;
+}
+
+.magicauth-form input:focus,
+.magicauth-form button:focus,
+.magicauth-link:focus {
+	outline: 2px solid var(--magicauth-color-focus-ring);
+	outline-offset: 2px;
+}
+
+.magicauth-form input[aria-invalid="true"] {
+	border-color: var(--magicauth-color-error);
+}
+
+.magicauth-button {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: var(--magicauth-input-height);
+	padding: 14px 20px;
+	border: 0;
+	border-radius: var(--magicauth-radius);
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-body);
+	font-weight: 600;
+	color: var(--magicauth-color-primary-text);
+	background: var(--magicauth-color-primary);
+	cursor: pointer;
+	transition: filter 0.15s ease;
+	/* Contain label/spinner crossfade. */
+	position: relative;
+	overflow: hidden;
+}
+
+.magicauth-button:hover {
+	filter: brightness(0.95);
+}
+
+.magicauth-button:disabled,
+.magicauth-button[disabled] {
+	opacity: 0.45;
+	cursor: not-allowed;
+	filter: none;
+}
+
+/* Loading state: label fades up out, spinner fades up in (clipped by overflow:hidden). */
+.magicauth-button__label {
+	display: inline-block;
+	transition: opacity 0.18s ease, transform 0.18s ease;
+	will-change: opacity, transform;
+}
+
+.magicauth-button__spinner {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transform: translateY(60%);
+	transition: opacity 0.18s ease, transform 0.18s ease;
+	pointer-events: none;
+}
+
+.magicauth-button__spinner::before {
+	content: "";
+	width: 18px;
+	height: 18px;
+	border: 2px solid currentColor;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: magicauth-spin 0.8s linear infinite;
+}
+
+.magicauth-button.is-loading {
+	cursor: progress;
+}
+
+.magicauth-button.is-loading .magicauth-button__label {
+	opacity: 0;
+	transform: translateY(-60%);
+}
+
+.magicauth-button.is-loading .magicauth-button__spinner {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+@keyframes magicauth-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Helper links below button — first gets breathing room, consecutive ones nest tight. */
+.magicauth-form .magicauth-helper--small {
+	margin: 16px 0 0;
+	text-align: left;
+}
+
+.magicauth-form .magicauth-helper--small + .magicauth-helper--small {
+	margin-top: 6px;
+}
+
+/* Password-fallback link, divider above. */
+.magicauth-fallback {
+	margin: 32px 0 0 !important;
+	padding-top: 24px;
+	border-top: 1px solid var(--magicauth-color-divider);
+	text-align: left;
+}
+
+.magicauth-link {
+	color: var(--magicauth-color-primary);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.magicauth-link:hover {
+	text-decoration: none;
+}
+
+/* Email-sent toast — top-right, dark surface. JS toggles `.is-visible`. */
+.magicauth-toast {
+	position: fixed;
+	top: 24px;
+	right: 24px;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	max-width: 360px;
+	padding: 10px 12px 10px 10px;
+	background: #1d2327;
+	color: #ffffff;
+	border-radius: var(--magicauth-radius);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+	font-family: var(--magicauth-font-family);
+	font-size: var(--magicauth-font-size-small);
+	line-height: 1.4;
+	transform: translateY(-12px);
+	opacity: 0;
+	transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.magicauth-toast.is-visible {
+	transform: translateY(0);
+	opacity: 1;
+}
+
+.magicauth-toast__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 4px;
+	background: #00a32a;
+	color: #ffffff;
+	flex-shrink: 0;
+}
+
+.magicauth-toast--error .magicauth-toast__icon {
+	background: #d63638;
+}
+
+.magicauth-toast--warning .magicauth-toast__icon {
+	background: #dba617;
+}
+
+.magicauth-toast__msg {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.magicauth-toast__close {
+	background: transparent;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	font-size: 22px;
+	line-height: 1;
+	padding: 0 6px;
+	margin-left: 4px;
+	opacity: 0.7;
+}
+
+.magicauth-toast__close:hover {
+	opacity: 1;
+}
+
+@media (max-width: 480px) {
+	.magicauth-toast {
+		top: 12px;
+		right: 12px;
+		left: 12px;
+		max-width: none;
+	}
+}
+
+.magicauth-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.magicauth-button,
+	.magicauth-button__label,
+	.magicauth-button__spinner,
+	.magicauth-form input,
+	.magicauth-link {
+		transition: none;
+	}
+	.magicauth-button__spinner::before {
+		animation: none;
+	}
+}
+
+@media (forced-colors: active) {
+	.magicauth-button,
+	.magicauth-form input:focus,
+	.magicauth-form button:focus,
+	.magicauth-link:focus {
+		outline: 2px solid CanvasText;
+	}
+}

@@ -1,0 +1,15 @@
+/*
+ * RTL overrides. Loaded automatically by wp_style_add_data('rtl', 'replace').
+ *
+ * The code input itself stays dir="ltr" — Crockford codes read left-to-right
+ * regardless of locale. Only ambient layout flips.
+ */
+
+.magicauth-form {
+	text-align: right;
+}
+
+#magicauth-code {
+	text-align: center;
+	direction: ltr;
+}

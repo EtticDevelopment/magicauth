@@ -1,0 +1,60 @@
+# macOS noise
+.DS_Store
+**/.DS_Store
+
+# Internal-only working tree
+_dev/
+.claude/
+CLAUDE.md
+
+# Local dev archives
+build/
+dist/
+*.zip
+*.tar.gz
+
+# Repo metadata
+.distignore
+.gitignore
+.git/
+.github/
+.editorconfig
+
+# IDE / editor
+.vscode/
+.idea/
+*.code-workspace
+.fleet/
+.zed/
+.history/
+
+# Build / dependency artifacts
+node_modules/
+vendor/
+composer.json
+composer.lock
+package-lock.json
+auth.json
+
+# Static-analysis / lint configs
+phpstan.neon
+phpstan.neon.dist
+phpstan-baseline.neon
+.semgrepignore
+
+# Tests
+tests/
+phpunit.xml
+phpunit.xml.dist
+phpcs.xml
+phpcs.xml.dist
+.phpunit.cache/
+.phpunit.result.cache
+
+# Local secrets and security artifacts
+security/
+.env
+.env.*
+
+# README markdown is for GitHub; readme.txt is what wordpress.org reads
+README.md
