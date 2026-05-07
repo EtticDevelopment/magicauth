@@ -13,6 +13,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Frontend;
 
+defined( 'ABSPATH' ) || exit;
+
 final class LoginScreen {
 
 	private const ACTION = 'magicauth';
@@ -316,8 +318,8 @@ final class LoginScreen {
 		$brand_txt = magicauth_yiq_text_color( $brand );
 		printf(
 			'<style id="magicauth-vars">:root{--magicauth-color-primary:%s;--magicauth-color-primary-text:%s;}</style>',
-			$brand,
-			$brand_txt
+			esc_attr( $brand ),
+			esc_attr( $brand_txt )
 		);
 
 		$branded_actions = [ self::ACTION, 'lostpassword', 'retrievepassword', 'rp', 'resetpass' ];

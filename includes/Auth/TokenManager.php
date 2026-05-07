@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Auth;
 
+defined( 'ABSPATH' ) || exit;
+
 use WP_Error;
 use WP_User;
 
@@ -271,6 +273,7 @@ final class TokenManager {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
 				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE user_id = %d AND consumed_at IS NULL',
@@ -292,6 +295,7 @@ final class TokenManager {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
 				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE email_hmac = %s AND consumed_at IS NULL',
@@ -310,6 +314,7 @@ final class TokenManager {
 	 */
 	public static function invalidate_all_outstanding(): int {
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$updated = $wpdb->query(
 			$wpdb->prepare(
 				'UPDATE ' . self::table() . ' SET consumed_at = %s WHERE consumed_at IS NULL',
@@ -336,6 +341,7 @@ final class TokenManager {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				'SELECT selector, created_at, expires_at, consumed_at FROM ' . self::table() . ' WHERE user_id = %d ORDER BY created_at DESC',
@@ -394,6 +400,7 @@ final class TokenManager {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table from class constant via self::table().
 		$deleted = $wpdb->query(
 			$wpdb->prepare(
 				'DELETE FROM ' . self::table() . ' WHERE user_id = %d',

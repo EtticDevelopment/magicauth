@@ -28,8 +28,8 @@ $shell_brand_txt = magicauth_yiq_text_color( $shell_brand );
 ?>
 <style id="magicauth-shell-vars">
 :root {
-	--magicauth-color-primary: <?php echo $shell_brand; ?>;
-	--magicauth-color-primary-text: <?php echo $shell_brand_txt; ?>;
+	--magicauth-color-primary: <?php echo esc_attr( $shell_brand ); ?>;
+	--magicauth-color-primary-text: <?php echo esc_attr( $shell_brand_txt ); ?>;
 }
 /* Vertical-center the card; flex avoids fighting WP's default top-padding. */
 html, body.login {

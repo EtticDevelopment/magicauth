@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Frontend;
 
+defined( 'ABSPATH' ) || exit;
+
 final class Shortcode {
 
 	private const SHORTCODE = 'magicauth_login';

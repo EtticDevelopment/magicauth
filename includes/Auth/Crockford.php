@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Auth;
 
+defined( 'ABSPATH' ) || exit;
+
 /**
  * Crockford base-32 helpers. We never decode back to bytes — verification
  * HMACs the normalized plaintext, so a one-way alphabet is fine.

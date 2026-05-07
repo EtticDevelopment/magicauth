@@ -11,6 +11,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Auth;
 
+defined( 'ABSPATH' ) || exit;
+
 /** Transient-backed throttle counters. */
 final class Throttle {
 

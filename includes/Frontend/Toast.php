@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Frontend;
 
+defined( 'ABSPATH' ) || exit;
+
 final class Toast {
 
 	/** Render at most one toast based on $_GET flags. Safe to call unconditionally. */

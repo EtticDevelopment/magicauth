@@ -7,6 +7,8 @@
 
 declare( strict_types=1 );
 
+defined( 'ABSPATH' ) || exit;
+
 if ( ! function_exists( 'magicauth_get_settings' ) ) {
 	/** Settings merged onto defaults. */
 	function magicauth_get_settings(): array {
@@ -34,7 +36,7 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 			'agency_credit_label'   => '',
 			'redirect_to_default'   => 'auto',
 			'allow_password_login'  => true,
-			'db_version'            => defined( 'MAGICAUTH_DB_VERSION' ) ? MAGICAUTH_DB_VERSION : 1,
+			'db_version'            => MAGICAUTH_DB_VERSION,
 		];
 
 		$saved = function_exists( 'get_option' ) ? get_option( 'magicauth_settings', [] ) : [];
@@ -47,7 +49,12 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 }
 
 if ( ! function_exists( 'magicauth_get_setting' ) ) {
-	/** Read a single top-level setting key. */
+	/**
+	 * Read a single top-level setting key.
+	 *
+	 * @param mixed $fallback Returned when the key is absent.
+	 * @return mixed
+	 */
 	function magicauth_get_setting( string $key, $fallback = null ) {
 		$settings = magicauth_get_settings();
 		return array_key_exists( $key, $settings ) ? $settings[ $key ] : $fallback;

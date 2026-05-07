@@ -10,6 +10,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Auth;
 
+defined( 'ABSPATH' ) || exit;
+
 use MagicAuth\Email\Mailer;
 use WP_Error;
 use WP_User;
@@ -453,6 +455,7 @@ final class Controller {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name from class constant via TokenManager::table(), not user input.
 		$row = $wpdb->get_row(
 			$wpdb->prepare( 'SELECT user_id FROM ' . TokenManager::table() . ' WHERE selector = %s', $selector )
 		);
@@ -557,18 +560,20 @@ final class Controller {
 			self::SESSION_TTL
 		);
 
-		setcookie(
-			self::SESSION_COOKIE,
-			$session_id,
-			[
-				'expires'  => time() + self::SESSION_TTL,
-				'path'     => '/',
-				'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
-				'secure'   => is_ssl(),
-				'httponly' => true,
-				'samesite' => 'Lax',
-			]
-		);
+		if ( ! headers_sent() ) {
+			setcookie(
+				self::SESSION_COOKIE,
+				$session_id,
+				[
+					'expires'  => time() + self::SESSION_TTL,
+					'path'     => '/',
+					'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+					'secure'   => is_ssl(),
+					'httponly' => true,
+					'samesite' => 'Lax',
+				]
+			);
+		}
 
 		return $session_id;
 	}
@@ -601,18 +606,20 @@ final class Controller {
 			}
 		}
 
-		setcookie(
-			self::SESSION_COOKIE,
-			'',
-			[
-				'expires'  => time() - HOUR_IN_SECONDS,
-				'path'     => '/',
-				'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
-				'secure'   => is_ssl(),
-				'httponly' => true,
-				'samesite' => 'Lax',
-			]
-		);
+		if ( ! headers_sent() ) {
+			setcookie(
+				self::SESSION_COOKIE,
+				'',
+				[
+					'expires'  => time() - HOUR_IN_SECONDS,
+					'path'     => '/',
+					'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+					'secure'   => is_ssl(),
+					'httponly' => true,
+					'samesite' => 'Lax',
+				]
+			);
+		}
 	}
 
 	/**
@@ -644,10 +651,10 @@ final class Controller {
 		// code POST resolves session_email even when cookie didn't survive (cache/CDN/samesite).
 		if ( '' !== $session_id ) {
 			$args['magicauth_sid'] = $session_id;
-		} elseif ( 'b' === $state && ! empty( $_COOKIE[ self::SESSION_COOKIE ] ) ) {
+		} elseif ( 'b' === $state && ! empty( $_COOKIE[ self::SESSION_COOKIE ] ) && ! headers_sent() ) {
 			// State-B short-circuit with no fresh session: expire cookie so renderer
 			// doesn't fall back to a stale one and surface a previous email.
-			// Keep the transient — a concurrent tab POSTing with sid can still resolve.
+			// Keep the transient: a concurrent tab POSTing with sid can still resolve.
 			setcookie(
 				self::SESSION_COOKIE,
 				'',

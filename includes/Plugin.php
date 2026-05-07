@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth;
 
+defined( 'ABSPATH' ) || exit;
+
 /** Singleton wiring; boot() is the entry-point. */
 final class Plugin {
 

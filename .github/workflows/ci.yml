@@ -43,7 +43,8 @@ jobs:
         uses: wordpress/plugin-check-action@v1
         with:
           ignore-warnings: true
-          exclude-directories: 'build,tests'
+          exclude-directories: 'build,tests,_dev'
+          exclude-files: 'phpstan.neon.dist,phpunit.xml.dist,composer.json,composer.lock'
 
   phpstan:
     name: PHPStan

@@ -13,6 +13,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use MagicAuth\Auth\Crockford;
 use MagicAuth\Auth\TokenManager;
 use MagicAuth\Email\Mailer;

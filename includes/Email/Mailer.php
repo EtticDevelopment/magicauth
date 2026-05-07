@@ -12,6 +12,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Email;
 
+defined( 'ABSPATH' ) || exit;
+
 use MagicAuth\Auth\Crockford;
 use WP_User;
 

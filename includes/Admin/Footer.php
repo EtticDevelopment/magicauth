@@ -9,12 +9,14 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 final class Footer {
 
 	private const URL_DOCS     = 'https://docs.ettic.nl/docs/magicauth';
 	private const URL_GITHUB   = 'https://github.com/EtticDevelopment/magicauth';
 	private const URL_SUPPORT  = 'https://wordpress.org/support/plugin/magicauth/';
-	private const URL_REVIEW   = 'https://wordpress.org/support/plugin/magicauth/reviews/?filter=5#new-post';
+	private const URL_REVIEW   = 'https://wordpress.org/support/plugin/magicauth/reviews/';
 	private const URL_SECURITY = 'https://docs.ettic.nl/docs/security';
 
 	/** Emit the footer block. Caller must place it inside .magicauth-admin. */

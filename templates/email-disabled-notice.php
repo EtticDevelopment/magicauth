@@ -17,7 +17,10 @@ $dir        = $is_rtl ? 'rtl' : 'ltr';
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title><?php echo esc_html( sprintf( __( 'About your sign-in request for %s', 'magicauth' ), $company_name ) ); ?></title>
+<title><?php
+/* translators: %s: company name */
+echo esc_html( sprintf( __( 'About your sign-in request for %s', 'magicauth' ), $company_name ) );
+?></title>
 </head>
 <body style="margin:0;padding:0;background:<?php echo esc_attr( $page_bg ); ?>;color:<?php echo esc_attr( $text_color ); ?>;-webkit-font-smoothing:antialiased;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:<?php echo esc_attr( $page_bg ); ?>;padding:40px 0;">

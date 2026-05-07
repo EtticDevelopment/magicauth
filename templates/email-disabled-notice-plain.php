@@ -12,12 +12,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Plaintext context — no esc_html() (would render `&` as `&amp;`).
+// Plaintext context: no esc_html() (would render `&` as `&amp;`).
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Plaintext email body.
 
+/* translators: %s: company name */
 echo sprintf( __( 'About your sign-in request for %s', 'magicauth' ), $company_name ) . "\n\n";
 
 echo sprintf(
-	/* translators: %s company name */
+	/* translators: %s: company name */
 	__( 'A sign-in code was just requested for your account at %s.', 'magicauth' ),
 	$company_name
 ) . "\n\n";
@@ -34,3 +36,5 @@ echo __( 'If you did not request a sign-in code, you can ignore this message. No
 
 echo '-- ' . "\n";
 echo $company_name . "\n";
+
+// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped

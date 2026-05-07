@@ -7,6 +7,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth;
 
+defined( 'ABSPATH' ) || exit;
+
 final class Installer {
 
 	private const SALT_NOTICE_KEY = 'magicauth_salt_notice';
