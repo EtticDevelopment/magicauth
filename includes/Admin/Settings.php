@@ -28,6 +28,8 @@ final class Settings {
 
 	private const MAX_LINK_USES_PRESETS = [ 1, 2, 3, 5, 10 ];
 
+	private const FONT_STACK_KEYS = [ 'system', 'sans-modern', 'serif', 'mono', 'rounded' ];
+
 	// Keyed by extension regex (wp_check_filetype_and_ext format); membership checks hit values.
 	private const LOGO_MIMES = [
 		'png'      => 'image/png',
@@ -199,6 +201,10 @@ final class Settings {
 				<?php self::field_company_name(); ?>
 				<?php self::field_logo(); ?>
 				<?php self::field_brand_color(); ?>
+				<?php self::field_page_color(); ?>
+				<?php self::field_card_radius(); ?>
+				<?php self::field_card_width(); ?>
+				<?php self::field_font_stack(); ?>
 			</div>
 		</section>
 		<?php
@@ -366,6 +372,26 @@ final class Settings {
 		if ( isset( $input['brand_color'] ) ) {
 			$sanitized            = sanitize_hex_color( (string) $input['brand_color'] );
 			$out['brand_color']   = $sanitized ? $sanitized : '#2271b1';
+		}
+
+		// is_scalar guards prevent (string) cast on array/object from emitting
+		// "Array" notices on probe traffic. Mirrors throttle's is_array guard.
+		if ( isset( $input['page_color'] ) && is_scalar( $input['page_color'] ) ) {
+			$sanitized         = sanitize_hex_color( (string) $input['page_color'] );
+			$out['page_color'] = $sanitized ? $sanitized : '#eeeeee';
+		}
+
+		if ( isset( $input['card_radius'] ) && is_scalar( $input['card_radius'] ) ) {
+			$out['card_radius'] = max( 0, min( 32, absint( $input['card_radius'] ) ) );
+		}
+
+		if ( isset( $input['card_width'] ) && is_scalar( $input['card_width'] ) ) {
+			$out['card_width'] = max( 360, min( 640, absint( $input['card_width'] ) ) );
+		}
+
+		if ( isset( $input['font_stack'] ) && is_scalar( $input['font_stack'] ) ) {
+			$candidate         = sanitize_key( (string) $input['font_stack'] );
+			$out['font_stack'] = in_array( $candidate, self::FONT_STACK_KEYS, true ) ? $candidate : 'system';
 		}
 
 		if ( isset( $input['redirect_to_default'] ) ) {
@@ -590,6 +616,90 @@ final class Settings {
 				<div class="magicauth-color">
 					<input type="color" value="<?php echo esc_attr( $value ); ?>" aria-label="<?php esc_attr_e( 'Color picker', 'magicauth' ); ?>">
 					<input type="text" class="magicauth-input magicauth-input--mono" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="7" data-validate-hex>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_page_color(): void {
+		$value = (string) magicauth_get_setting( 'page_color', '#eeeeee' );
+		$name  = sprintf( '%s[page_color]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Page background', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Color behind the sign-in card. Choose a value distinct from white so the card stays visible.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control magicauth-row__control--stack">
+				<div class="magicauth-color">
+					<input type="color" value="<?php echo esc_attr( $value ); ?>" aria-label="<?php esc_attr_e( 'Color picker', 'magicauth' ); ?>">
+					<input type="text" class="magicauth-input magicauth-input--mono" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="7" data-validate-hex>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_card_radius(): void {
+		$value = (int) magicauth_get_setting( 'card_radius', 6 );
+		$name  = sprintf( '%s[card_radius]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Card corner radius', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Sign-in card corner softness, in pixels. 0 is sharp; 32 is heavily rounded.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" min="0" max="32" step="1">
+				<span style="font-size:13px;color:var(--tx-muted);"><?php esc_html_e( 'px', 'magicauth' ); ?></span>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_card_width(): void {
+		$value = (int) magicauth_get_setting( 'card_width', 480 );
+		$name  = sprintf( '%s[card_width]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Card max width', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Card max width on desktop, in pixels. Shrinks below this on narrow viewports.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" min="360" max="640" step="20">
+				<span style="font-size:13px;color:var(--tx-muted);"><?php esc_html_e( 'px', 'magicauth' ); ?></span>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_font_stack(): void {
+		$value   = (string) magicauth_get_setting( 'font_stack', 'system' );
+		$name    = sprintf( '%s[font_stack]', self::OPTION_NAME );
+		$options = [
+			'system'      => __( 'System default', 'magicauth' ),
+			'sans-modern' => __( 'Modern sans (Inter)', 'magicauth' ),
+			'serif'       => __( 'Serif (Georgia)', 'magicauth' ),
+			'mono'        => __( 'Monospace', 'magicauth' ),
+			'rounded'     => __( 'Rounded', 'magicauth' ),
+		];
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Font family', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Font used on the sign-in card. Each option is a stack of system-installed fonts — nothing is loaded from the network.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<div class="magicauth-select">
+					<select name="<?php echo esc_attr( $name ); ?>">
+						<?php foreach ( $options as $opt_value => $label ) : ?>
+							<option value="<?php echo esc_attr( $opt_value ); ?>" <?php selected( $value, $opt_value ); ?>>
+								<?php echo esc_html( $label ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
 				</div>
 			</div>
 		</div>

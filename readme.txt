@@ -74,5 +74,9 @@ MagicAuth registers a WordPress privacy exporter and eraser. Personal data store
 
 == Changelog ==
 
+= 1.1.0 =
+* Branding: page background color, card corner radius, card max width, and font family are now admin-controllable from Settings > MagicAuth.
+* Security: `wp-login.php` now sends `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'` to refuse framing entirely.
+
 = 1.0.0 =
 * Initial public release.

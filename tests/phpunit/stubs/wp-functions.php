@@ -695,6 +695,33 @@ if ( ! function_exists( 'retrieve_password' ) ) {
 	}
 }
 
+if ( ! function_exists( 'absint' ) ) {
+	function absint( $maybeint ): int {
+		return abs( (int) $maybeint );
+	}
+}
+
+if ( ! function_exists( 'sanitize_hex_color' ) ) {
+	// Mirrors core: accepts #rgb / #rrggbb only; returns null otherwise.
+	function sanitize_hex_color( string $color ) {
+		if ( '' === $color ) {
+			return '';
+		}
+		if ( preg_match( '|^#([A-Fa-f0-9]{3}){1,2}$|', $color ) ) {
+			return $color;
+		}
+		return null;
+	}
+}
+
+if ( ! function_exists( 'add_settings_error' ) ) {
+	// Test-time recorder; lets tests assert that an error WAS raised when expected.
+	function add_settings_error( string $setting, string $code, string $message, string $type = 'error' ): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['settings_errors'][] = compact( 'setting', 'code', 'message', 'type' );
+	}
+}
+
 if ( ! function_exists( 'magicauth_test_reset_state' ) ) {
 	/**
 	 * Test helper: wipe in-memory state between tests.
