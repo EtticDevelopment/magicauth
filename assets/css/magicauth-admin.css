@@ -413,20 +413,6 @@ body.admin-bar .magicauth-admin .magicauth-topbar__bar { top: 32px; }
 	border-radius: 4px;
 }
 
-/* Sub-card subheading inside .magicauth-card */
-.magicauth-admin .magicauth-card__subhead {
-	margin: 0 0 16px;
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--tx-muted);
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-}
-
-.magicauth-admin .magicauth-card + .magicauth-card {
-	margin-top: 16px;
-}
-
 /* Cards. Namespaced to avoid colliding with WP core `.card` (caps at 520px). */
 .magicauth-admin .magicauth-card {
 	background: var(--ettic-surface);

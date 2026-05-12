@@ -178,6 +178,7 @@ final class Settings {
 				<div class="magicauth-stack">
 					<?php self::render_section_general(); ?>
 					<?php self::render_section_branding( $weak_salts ); ?>
+					<?php self::render_section_appearance(); ?>
 					<?php self::render_section_agency_credit(); ?>
 					<?php self::render_section_security(); ?>
 					<?php self::render_section_diagnostics(); ?>
@@ -211,18 +212,25 @@ final class Settings {
 				<h2><?php esc_html_e( 'Branding', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'How the sign-in card looks. Settings render on the branded login screen and in transactional emails.', 'magicauth' ); ?></p>
 			</summary>
-
 			<div class="magicauth-card">
-				<h3 class="magicauth-card__subhead"><?php esc_html_e( 'Identity', 'magicauth' ); ?></h3>
 				<?php self::field_replace_default( $weak_salts ); ?>
 				<?php self::field_company_name(); ?>
 				<?php self::field_logo(); ?>
 				<?php self::field_brand_color(); ?>
 				<?php self::field_link_color(); ?>
 			</div>
+		</details>
+		<?php
+	}
 
+	private static function render_section_appearance(): void {
+		?>
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
+				<h2><?php esc_html_e( 'Appearance', 'magicauth' ); ?></h2>
+				<p><?php esc_html_e( 'Layout and theme of the sign-in card. Color mode, page background, sizing, and typography.', 'magicauth' ); ?></p>
+			</summary>
 			<div class="magicauth-card">
-				<h3 class="magicauth-card__subhead"><?php esc_html_e( 'Appearance', 'magicauth' ); ?></h3>
 				<?php self::field_color_mode(); ?>
 				<?php self::field_page_color(); ?>
 				<?php self::field_background_image(); ?>
