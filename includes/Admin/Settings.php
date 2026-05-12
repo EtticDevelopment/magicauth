@@ -870,7 +870,7 @@ final class Settings {
 				<p class="magicauth-row__help"><?php esc_html_e( 'Color of text links on the sign-in card. Leave blank to follow brand color. Validated against the card surface for readability.', 'magicauth' ); ?></p>
 			</div>
 			<div class="magicauth-row__control magicauth-row__control--stack">
-				<div class="magicauth-color">
+				<div class="magicauth-color" data-magicauth-color-follows="brand_color">
 					<input type="color" value="<?php echo esc_attr( '' !== $value ? $value : $brand_default ); ?>" aria-label="<?php esc_attr_e( 'Color picker', 'magicauth' ); ?>">
 					<input type="text" class="magicauth-input magicauth-input--mono" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="7" placeholder="<?php esc_attr_e( '(brand color)', 'magicauth' ); ?>" data-validate-hex>
 				</div>
