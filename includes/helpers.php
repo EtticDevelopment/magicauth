@@ -10,8 +10,17 @@ declare( strict_types=1 );
 defined( 'ABSPATH' ) || exit;
 
 if ( ! function_exists( 'magicauth_get_settings' ) ) {
-	/** Settings merged onto defaults. */
+	/**
+	 * Settings merged onto defaults. Memoized per-request via $GLOBALS so the
+	 * 7 calls on the login render path don't each rebuild the defaults array
+	 * and run array_replace_recursive. Invalidated by the option-update hooks
+	 * registered at the bottom of this file (and by the test stubs).
+	 */
 	function magicauth_get_settings(): array {
+		if ( isset( $GLOBALS['magicauth_settings_cache'] ) && is_array( $GLOBALS['magicauth_settings_cache'] ) ) {
+			return $GLOBALS['magicauth_settings_cache'];
+		}
+
 		$defaults = [
 			'ttl_minutes'           => 10,
 			'max_link_uses'         => 2,
@@ -30,10 +39,13 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 			'company_name'          => '',
 			'logo_attachment_id'    => 0,
 			'brand_color'           => '#2271b1',
+			'link_color'            => '',
 			'page_color'            => '#eeeeee',
+			'background_attachment_id' => 0,
 			'card_radius'           => 6,
 			'card_width'            => 480,
 			'font_stack'            => 'system',
+			'color_mode'            => 'light',
 			'agency_credit_name'    => '',
 			'agency_credit_url'     => '',
 			'agency_credit_icon_id' => 0,
@@ -48,8 +60,23 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 			$saved = [];
 		}
 
-		return array_replace_recursive( $defaults, $saved );
+		$GLOBALS['magicauth_settings_cache'] = array_replace_recursive( $defaults, $saved );
+		return $GLOBALS['magicauth_settings_cache'];
 	}
+}
+
+if ( ! function_exists( 'magicauth_invalidate_settings_cache' ) ) {
+	/** Drop the per-request settings memo. Tests reset state; admin saves fire this. */
+	function magicauth_invalidate_settings_cache(): void {
+		unset( $GLOBALS['magicauth_settings_cache'] );
+	}
+}
+
+if ( function_exists( 'add_action' ) ) {
+	foreach ( [ 'update_option_magicauth_settings', 'add_option_magicauth_settings', 'delete_option_magicauth_settings' ] as $magicauth_cache_hook ) {
+		add_action( $magicauth_cache_hook, 'magicauth_invalidate_settings_cache' );
+	}
+	unset( $magicauth_cache_hook );
 }
 
 if ( ! function_exists( 'magicauth_get_setting' ) ) {
@@ -150,21 +177,98 @@ if ( ! function_exists( 'magicauth_hash_email' ) ) {
 	}
 }
 
-if ( ! function_exists( 'magicauth_yiq_text_color' ) ) {
-	/** Black or white text for a hex bg via YIQ luminance. */
-	function magicauth_yiq_text_color( string $hex ): string {
+if ( ! function_exists( 'magicauth_hex_to_rgb' ) ) {
+	/**
+	 * Parse a 3- or 6-digit hex color (leading `#` optional) into [r, g, b]
+	 * ints (0–255). Returns null on malformed input.
+	 *
+	 * @return array{0:int,1:int,2:int}|null
+	 */
+	function magicauth_hex_to_rgb( string $hex ): ?array {
 		$hex = ltrim( $hex, '#' );
 		if ( 3 === strlen( $hex ) ) {
 			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
 		}
 		if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+			return null;
+		}
+		return [
+			(int) hexdec( substr( $hex, 0, 2 ) ),
+			(int) hexdec( substr( $hex, 2, 2 ) ),
+			(int) hexdec( substr( $hex, 4, 2 ) ),
+		];
+	}
+}
+
+if ( ! function_exists( 'magicauth_yiq_text_color' ) ) {
+	/** Black or white text for a hex bg via YIQ luminance. */
+	function magicauth_yiq_text_color( string $hex ): string {
+		$rgb = magicauth_hex_to_rgb( $hex );
+		if ( null === $rgb ) {
 			return '#ffffff';
 		}
-		$r   = hexdec( substr( $hex, 0, 2 ) );
-		$g   = hexdec( substr( $hex, 2, 2 ) );
-		$b   = hexdec( substr( $hex, 4, 2 ) );
-		$yiq = ( ( $r * 299 ) + ( $g * 587 ) + ( $b * 114 ) ) / 1000;
+		$yiq = ( ( $rgb[0] * 299 ) + ( $rgb[1] * 587 ) + ( $rgb[2] * 114 ) ) / 1000;
 		return $yiq >= 128 ? '#000000' : '#ffffff';
+	}
+}
+
+if ( ! function_exists( 'magicauth_contrast_ratio' ) ) {
+	/**
+	 * WCAG 2.1 relative-luminance contrast ratio between two hex colors.
+	 *
+	 * Range: 1.0 (identical) to 21.0 (pure black on pure white). Uses ITU-R
+	 * BT.709 coefficients and the sRGB gamma curve per the WCAG 2.1 spec.
+	 * Accepts 3- or 6-digit hex with optional leading `#`. Returns 1.0 (the
+	 * worst valid ratio) on malformed input — callers should pre-validate.
+	 */
+	function magicauth_contrast_ratio( string $hex_a, string $hex_b ): float {
+		$lum = static function ( string $hex ): ?float {
+			$rgb = magicauth_hex_to_rgb( $hex );
+			if ( null === $rgb ) {
+				return null;
+			}
+			$channels = [ $rgb[0] / 255.0, $rgb[1] / 255.0, $rgb[2] / 255.0 ];
+			foreach ( $channels as &$c ) {
+				$c = ( $c <= 0.03928 )
+					? $c / 12.92
+					: pow( ( $c + 0.055 ) / 1.055, 2.4 );
+			}
+			unset( $c );
+			return ( 0.2126 * $channels[0] ) + ( 0.7152 * $channels[1] ) + ( 0.0722 * $channels[2] );
+		};
+
+		$l1 = $lum( $hex_a );
+		$l2 = $lum( $hex_b );
+		if ( null === $l1 || null === $l2 ) {
+			return 1.0;
+		}
+		if ( $l2 > $l1 ) {
+			[ $l1, $l2 ] = [ $l2, $l1 ];
+		}
+		return ( $l1 + 0.05 ) / ( $l2 + 0.05 );
+	}
+}
+
+if ( ! function_exists( 'magicauth_contrast_evaluate' ) ) {
+	/**
+	 * Three-tier WCAG verdict on a contrast ratio.
+	 *
+	 * - 'fail' below 2.5:1 (unreadable territory; reject at sanitize).
+	 * - 'warn' from 2.5:1 to context floor (AA 4.5:1 normal, 3:1 large/UI).
+	 * - 'pass' at or above context floor.
+	 *
+	 * @param float  $ratio   Output of magicauth_contrast_ratio().
+	 * @param string $context 'normal'|'large'|'ui' — defaults to 'normal' (strictest).
+	 */
+	function magicauth_contrast_evaluate( float $ratio, string $context = 'normal' ): string {
+		$floor = 'normal' === $context ? 4.5 : 3.0;
+		if ( $ratio < 2.5 ) {
+			return 'fail';
+		}
+		if ( $ratio < $floor ) {
+			return 'warn';
+		}
+		return 'pass';
 	}
 }
 

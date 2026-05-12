@@ -47,6 +47,30 @@ $shell_font_stacks = [
 ];
 $shell_font_key   = (string) magicauth_get_setting( 'font_stack', 'system' );
 $shell_font_stack = $shell_font_stacks[ $shell_font_key ] ?? $shell_font_stacks['system'];
+
+// link_color: empty stored value means "inherit from brand" — emit nothing
+// and let consumers fall back via `var(--magicauth-color-link, var(--primary))`.
+$shell_link = '';
+$link_raw   = (string) magicauth_get_setting( 'link_color', '' );
+if ( '' !== $link_raw && function_exists( 'sanitize_hex_color' ) ) {
+	$candidate = (string) sanitize_hex_color( $link_raw );
+	if ( '' !== $candidate ) {
+		$shell_link = $candidate;
+	}
+}
+
+// Background image — resolve attachment to a URL. Falls back to page_color
+// when the attachment is missing or `wp_get_attachment_image_src()` is unavailable.
+$shell_bg_url = '';
+$shell_bg_id  = (int) magicauth_get_setting( 'background_attachment_id', 0 );
+if ( $shell_bg_id > 0 && function_exists( 'wp_get_attachment_image_src' ) ) {
+	// 'large' (≤1024w) avoids serving a 5 MB original to every login render
+	// when CSS will background-size: cover it anyway.
+	$src = wp_get_attachment_image_src( $shell_bg_id, 'large' );
+	if ( is_array( $src ) && ! empty( $src[0] ) ) {
+		$shell_bg_url = (string) $src[0];
+	}
+}
 ?>
 <style id="magicauth-shell-vars">
 :root {
@@ -56,6 +80,9 @@ $shell_font_stack = $shell_font_stacks[ $shell_font_key ] ?? $shell_font_stacks[
 	--magicauth-radius-card: <?php echo (int) $shell_radius; ?>px;
 	--magicauth-card-max-width: <?php echo (int) $shell_width; ?>px;
 	--magicauth-font-family: <?php echo esc_attr( $shell_font_stack ); ?>;
+<?php if ( '' !== $shell_link ) : ?>
+	--magicauth-color-link: <?php echo esc_attr( $shell_link ); ?>;
+<?php endif; ?>
 }
 /* Vertical-center the card; flex avoids fighting WP's default top-padding. */
 html, body.login {
@@ -101,6 +128,19 @@ body.login .magicauth-form {
 body.login.magicauth-page .magicauth-card {
 	display: block;
 }
+<?php if ( '' !== $shell_bg_url ) : ?>
+/* Background image — comes AFTER the body.login shorthand `background:`
+   so this longhand doesn't get clobbered by the shorthand's reset. */
+body.login {
+	background-image: url('<?php echo esc_url( $shell_bg_url ); ?>');
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+@media (prefers-reduced-data: reduce) {
+	body.login { background-image: none; }
+}
+<?php endif; ?>
 </style>
 
 <?php

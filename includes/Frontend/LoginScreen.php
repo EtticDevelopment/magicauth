@@ -364,6 +364,10 @@ final class LoginScreen {
 
 	public static function filter_body_class( array $classes ): array {
 		$classes[] = 'magicauth-page';
+		$mode      = (string) magicauth_get_setting( 'color_mode', 'light' );
+		if ( in_array( $mode, [ 'light', 'dark', 'auto' ], true ) ) {
+			$classes[] = 'magicauth-mode-' . $mode;
+		}
 		return $classes;
 	}
 

@@ -48,6 +48,9 @@ if ( ! function_exists( 'update_option' ) ) {
 		unset( $autoload );
 		global $magicauth_test_state;
 		$magicauth_test_state['options'][ $option ] = $value;
+		if ( 'magicauth_settings' === $option && function_exists( 'magicauth_invalidate_settings_cache' ) ) {
+			magicauth_invalidate_settings_cache();
+		}
 		return true;
 	}
 }
@@ -59,6 +62,9 @@ if ( ! function_exists( 'add_option' ) ) {
 			return false;
 		}
 		$magicauth_test_state['options'][ $option ] = $value;
+		if ( 'magicauth_settings' === $option && function_exists( 'magicauth_invalidate_settings_cache' ) ) {
+			magicauth_invalidate_settings_cache();
+		}
 		return true;
 	}
 }
@@ -67,6 +73,9 @@ if ( ! function_exists( 'delete_option' ) ) {
 	function delete_option( string $option ): bool {
 		global $magicauth_test_state;
 		unset( $magicauth_test_state['options'][ $option ] );
+		if ( 'magicauth_settings' === $option && function_exists( 'magicauth_invalidate_settings_cache' ) ) {
+			magicauth_invalidate_settings_cache();
+		}
 		return true;
 	}
 }
@@ -656,10 +665,54 @@ if ( ! function_exists( 'wp_get_attachment_image_src' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_attachment_is_image' ) ) {
+	function wp_attachment_is_image( int $id ): bool {
+		global $magicauth_test_state;
+		return ! empty( $magicauth_test_state['attachment_is_image'][ $id ] );
+	}
+}
+
+if ( ! function_exists( 'get_attached_file' ) ) {
+	function get_attached_file( int $id ) {
+		global $magicauth_test_state;
+		return $magicauth_test_state['attachment_paths'][ $id ] ?? false;
+	}
+}
+
+if ( ! function_exists( 'wp_check_filetype_and_ext' ) ) {
+	// Simplified: match by file extension against the allowlist regex keys.
+	// Real WP also peeks at content via finfo; we leave that to the caller's
+	// own finfo block, since duplicating WP's logic here adds little value.
+	function wp_check_filetype_and_ext( string $file, string $filename, array $mimes = [] ): array {
+		unset( $file );
+		$ext = strtolower( (string) pathinfo( $filename, PATHINFO_EXTENSION ) );
+		foreach ( $mimes as $regex => $mime ) {
+			$alternatives = explode( '|', $regex );
+			if ( in_array( $ext, $alternatives, true ) ) {
+				return [ 'ext' => $ext, 'type' => $mime, 'proper_filename' => false ];
+			}
+		}
+		return [ 'ext' => false, 'type' => false, 'proper_filename' => false ];
+	}
+}
+
 if ( ! function_exists( 'magicauth_test_register_attachment' ) ) {
 	function magicauth_test_register_attachment( int $id, string $url ): void {
 		global $magicauth_test_state;
 		$magicauth_test_state['attachments'][ $id ] = $url;
+	}
+}
+
+if ( ! function_exists( 'magicauth_test_register_attachment_file' ) ) {
+	/**
+	 * Test helper: bind an attachment ID to an on-disk path so sanitize_background()
+	 * sees a real file (finfo needs bytes). Marks the attachment as an image by
+	 * default; pass $is_image=false to simulate a non-image attachment.
+	 */
+	function magicauth_test_register_attachment_file( int $id, string $path, bool $is_image = true ): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['attachment_paths'][ $id ]    = $path;
+		$magicauth_test_state['attachment_is_image'][ $id ] = $is_image;
 	}
 }
 
@@ -729,14 +782,19 @@ if ( ! function_exists( 'magicauth_test_reset_state' ) ) {
 	function magicauth_test_reset_state(): void {
 		global $magicauth_test_state, $wpdb;
 		$magicauth_test_state = [
-			'options'     => [],
-			'usermeta'    => [],
-			'transients'  => [],
-			'users'       => [],
-			'actions'     => [],
-			'filters'     => [],
-			'attachments' => [],
+			'options'             => [],
+			'usermeta'            => [],
+			'transients'          => [],
+			'users'               => [],
+			'actions'             => [],
+			'filters'             => [],
+			'attachments'         => [],
+			'attachment_paths'    => [],
+			'attachment_is_image' => [],
 		];
+		if ( function_exists( 'magicauth_invalidate_settings_cache' ) ) {
+			magicauth_invalidate_settings_cache();
+		}
 		if ( isset( $wpdb ) && method_exists( $wpdb, 'truncate_magicauth_table' ) ) {
 			$wpdb->truncate_magicauth_table();
 		}
