@@ -871,7 +871,7 @@ body.admin-bar .magicauth-admin .magicauth-topbar__bar { top: 32px; }
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	padding: 14px 8px;
+	padding: 14px;
 	position: relative;
 }
 
