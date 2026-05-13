@@ -148,6 +148,11 @@
 					mirrorFromSource();
 				}
 			} );
+
+			// Initial render: if follower is blank, mirror immediately.
+			if ( isConnected() ) {
+				mirrorFromSource();
+			}
 		} );
 	}
 

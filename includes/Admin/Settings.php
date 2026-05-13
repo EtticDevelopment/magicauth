@@ -32,9 +32,13 @@ final class Settings {
 
 	private const COLOR_MODE_KEYS = [ 'light', 'dark', 'auto' ];
 
-	// Curated dark-mode surface — must match the value emitted by magicauth.css
-	// for body.magicauth-mode-dark / .magicauth-mode-auto. Used by the
-	// brand-color contrast check below.
+	// Curated dark-mode surface — used by the brand-color contrast check below.
+	// !!! SYNC-LOCK !!! This value MUST equal the --magicauth-color-surface
+	// declarations in assets/css/magicauth.css at:
+	//   - line ~463 (body.magicauth-mode-dark block)
+	//   - line ~482 (@media (prefers-color-scheme: dark) > body.magicauth-mode-auto)
+	// Three locations, one truth. If you change one, change all three or the
+	// contrast warning shown to admins will disagree with the rendered card.
 	private const DARK_SURFACE_HEX = '#181c22';
 
 	// Keyed by extension regex (wp_check_filetype_and_ext format); membership checks hit values.
@@ -52,6 +56,10 @@ final class Settings {
 		'jpg|jpeg' => 'image/jpeg',
 		'webp'     => 'image/webp',
 	];
+
+	// Background image soft-limit. Files larger than this trigger a non-blocking
+	// "consider compressing" admin notice but still save successfully.
+	private const BACKGROUND_SIZE_SOFT_LIMIT_BYTES = 1024 * 1024; // 1 MB.
 
 	public static function setup(): void {
 		add_action( 'admin_init', [ self::class, 'register' ] );
@@ -654,14 +662,14 @@ final class Settings {
 		}
 
 		$size = (int) @filesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-		if ( $size > 1024 * 1024 ) {
+		if ( $size > self::BACKGROUND_SIZE_SOFT_LIMIT_BYTES ) {
 			add_settings_error(
 				self::OPTION_NAME,
 				'magicauth_bg_large',
 				sprintf(
 					/* translators: %s: file size in MB */
 					__( 'Background image saved. File is %s MB — consider compressing for faster page load.', 'magicauth' ),
-					number_format( $size / ( 1024 * 1024 ), 1 )
+					number_format( $size / self::BACKGROUND_SIZE_SOFT_LIMIT_BYTES, 1 )
 				),
 				'warning'
 			);

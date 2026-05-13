@@ -451,10 +451,16 @@
 /* Dark mode — explicit. Body-class specificity (0,1,1) beats :root (0,0,1),
    so the shell-vars block can still set per-instance brand_color / link_color /
    font_stack without being overridden. Curated values, not exposed to admin
-   pickers. The surface hex must match Admin\Settings::DARK_SURFACE_HEX. */
+   pickers.
+   !!! SYNC-LOCK !!! --magicauth-color-surface (#181c22) MUST equal the PHP
+   constant MagicAuth\Admin\Settings::DARK_SURFACE_HEX
+   (includes/Admin/Settings.php:~42). The PHP constant feeds the brand-color
+   contrast check; the CSS variable paints the card. If either changes without
+   the other, dark-mode contrast warnings will lie. Value also duplicated at
+   line ~482 below (auto-mode @media block) — update all three together. */
 body.magicauth-mode-dark {
 	--magicauth-color-page: #0e1116;
-	--magicauth-color-surface: #181c22;
+	--magicauth-color-surface: #181c22; /* SYNC with Settings::DARK_SURFACE_HEX */
 	--magicauth-color-code-bg: #202832;
 	--magicauth-color-text: #eef0f3;
 	--magicauth-color-text-muted: #9aa3ad;
@@ -465,11 +471,15 @@ body.magicauth-mode-dark {
 }
 
 /* Dark mode — auto. Only kicks in when admin chose color_mode = auto AND
-   the visitor's browser reports a dark preference. */
+   the visitor's browser reports a dark preference.
+   !!! SYNC-LOCK !!! --magicauth-color-surface (#181c22) MUST equal the PHP
+   constant MagicAuth\Admin\Settings::DARK_SURFACE_HEX
+   (includes/Admin/Settings.php:~42). See full note above the explicit-dark
+   block (~line 451). Three locations to update in lockstep. */
 @media (prefers-color-scheme: dark) {
 	body.magicauth-mode-auto {
 		--magicauth-color-page: #0e1116;
-		--magicauth-color-surface: #181c22;
+		--magicauth-color-surface: #181c22; /* SYNC with Settings::DARK_SURFACE_HEX */
 		--magicauth-color-code-bg: #202832;
 		--magicauth-color-text: #eef0f3;
 		--magicauth-color-text-muted: #9aa3ad;
