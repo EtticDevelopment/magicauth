@@ -241,10 +241,73 @@ final class Installer {
 		<?php
 	}
 
-	/** Generate one cryptographically strong salt value (random_bytes only). */
+	/** Local fallback: one strong salt value (random_bytes, base64 — quote-safe). */
 	public static function generate_salt_value(): string {
-		// base64 of 48 random bytes: 64 chars, no quote/backslash — safe inside a single-quoted PHP literal.
 		return base64_encode( random_bytes( 48 ) );
+	}
+
+	/**
+	 * Fetch fresh salts from the official WordPress generator, the same source
+	 * core's installer uses. Returns a name => value map for all eight constants,
+	 * or null on any failure so the caller can fall back to local generation.
+	 *
+	 * Values are rejected if they contain a single quote or backslash, preserving
+	 * the invariant that every salt is safe to splice into a single-quoted literal.
+	 *
+	 * @return array<string,string>|null
+	 */
+	private static function fetch_salts_from_api(): ?array {
+		if ( ! function_exists( 'wp_remote_get' ) ) {
+			return null;
+		}
+		$response = wp_remote_get(
+			'https://api.wordpress.org/secret-key/1.1/salt/',
+			[ 'timeout' => 8 ]
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return null;
+		}
+		$body = wp_remote_retrieve_body( $response );
+		if ( '' === $body ) {
+			return null;
+		}
+
+		$values = [];
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! preg_match( self::define_pattern( $name ), $body, $matches ) ) {
+				return null;
+			}
+			$value = $matches[3];
+			if ( '' === trim( $value ) || false !== strpbrk( $value, "'\\" ) ) {
+				return null;
+			}
+			foreach ( self::PLACEHOLDER_MARKERS as $marker ) {
+				if ( false !== stripos( $value, $marker ) ) {
+					return null;
+				}
+			}
+			$values[ $name ] = $value;
+		}
+		return $values;
+	}
+
+	/**
+	 * The eight salt values to write: the WordPress API first, local generation
+	 * as a fallback (offline, firewalled, or air-gapped sites — common where
+	 * placeholder salts occur).
+	 *
+	 * @return array<string,string>
+	 */
+	private static function salt_values(): array {
+		$api = self::fetch_salts_from_api();
+		if ( null !== $api ) {
+			return $api;
+		}
+		$values = [];
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			$values[ $name ] = self::generate_salt_value();
+		}
+		return $values;
 	}
 
 	/**
@@ -253,8 +316,8 @@ final class Installer {
 	 */
 	public static function generate_salt_block(): string {
 		$lines = [];
-		foreach ( self::SALT_CONSTANTS as $name ) {
-			$lines[] = sprintf( "define( '%s', '%s' );", $name, self::generate_salt_value() );
+		foreach ( self::salt_values() as $name => $value ) {
+			$lines[] = sprintf( "define( '%s', '%s' );", $name, $value );
 		}
 		return implode( "\n", $lines );
 	}
@@ -297,14 +360,19 @@ final class Installer {
 	}
 
 	/**
-	 * Replace every salt define's value with a fresh one, preserving the rest of
-	 * the line verbatim. Pure string transform — returns null if any of the eight
-	 * defines is absent (caller falls back to copy-and-paste).
+	 * Replace every salt define's value with the supplied one, preserving the
+	 * rest of the line verbatim. Pure string transform — returns null if any of
+	 * the eight defines is absent or has no value (caller falls back to paste).
+	 *
+	 * @param array<string,string> $values Salt values keyed by constant name.
 	 */
-	public static function rewrite_salt_defines( string $contents ): ?string {
+	public static function rewrite_salt_defines( string $contents, array $values ): ?string {
 		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! isset( $values[ $name ] ) || '' === $values[ $name ] ) {
+				return null;
+			}
+			$value   = $values[ $name ];
 			$pattern = '/(define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\2\s*,\s*)([\'"]).*?\3(\s*\)\s*;)/s';
-			$value   = self::generate_salt_value();
 			$count   = 0;
 			$result  = preg_replace_callback(
 				$pattern,
@@ -397,7 +465,7 @@ final class Installer {
 				'message' => __( 'Could not read wp-config.php.', 'magicauth' ),
 			];
 		}
-		$updated = self::rewrite_salt_defines( $original );
+		$updated = self::rewrite_salt_defines( $original, self::salt_values() );
 		if ( null === $updated ) {
 			return [
 				'ok'      => false,

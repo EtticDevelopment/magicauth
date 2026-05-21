@@ -75,7 +75,7 @@ MagicAuth registers a WordPress privacy exporter and eraser. Personal data store
 == Changelog ==
 
 = 1.1.0 =
-* Security: new "Fix WordPress salts" wizard under Settings > MagicAuth > Diagnostics & recovery. Generates fresh, cryptographically strong keys with `random_bytes` and writes them to `wp-config.php` automatically (atomic temp-file swap, no readable backup left in the web root). Falls back to a copy-and-paste block when `wp-config.php` is not writable.
+* Security: new "Fix WordPress salts" wizard under Settings > MagicAuth > Diagnostics & recovery. Fetches fresh keys from the official api.wordpress.org generator (with a local `random_bytes` fallback for offline sites) and writes them to `wp-config.php` automatically (atomic temp-file swap, no readable backup left in the web root). Falls back to a copy-and-paste block when `wp-config.php` is not writable.
 * Security: the weak-salt admin notice now offers a one-click "Fix it for me" button and explains the impact before any change. The wizard never enables the branded login replacement — it only clears the block.
 * Security: weak-salt detection now covers all eight key/salt constants (previously the four `*_KEY` constants only).
 

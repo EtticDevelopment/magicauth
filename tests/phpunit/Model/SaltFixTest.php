@@ -28,6 +28,15 @@ final class SaltFixTest extends TestCase {
 		'NONCE_SALT',
 	];
 
+	/** A full set of strong salt values keyed by constant name (no network). */
+	private function strong_values(): array {
+		$values = [];
+		foreach ( self::CONSTANTS as $name ) {
+			$values[ $name ] = Installer::generate_salt_value();
+		}
+		return $values;
+	}
+
 	/** A wp-config slice carrying all eight placeholder defines plus unrelated lines. */
 	private function placeholder_config(): string {
 		$lines = [ '<?php', "define( 'DB_NAME', 'wordpress' );" ];
@@ -75,7 +84,7 @@ final class SaltFixTest extends TestCase {
 
 	public function test_rewrite_replaces_placeholders_with_strong_salts(): void {
 		$original = $this->placeholder_config();
-		$updated  = Installer::rewrite_salt_defines( $original );
+		$updated  = Installer::rewrite_salt_defines( $original, $this->strong_values() );
 
 		$this->assertIsString( $updated );
 		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
@@ -91,7 +100,7 @@ final class SaltFixTest extends TestCase {
 
 	public function test_rewrite_returns_null_when_a_define_is_missing(): void {
 		$config = "<?php\ndefine( 'AUTH_KEY', 'put your unique phrase here' );";
-		$this->assertNull( Installer::rewrite_salt_defines( $config ) );
+		$this->assertNull( Installer::rewrite_salt_defines( $config, $this->strong_values() ) );
 	}
 
 	public function test_rewrite_handles_double_quotes_and_tight_spacing(): void {
@@ -99,7 +108,7 @@ final class SaltFixTest extends TestCase {
 		foreach ( self::CONSTANTS as $name ) {
 			$lines[] = 'define("' . $name . '","put your unique phrase here");';
 		}
-		$updated = Installer::rewrite_salt_defines( implode( "\n", $lines ) );
+		$updated = Installer::rewrite_salt_defines( implode( "\n", $lines ), $this->strong_values() );
 		$this->assertIsString( $updated );
 		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
 	}
