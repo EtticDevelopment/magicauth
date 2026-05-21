@@ -13,6 +13,21 @@ final class Installer {
 
 	private const SALT_NOTICE_KEY = 'magicauth_salt_notice';
 
+	/** The eight key/salt constants WordPress derives wp_salt() from. */
+	private const SALT_CONSTANTS = [
+		'AUTH_KEY',
+		'SECURE_AUTH_KEY',
+		'LOGGED_IN_KEY',
+		'NONCE_KEY',
+		'AUTH_SALT',
+		'SECURE_AUTH_SALT',
+		'LOGGED_IN_SALT',
+		'NONCE_SALT',
+	];
+
+	/** Substrings that mark a salt as the shipped wp-config-sample placeholder. */
+	private const PLACEHOLDER_MARKERS = [ 'put your unique phrase here' ];
+
 	/** Activation: schema, defaults, cron, salt check. Order matters. */
 	public static function activate(): void {
 		self::install_schema();
@@ -130,18 +145,13 @@ final class Installer {
 	 * notice. Never blocks activation; only refuses replace_default.
 	 */
 	public static function check_salts(): void {
-		$placeholder_markers = [
-			'put your unique phrase here',
-		];
-
-		$keys = [ 'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY' ];
-		foreach ( $keys as $constant ) {
+		foreach ( self::SALT_CONSTANTS as $constant ) {
 			$value = defined( $constant ) ? constant( $constant ) : '';
 			if ( ! is_string( $value ) || '' === $value ) {
 				set_transient( self::SALT_NOTICE_KEY, 1, WEEK_IN_SECONDS );
 				return;
 			}
-			foreach ( $placeholder_markers as $marker ) {
+			foreach ( self::PLACEHOLDER_MARKERS as $marker ) {
 				if ( false !== stripos( $value, $marker ) ) {
 					set_transient( self::SALT_NOTICE_KEY, 1, WEEK_IN_SECONDS );
 					return;
@@ -190,15 +200,30 @@ final class Installer {
 		if ( ! self::has_weak_salts() ) {
 			return;
 		}
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$fix_url = add_query_arg(
+			[
+				'page'                => 'magicauth',
+				'magicauth-fix-salts' => '1',
+			],
+			admin_url( 'options-general.php' )
+		);
 		?>
 		<div class="notice notice-error">
 			<p>
 				<strong><?php esc_html_e( 'MagicAuth: weak WordPress salts detected.', 'magicauth' ); ?></strong>
+				<?php esc_html_e( 'Your security keys still hold placeholder or empty values, so token and session secrets are not unique to this site. Branded login replacement is disabled until this is resolved.', 'magicauth' ); ?>
+			</p>
+			<p>
+				<a href="<?php echo esc_url( $fix_url ); ?>" class="button button-primary"><?php esc_html_e( 'Fix it for me', 'magicauth' ); ?></a>
 				<?php
+				echo ' ';
 				echo wp_kses(
 					sprintf(
 						/* translators: %s: salt generator URL */
-						__( 'Generate fresh salts at <a href="%s" target="_blank" rel="noopener">api.wordpress.org/secret-key</a> and paste them into <code>wp-config.php</code>. Branded login replacement is disabled until this is resolved.', 'magicauth' ),
+						__( 'or generate them yourself at <a href="%s" target="_blank" rel="noopener">api.wordpress.org/secret-key</a> and paste into <code>wp-config.php</code>.', 'magicauth' ),
 						'https://api.wordpress.org/secret-key/1.1/salt/'
 					),
 					[
@@ -214,5 +239,318 @@ final class Installer {
 			</p>
 		</div>
 		<?php
+	}
+
+	/** Local fallback: one strong salt value (random_bytes, base64 — quote-safe). */
+	public static function generate_salt_value(): string {
+		return base64_encode( random_bytes( 48 ) );
+	}
+
+	/**
+	 * Fetch fresh salts from the official WordPress generator, the same source
+	 * core's installer uses. Returns a name => value map for all eight constants,
+	 * or null on any failure so the caller can fall back to local generation.
+	 *
+	 * Values are rejected if they contain a single quote or backslash, preserving
+	 * the invariant that every salt is safe to splice into a single-quoted literal.
+	 *
+	 * @return array<string,string>|null
+	 */
+	private static function fetch_salts_from_api(): ?array {
+		if ( ! function_exists( 'wp_remote_get' ) ) {
+			return null;
+		}
+		$response = wp_remote_get(
+			'https://api.wordpress.org/secret-key/1.1/salt/',
+			[ 'timeout' => 8 ]
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return null;
+		}
+		$body = wp_remote_retrieve_body( $response );
+		if ( '' === $body ) {
+			return null;
+		}
+
+		$values = [];
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! preg_match( self::define_pattern( $name ), $body, $matches ) ) {
+				return null;
+			}
+			$value = $matches[3];
+			if ( '' === trim( $value ) || false !== strpbrk( $value, "'\\" ) ) {
+				return null;
+			}
+			foreach ( self::PLACEHOLDER_MARKERS as $marker ) {
+				if ( false !== stripos( $value, $marker ) ) {
+					return null;
+				}
+			}
+			$values[ $name ] = $value;
+		}
+		return $values;
+	}
+
+	/**
+	 * The eight salt values to write: the WordPress API first, local generation
+	 * as a fallback (offline, firewalled, or air-gapped sites — common where
+	 * placeholder salts occur).
+	 *
+	 * @return array<string,string>
+	 */
+	private static function salt_values(): array {
+		$api = self::fetch_salts_from_api();
+		if ( null !== $api ) {
+			return $api;
+		}
+		$values = [];
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			$values[ $name ] = self::generate_salt_value();
+		}
+		return $values;
+	}
+
+	/**
+	 * Build a ready-to-paste block of all eight define() lines with fresh salts.
+	 * Used for the manual copy-and-paste path when wp-config.php is not writable.
+	 */
+	public static function generate_salt_block(): string {
+		$lines = [];
+		foreach ( self::salt_values() as $name => $value ) {
+			$lines[] = sprintf( "define( '%s', '%s' );", $name, $value );
+		}
+		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Regex capturing a single define() with its quote style and value (group 3).
+	 * Anchored to a line start (multiline) so commented-out lines such as
+	 * `// define( 'AUTH_KEY', ... );` are skipped — PHP honours the first active
+	 * define, and matching a comment instead would corrupt detection/rewrite.
+	 */
+	private static function define_pattern( string $name ): string {
+		return '/^[ \t]*define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\1\s*,\s*([\'"])(.*?)\2\s*\)\s*;/m';
+	}
+
+	/** True only when all eight salt defines are present in the given config text. */
+	private static function defines_present( string $contents ): bool {
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! preg_match( self::define_pattern( $name ), $contents ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * File-based weak-salt detection (operates on wp-config text, not runtime
+	 * constants). A salt is weak if missing, empty, or placeholder.
+	 */
+	public static function config_has_weak_salts( string $contents ): bool {
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! preg_match( self::define_pattern( $name ), $contents, $matches ) ) {
+				return true;
+			}
+			$value = $matches[3];
+			if ( '' === trim( $value ) ) {
+				return true;
+			}
+			foreach ( self::PLACEHOLDER_MARKERS as $marker ) {
+				if ( false !== stripos( $value, $marker ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Replace every salt define's value with the supplied one, preserving the
+	 * rest of the line verbatim. Pure string transform — returns null if any of
+	 * the eight defines is absent or has no value (caller falls back to paste).
+	 *
+	 * @param array<string,string> $values Salt values keyed by constant name.
+	 */
+	public static function rewrite_salt_defines( string $contents, array $values ): ?string {
+		foreach ( self::SALT_CONSTANTS as $name ) {
+			if ( ! isset( $values[ $name ] ) || '' === $values[ $name ] ) {
+				return null;
+			}
+			$value   = $values[ $name ];
+			// Leading whitespace lives inside group 1 so indentation is preserved;
+			// the line-start anchor (multiline) skips commented-out defines.
+			$pattern = '/^([ \t]*define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\2\s*,\s*)([\'"]).*?\3(\s*\)\s*;)/m';
+			$count   = 0;
+			$result  = preg_replace_callback(
+				$pattern,
+				static function ( array $matches ) use ( $value ): string {
+					return (string) $matches[1] . "'" . $value . "'" . (string) $matches[4];
+				},
+				$contents,
+				1,
+				$count
+			);
+			if ( ! is_string( $result ) || 1 !== $count ) {
+				return null;
+			}
+			$contents = $result;
+		}
+		return $contents;
+	}
+
+	/** Resolve wp-config.php the same way wp-load.php does (ABSPATH or one level up). */
+	public static function locate_wp_config(): ?string {
+		$candidate = ABSPATH . 'wp-config.php';
+		if ( file_exists( $candidate ) ) {
+			return $candidate;
+		}
+		$parent = dirname( ABSPATH ) . '/wp-config.php';
+		if ( file_exists( $parent ) && ! file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
+			return $parent;
+		}
+		return null;
+	}
+
+	/** WP_Filesystem in the credential-free 'direct' mode, or null if unavailable. */
+	private static function filesystem(): ?\WP_Filesystem_Base {
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		if ( 'direct' !== get_filesystem_method() ) {
+			return null;
+		}
+		if ( ! WP_Filesystem() ) {
+			return null;
+		}
+		global $wp_filesystem;
+		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
+	}
+
+	/**
+	 * Can we rewrite wp-config.php in place? Requires the file located, the
+	 * direct filesystem method, write permission, and all eight defines present.
+	 */
+	public static function salt_autofix_available(): bool {
+		$path = self::locate_wp_config();
+		if ( null === $path ) {
+			return false;
+		}
+		$filesystem = self::filesystem();
+		if ( null === $filesystem || ! $filesystem->is_writable( $path ) ) {
+			return false;
+		}
+		$contents = $filesystem->get_contents( $path );
+		return is_string( $contents ) && '' !== $contents && self::defines_present( $contents );
+	}
+
+	/**
+	 * Write fresh salts into wp-config.php via an atomic temp-file swap. No
+	 * backup file is left in the document root — a readable wp-config.php.bak
+	 * would expose DB credentials. Clears the weak-salt notice on success.
+	 *
+	 * @return array{ok:bool,message:string}
+	 */
+	public static function apply_salt_fix(): array {
+		$path = self::locate_wp_config();
+		if ( null === $path ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not locate wp-config.php.', 'magicauth' ),
+			];
+		}
+		$filesystem = self::filesystem();
+		if ( null === $filesystem || ! $filesystem->is_writable( $path ) ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'wp-config.php is not writable on this server. Use the manual copy-and-paste option instead.', 'magicauth' ),
+			];
+		}
+		$original = $filesystem->get_contents( $path );
+		if ( ! is_string( $original ) || '' === $original ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not read wp-config.php.', 'magicauth' ),
+			];
+		}
+		$updated = self::rewrite_salt_defines( $original, self::salt_values() );
+		if ( null === $updated ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'wp-config.php does not contain the expected salt definitions. Use the manual copy-and-paste option instead.', 'magicauth' ),
+			];
+		}
+		// Safety gate: result must still be PHP and must no longer look weak.
+		if ( 0 !== strpos( ltrim( $updated ), '<?php' ) || self::config_has_weak_salts( $updated ) ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'The generated configuration failed a safety check, so nothing was written.', 'magicauth' ),
+			];
+		}
+		// Preserve the original file mode across the swap: move() uses rename(),
+		// so the destination would otherwise inherit the temp file's perms and
+		// silently widen a hardened wp-config.php (e.g. 0600 -> 0644). Applying
+		// the original mode to the temp before the move also keeps the brief
+		// temp-file window no more readable than the file it replaces.
+		$mode = $filesystem->getchmod( $path );
+
+		$temp = dirname( $path ) . '/.magicauth-wpconfig-' . bin2hex( random_bytes( 8 ) ) . '.tmp';
+		if ( ! $filesystem->put_contents( $temp, $updated, FS_CHMOD_FILE ) ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not write the new configuration. No changes were made.', 'magicauth' ),
+			];
+		}
+		if ( '' !== $mode ) {
+			$filesystem->chmod( $temp, (int) octdec( $mode ) );
+		}
+		if ( ! $filesystem->move( $temp, $path, true ) ) {
+			$filesystem->delete( $temp );
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not replace wp-config.php. No changes were made.', 'magicauth' ),
+			];
+		}
+		delete_transient( self::SALT_NOTICE_KEY );
+		magicauth_debug_log( sprintf( 'salt fix: rewrote %s by user_id=%d', $path, (int) get_current_user_id() ) );
+		return [
+			'ok'      => true,
+			'message' => __( 'Fresh salts written to wp-config.php. Everyone, including you, will be signed out — sign in again to continue.', 'magicauth' ),
+		];
+	}
+
+	/**
+	 * Re-read wp-config.php and clear the weak-salt notice if it is now clean.
+	 * Backs the manual copy-and-paste path, which we cannot verify from runtime
+	 * constants (those were loaded before the file was edited).
+	 *
+	 * @return array{ok:bool,message:string}
+	 */
+	public static function recheck_salts_from_file(): array {
+		$path = self::locate_wp_config();
+		if ( null === $path ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not locate wp-config.php to verify.', 'magicauth' ),
+			];
+		}
+		$filesystem = self::filesystem();
+		$contents   = null !== $filesystem ? $filesystem->get_contents( $path ) : null;
+		if ( ! is_string( $contents ) || '' === $contents ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Could not read wp-config.php to verify.', 'magicauth' ),
+			];
+		}
+		if ( self::config_has_weak_salts( $contents ) ) {
+			return [
+				'ok'      => false,
+				'message' => __( 'Still detecting placeholder or empty salts. Make sure you replaced all eight lines and saved wp-config.php.', 'magicauth' ),
+			];
+		}
+		delete_transient( self::SALT_NOTICE_KEY );
+		return [
+			'ok'      => true,
+			'message' => __( 'Salts look good now. Branded login replacement is available again.', 'magicauth' ),
+		];
 	}
 }
