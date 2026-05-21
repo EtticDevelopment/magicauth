@@ -4,7 +4,7 @@ Tags: login, passwordless, magic link, authentication, security
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,12 +77,6 @@ Yes. Templates can be overridden by copying them into `your-theme/magicauth/`. F
 MagicAuth registers a WordPress privacy exporter and eraser. Personal data stored is limited to: `user_id`, an HMAC of the user's email and IP, and timestamps for each sign-in attempt. Verifiers are not exportable; only metadata about issued/consumed tokens.
 
 == Changelog ==
-
-= 1.0.1 =
-* The weak-salt helper no longer edits `wp-config.php`. It generates a ready-to-paste block of fresh keys and links to a step-by-step guide; you paste and save. This removes any risk of the plugin corrupting your site configuration.
-* Fresh salts are generated locally with `random_bytes` and are never fetched over the network.
-* Weak-salt detection now reads your live security keys, so managed and environment-based hosts (Bedrock, WP Engine, Pantheon) are no longer falsely flagged, and the notice clears itself once the keys are strong.
-* The weak-salt notice is now advisory: the branded login screen can be enabled with an informed-consent warning instead of being hard-blocked.
 
 = 1.0.0 =
 * Initial release.
