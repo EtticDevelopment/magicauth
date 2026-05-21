@@ -22,6 +22,7 @@
 		initToastFromUrl();
 		initDiscardFlash();
 		initRecoveryActions();
+		initSaltFix();
 		initUserProfile();
 	}
 
@@ -540,6 +541,10 @@
 
 		document.body.appendChild( backdrop );
 
+		if ( typeof opts.onBody === 'function' ) {
+			opts.onBody( backdrop.querySelector( '[data-modal-body]' ) );
+		}
+
 		var confirmBtn = backdrop.querySelector( '[data-confirm]' );
 		var cancelBtn  = backdrop.querySelector( '[data-cancel]' );
 
@@ -564,10 +569,13 @@
 			}
 			setLoading( confirmBtn, true, 'Working…' );
 			cancelBtn.setAttribute( 'disabled', '' );
-			Promise.resolve( onConfirm && onConfirm() ).then( function () {
+			Promise.resolve( onConfirm && onConfirm() ).then( function ( keepOpen ) {
 				setLoading( confirmBtn, false );
 				cancelBtn.removeAttribute( 'disabled' );
-				close();
+				// onConfirm may return false to keep the modal open (e.g. a failed re-check).
+				if ( keepOpen !== false ) {
+					close();
+				}
 			} ).catch( function () {
 				setLoading( confirmBtn, false );
 				cancelBtn.removeAttribute( 'disabled' );
@@ -676,6 +684,145 @@
 				}
 			} );
 		} );
+	}
+
+	// Salt-fix wizard — "Fix WordPress salts"
+	function initSaltFix() {
+		var root = document.querySelector( '.magicauth-recovery' );
+		if ( ! root ) {
+			return;
+		}
+		var btn = root.querySelector( '[data-magicauth-salt-fix]' );
+		if ( ! btn ) {
+			return;
+		}
+
+		var ajaxurl = root.getAttribute( 'data-ajaxurl' ) || ( window.ajaxurl || '' );
+		var nonce   = root.getAttribute( 'data-nonce' ) || '';
+
+		function post( mode ) {
+			return fetch( ajaxurl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams( { action: 'magicauth_admin_fix_salts', mode: mode, _ajax_nonce: nonce } )
+			} ).then( function ( res ) { return res.json(); } );
+		}
+
+		function escapeHtml( str ) {
+			return String( str ).replace( /[&<>"']/g, function ( c ) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ];
+			} );
+		}
+
+		var effects =
+			'<p>Fresh, random values will be generated for all eight WordPress security keys.</p>' +
+			'<ul class="magicauth-modal-list">' +
+				'<li><strong>Everyone is signed out.</strong> All sessions (including yours) end — you will sign in again right after.</li>' +
+				'<li><strong>Pending sign-in links and codes stop working.</strong> They were signed with the old keys, so anyone mid-sign-in requests a fresh email.</li>' +
+				'<li><strong>The branded login screen stays off.</strong> This only clears the block; you turn the replacement on yourself when ready.</li>' +
+			'</ul>';
+
+		// Open the wizard for the writable (auto-write) case.
+		function openAutoWrite() {
+			showConfirm( {
+				title:       'Fix WordPress salts',
+				lede:        'wp-config.php is writable, so MagicAuth can update it for you.',
+				body:        effects + '<p>A backup is not left in the web root (it would expose your database credentials); the file is replaced atomically instead.</p>',
+				confirmText: 'Generate & write salts',
+				cancelText:  'Cancel',
+				onConfirm:   function () {
+					return post( 'apply' ).then( function ( payload ) {
+						if ( ! payload || ! payload.success ) {
+							showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Could not write wp-config.php.' } );
+							return;
+						}
+						showToast( { type: 'success', message: payload.data.message || 'Salts updated. Signing you out…' } );
+						setTimeout( function () { window.location.reload(); }, 1800 );
+					} ).catch( function () {
+						showToast( { type: 'error', message: 'Network error. Please try again.' } );
+					} );
+				}
+			} );
+		}
+
+		// Open the wizard for the manual (copy-and-paste) case.
+		function openManual( block ) {
+			var body =
+				effects +
+				'<p>wp-config.php is not writable from PHP on this server, so copy these lines and replace the matching salt lines in <code>wp-config.php</code>, then save it:</p>' +
+				'<textarea class="magicauth-salt-block" readonly rows="8">' + escapeHtml( block ) + '</textarea>' +
+				'<button type="button" class="magicauth-btn magicauth-btn--ghost magicauth-btn--sm" data-salt-copy>Copy to clipboard</button>';
+
+			showConfirm( {
+				title:       'Fix WordPress salts',
+				lede:        'Copy these fresh salts into wp-config.php.',
+				body:        body,
+				confirmText: 'I have updated wp-config.php',
+				cancelText:  'Close',
+				onBody:      function ( bodyEl ) {
+					var copyBtn = bodyEl.querySelector( '[data-salt-copy]' );
+					var area    = bodyEl.querySelector( '.magicauth-salt-block' );
+					if ( ! copyBtn || ! area ) {
+						return;
+					}
+					copyBtn.addEventListener( 'click', function () {
+						area.focus();
+						area.select();
+						var done = function () { copyBtn.textContent = 'Copied'; setTimeout( function () { copyBtn.textContent = 'Copy to clipboard'; }, 1500 ); };
+						if ( navigator.clipboard && navigator.clipboard.writeText ) {
+							navigator.clipboard.writeText( area.value ).then( done, function () {} );
+						} else {
+							try { document.execCommand( 'copy' ); done(); } catch ( e ) {}
+						}
+					} );
+				},
+				onConfirm:   function () {
+					return post( 'recheck' ).then( function ( payload ) {
+						if ( ! payload || ! payload.success ) {
+							showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Still detecting weak salts.' } );
+							return false; // keep the modal open so they can fix and retry
+						}
+						showToast( { type: 'success', message: payload.data.message || 'Salts updated.' } );
+						setTimeout( function () { window.location.reload(); }, 1500 );
+					} ).catch( function () {
+						showToast( { type: 'error', message: 'Network error. Please try again.' } );
+						return false;
+					} );
+				}
+			} );
+		}
+
+		function openWizard() {
+			setLoading( btn, true, 'Checking…' );
+			post( 'preview' ).then( function ( payload ) {
+				setLoading( btn, false );
+				if ( ! payload || ! payload.success ) {
+					showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Could not start the wizard.' } );
+					return;
+				}
+				if ( payload.data.writable ) {
+					openAutoWrite();
+				} else {
+					openManual( payload.data.block || '' );
+				}
+			} ).catch( function () {
+				setLoading( btn, false );
+				showToast( { type: 'error', message: 'Network error. Please try again.' } );
+			} );
+		}
+
+		btn.addEventListener( 'click', function ( ev ) {
+			ev.preventDefault();
+			openWizard();
+		} );
+
+		// Auto-open when arriving from the admin notice's "Fix it for me" button.
+		try {
+			if ( new URLSearchParams( window.location.search ).get( 'magicauth-fix-salts' ) === '1' ) {
+				openWizard();
+			}
+		} catch ( e ) {}
 	}
 
 	// User-profile actions — surfaced through toasts

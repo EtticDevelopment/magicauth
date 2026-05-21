@@ -3,7 +3,7 @@
  * Plugin Name:       MagicAuth
  * Plugin URI:        https://github.com/EtticDevelopment/magicauth
  * Description:       Passwordless WordPress sign-in via email magic link or 6-character code.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Ettic
@@ -26,7 +26,7 @@ if ( defined( 'MAGICAUTH_VERSION' ) ) {
 	return;
 }
 
-define( 'MAGICAUTH_VERSION', '1.0.0' );
+define( 'MAGICAUTH_VERSION', '1.1.0' );
 define( 'MAGICAUTH_DB_VERSION', 1 );
 define( 'MAGICAUTH_FILE', __FILE__ );
 define( 'MAGICAUTH_DIR', plugin_dir_path( __FILE__ ) );
