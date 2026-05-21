@@ -375,6 +375,44 @@ body.admin-bar .magicauth-admin .magicauth-topbar__bar { top: 32px; }
 	line-height: 1.55;
 }
 
+/* <details>/<summary> disclosure widget. <summary> is keyboard-focusable
+   natively; no JS. Native marker hidden so we can render our own chevron. */
+.magicauth-admin details.magicauth-block > summary {
+	list-style: none;
+	cursor: pointer;
+	user-select: none;
+	position: relative;
+	padding-right: 32px;
+}
+
+.magicauth-admin details.magicauth-block > summary::-webkit-details-marker { display: none; }
+
+.magicauth-admin details.magicauth-block > summary::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 8px;
+	margin: auto 0;
+	width: 9px;
+	height: 9px;
+	border-right: 2px solid var(--tx-muted);
+	border-bottom: 2px solid var(--tx-muted);
+	transform: rotate(45deg);
+	transform-origin: center;
+	transition: transform 0.15s ease;
+}
+
+.magicauth-admin details.magicauth-block[open] > summary::after {
+	transform: rotate(-135deg);
+}
+
+.magicauth-admin details.magicauth-block > summary:focus-visible {
+	outline: 2px solid var(--ettic-accent, #2271b1);
+	outline-offset: 4px;
+	border-radius: 4px;
+}
+
 /* Cards. Namespaced to avoid colliding with WP core `.card` (caps at 520px). */
 .magicauth-admin .magicauth-card {
 	background: var(--ettic-surface);
@@ -833,7 +871,7 @@ body.admin-bar .magicauth-admin .magicauth-topbar__bar { top: 32px; }
 	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
-	padding: 14px 8px;
+	padding: 14px;
 	position: relative;
 }
 

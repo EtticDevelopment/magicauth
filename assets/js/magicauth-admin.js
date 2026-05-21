@@ -12,6 +12,7 @@
 	function init() {
 		initMediaPickers();
 		initColorPickers();
+		initColorFollowers();
 		initRowDirtyMarks();
 		initDirtyTracking();
 		initCharCounters();
@@ -104,6 +105,54 @@
 					swatch.value = v.charAt( 0 ) === '#' ? v : '#' + v;
 				}
 			} );
+		} );
+	}
+
+	// Follower color pickers: when the text input is blank, the swatch mirrors
+	// a source picker (e.g. link_color follows brand_color). Typing a hex or
+	// picking a swatch color writes to the text input, which disconnects.
+	function initColorFollowers() {
+		var HEX_RE = /^#?[0-9a-fA-F]{6}$/;
+		var normalize = function ( v ) { return v.charAt( 0 ) === '#' ? v : '#' + v; };
+
+		document.querySelectorAll( '.magicauth-admin .magicauth-color[data-magicauth-color-follows]' ).forEach( function ( follower ) {
+			var sourceKey = follower.getAttribute( 'data-magicauth-color-follows' );
+			if ( ! sourceKey ) {
+				return;
+			}
+			var sourceText = document.querySelector( 'input[name="magicauth_settings[' + sourceKey + ']"]' );
+			var swatch     = follower.querySelector( 'input[type="color"]' );
+			var text       = follower.querySelector( 'input[type="text"]' );
+			if ( ! sourceText || ! swatch || ! text ) {
+				return;
+			}
+
+			function isConnected() { return '' === text.value.trim(); }
+			function mirrorFromSource() {
+				var v = sourceText.value.trim();
+				if ( HEX_RE.test( v ) ) {
+					swatch.value = normalize( v );
+				}
+			}
+
+			// Cleared text → snap swatch back to source.
+			text.addEventListener( 'input', function () {
+				if ( isConnected() ) {
+					mirrorFromSource();
+				}
+			} );
+
+			// Source moved → mirror only while connected.
+			sourceText.addEventListener( 'input', function () {
+				if ( isConnected() ) {
+					mirrorFromSource();
+				}
+			} );
+
+			// Initial render: if follower is blank, mirror immediately.
+			if ( isConnected() ) {
+				mirrorFromSource();
+			}
 		} );
 	}
 

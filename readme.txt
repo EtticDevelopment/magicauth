@@ -74,5 +74,14 @@ MagicAuth registers a WordPress privacy exporter and eraser. Personal data store
 
 == Changelog ==
 
+= 1.2.0 =
+* Branding: link color, color mode (light / dark / auto), and page background image are now admin-controllable from Settings > MagicAuth.
+* Branding: new color knobs are validated against WCAG 2.1 AA contrast at save time — accidents below the readability floor are rejected, low-contrast values save with a notice, AA+ values save silently.
+* UX: Branding section now splits into "Identity" and "Appearance" sub-cards; all settings sections are collapsible via native `<details>`/`<summary>`.
+
+= 1.1.0 =
+* Branding: page background color, card corner radius, card max width, and font family are now admin-controllable from Settings > MagicAuth.
+* Security: `wp-login.php` now sends `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'` to refuse framing entirely.
+
 = 1.0.0 =
 * Initial public release.

@@ -28,6 +28,19 @@ final class Settings {
 
 	private const MAX_LINK_USES_PRESETS = [ 1, 2, 3, 5, 10 ];
 
+	private const FONT_STACK_KEYS = [ 'system', 'sans-modern', 'serif', 'mono', 'rounded' ];
+
+	private const COLOR_MODE_KEYS = [ 'light', 'dark', 'auto' ];
+
+	// Curated dark-mode surface — used by the brand-color contrast check below.
+	// !!! SYNC-LOCK !!! This value MUST equal the --magicauth-color-surface
+	// declarations in assets/css/magicauth.css at:
+	//   - line ~463 (body.magicauth-mode-dark block)
+	//   - line ~482 (@media (prefers-color-scheme: dark) > body.magicauth-mode-auto)
+	// Three locations, one truth. If you change one, change all three or the
+	// contrast warning shown to admins will disagree with the rendered card.
+	private const DARK_SURFACE_HEX = '#181c22';
+
 	// Keyed by extension regex (wp_check_filetype_and_ext format); membership checks hit values.
 	private const LOGO_MIMES = [
 		'png'      => 'image/png',
@@ -35,6 +48,18 @@ final class Settings {
 		'webp'     => 'image/webp',
 		'svg'      => 'image/svg+xml',
 	];
+
+	// Background images: raster only. SVG explicitly excluded — larger attack
+	// surface than logos and no rendering benefit at full-page scale.
+	private const BACKGROUND_MIMES = [
+		'png'      => 'image/png',
+		'jpg|jpeg' => 'image/jpeg',
+		'webp'     => 'image/webp',
+	];
+
+	// Background image soft-limit. Files larger than this trigger a non-blocking
+	// "consider compressing" admin notice but still save successfully.
+	private const BACKGROUND_SIZE_SOFT_LIMIT_BYTES = 1024 * 1024; // 1 MB.
 
 	public static function setup(): void {
 		add_action( 'admin_init', [ self::class, 'register' ] );
@@ -161,6 +186,7 @@ final class Settings {
 				<div class="magicauth-stack">
 					<?php self::render_section_general(); ?>
 					<?php self::render_section_branding( $weak_salts ); ?>
+					<?php self::render_section_appearance(); ?>
 					<?php self::render_section_agency_credit(); ?>
 					<?php self::render_section_security(); ?>
 					<?php self::render_section_diagnostics(); ?>
@@ -173,66 +199,86 @@ final class Settings {
 
 	private static function render_section_general(): void {
 		?>
-		<section class="magicauth-block">
-			<header class="magicauth-block__head">
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
 				<h2><?php esc_html_e( 'General', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'How long links live and where users land afterwards.', 'magicauth' ); ?></p>
-			</header>
+			</summary>
 			<div class="magicauth-card">
 				<?php self::field_ttl_minutes(); ?>
 				<?php self::field_max_link_uses(); ?>
 				<?php self::field_redirect_to_default(); ?>
 			</div>
-		</section>
+		</details>
 		<?php
 	}
 
 	private static function render_section_branding( bool $weak_salts ): void {
 		?>
-		<section class="magicauth-block">
-			<header class="magicauth-block__head">
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
 				<h2><?php esc_html_e( 'Branding', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'How the sign-in card looks. Settings render on the branded login screen and in transactional emails.', 'magicauth' ); ?></p>
-			</header>
+			</summary>
 			<div class="magicauth-card">
 				<?php self::field_replace_default( $weak_salts ); ?>
 				<?php self::field_company_name(); ?>
 				<?php self::field_logo(); ?>
 				<?php self::field_brand_color(); ?>
+				<?php self::field_link_color(); ?>
 			</div>
-		</section>
+		</details>
+		<?php
+	}
+
+	private static function render_section_appearance(): void {
+		?>
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
+				<h2><?php esc_html_e( 'Appearance', 'magicauth' ); ?></h2>
+				<p><?php esc_html_e( 'Layout and theme of the sign-in card. Color mode, page background, sizing, and typography.', 'magicauth' ); ?></p>
+			</summary>
+			<div class="magicauth-card">
+				<?php self::field_color_mode(); ?>
+				<?php self::field_page_color(); ?>
+				<?php self::field_background_image(); ?>
+				<?php self::field_card_radius(); ?>
+				<?php self::field_card_width(); ?>
+				<?php self::field_font_stack(); ?>
+			</div>
+		</details>
 		<?php
 	}
 
 	private static function render_section_agency_credit(): void {
 		?>
-		<section class="magicauth-block">
-			<header class="magicauth-block__head">
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
 				<h2><?php esc_html_e( 'Agency credit', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'Optional "Built by [Brand]" line below the sign-in card. Renders only when name, URL, and favicon are all filled.', 'magicauth' ); ?></p>
-			</header>
+			</summary>
 			<div class="magicauth-card">
 				<?php self::field_agency_credit_name(); ?>
 				<?php self::field_agency_credit_url(); ?>
 				<?php self::field_agency_credit_icon(); ?>
 				<?php self::field_agency_credit_label(); ?>
 			</div>
-		</section>
+		</details>
 		<?php
 	}
 
 	private static function render_section_security(): void {
 		?>
-		<section class="magicauth-block">
-			<header class="magicauth-block__head">
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
 				<h2><?php esc_html_e( 'Security &amp; throttling', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'Recovery layers and rate-limit caps. The "Sign in with password" link is the unconditional safety net. Disable it only after site-wide password auth is already off.', 'magicauth' ); ?></p>
-			</header>
+			</summary>
 			<div class="magicauth-card">
 				<?php self::field_allow_password_login(); ?>
 				<?php self::field_throttle(); ?>
 			</div>
-		</section>
+		</details>
 		<?php
 	}
 
@@ -242,11 +288,11 @@ final class Settings {
 		$recovery_nonce = wp_create_nonce( 'magicauth-admin-recovery' );
 		$ajaxurl        = admin_url( 'admin-ajax.php' );
 		?>
-		<section class="magicauth-block">
-			<header class="magicauth-block__head">
+		<details class="magicauth-block" open>
+			<summary class="magicauth-block__head">
 				<h2><?php esc_html_e( 'Diagnostics &amp; recovery', 'magicauth' ); ?></h2>
 				<p><?php esc_html_e( 'One-shot tools for debugging and unsticking the plugin. Destructive actions ask for confirmation.', 'magicauth' ); ?></p>
-			</header>
+			</summary>
 			<div class="magicauth-card magicauth-recovery"
 				data-ajaxurl="<?php echo esc_url( $ajaxurl ); ?>"
 				data-nonce="<?php echo esc_attr( $recovery_nonce ); ?>">
@@ -281,7 +327,7 @@ final class Settings {
 					</button>
 				</div>
 			</div>
-		</section>
+		</details>
 		<?php
 	}
 
@@ -368,6 +414,65 @@ final class Settings {
 			$out['brand_color']   = $sanitized ? $sanitized : '#2271b1';
 		}
 
+		// is_scalar guards prevent (string) cast on array/object from emitting
+		// "Array" notices on probe traffic. Mirrors throttle's is_array guard.
+		if ( isset( $input['page_color'] ) && is_scalar( $input['page_color'] ) ) {
+			$sanitized         = sanitize_hex_color( (string) $input['page_color'] );
+			$out['page_color'] = $sanitized ? $sanitized : '#eeeeee';
+		}
+
+		if ( isset( $input['card_radius'] ) && is_scalar( $input['card_radius'] ) ) {
+			$out['card_radius'] = max( 0, min( 32, absint( $input['card_radius'] ) ) );
+		}
+
+		if ( isset( $input['card_width'] ) && is_scalar( $input['card_width'] ) ) {
+			$out['card_width'] = max( 360, min( 640, absint( $input['card_width'] ) ) );
+		}
+
+		if ( isset( $input['font_stack'] ) && is_scalar( $input['font_stack'] ) ) {
+			$candidate         = sanitize_key( (string) $input['font_stack'] );
+			$out['font_stack'] = in_array( $candidate, self::FONT_STACK_KEYS, true ) ? $candidate : 'system';
+		}
+
+		if ( isset( $input['background_attachment_id'] ) ) {
+			$out['background_attachment_id'] = self::sanitize_background( absint( $input['background_attachment_id'] ) );
+		}
+
+		if ( isset( $input['link_color'] ) && is_scalar( $input['link_color'] ) ) {
+			$out['link_color'] = self::sanitize_link_color(
+				(string) $input['link_color'],
+				(string) ( $current['link_color'] ?? '' )
+			);
+		}
+
+		if ( isset( $input['color_mode'] ) && is_scalar( $input['color_mode'] ) ) {
+			$candidate         = sanitize_key( (string) $input['color_mode'] );
+			$out['color_mode'] = in_array( $candidate, self::COLOR_MODE_KEYS, true ) ? $candidate : 'light';
+		}
+
+		// Brand color × dark surface. Runs AFTER brand_color and color_mode
+		// are settled. SC 1.4.11 wants ≥3:1 for non-text UI; the focus ring
+		// on a dark surface is the at-risk element. Warn only — admins keep
+		// brand color sovereignty.
+		if ( in_array( ( $out['color_mode'] ?? 'light' ), [ 'dark', 'auto' ], true ) ) {
+			$brand_for_check = (string) ( $out['brand_color'] ?? '' );
+			if ( '' !== $brand_for_check ) {
+				$ratio = magicauth_contrast_ratio( $brand_for_check, self::DARK_SURFACE_HEX );
+				if ( $ratio < 3.0 ) {
+					add_settings_error(
+						self::OPTION_NAME,
+						'magicauth_brand_dark_contrast',
+						sprintf(
+							/* translators: %s: contrast ratio */
+							__( 'Brand color note: contrast against the dark-mode surface is %s — below the 3:1 minimum for UI elements. Focus indicators may be hard to see for visitors using dark mode.', 'magicauth' ),
+							number_format( $ratio, 2 )
+						),
+						'warning'
+					);
+				}
+			}
+		}
+
 		if ( isset( $input['redirect_to_default'] ) ) {
 			$candidate                  = (string) $input['redirect_to_default'];
 			$out['redirect_to_default'] = in_array( $candidate, self::REDIRECT_OPTIONS, true ) ? $candidate : 'auto';
@@ -393,6 +498,58 @@ final class Settings {
 			return mb_substr( $clean, 0, 40 );
 		}
 		return substr( $clean, 0, 40 );
+	}
+
+	// Empty = inherit from brand. Graded against the fixed #ffffff card surface:
+	// <2.5:1 rejects (restore previous), 2.5–4.5 saves with warning, AA+ silent.
+	private static function sanitize_link_color( string $raw, string $current ): string {
+		$raw = trim( $raw );
+		if ( '' === $raw ) {
+			return '';
+		}
+
+		$sanitized = sanitize_hex_color( $raw );
+		if ( ! $sanitized ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_link_color_invalid',
+				__( 'Link color: invalid hex value, change ignored.', 'magicauth' ),
+				'error'
+			);
+			return $current;
+		}
+
+		$ratio   = magicauth_contrast_ratio( $sanitized, '#ffffff' );
+		$verdict = magicauth_contrast_evaluate( $ratio, 'normal' );
+
+		if ( 'fail' === $verdict ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_link_color_unreadable',
+				sprintf(
+					/* translators: %s: contrast ratio */
+					__( 'Link color: contrast ratio %s against the card surface is below the 2.5:1 readability floor. Change ignored.', 'magicauth' ),
+					number_format( $ratio, 2 )
+				),
+				'error'
+			);
+			return $current;
+		}
+
+		if ( 'warn' === $verdict ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_link_color_low_contrast',
+				sprintf(
+					/* translators: %s: contrast ratio */
+					__( 'Link color saved. Contrast against the card surface is %s — below the WCAG AA target of 4.5:1 for body text. Visitors may struggle to read the link.', 'magicauth' ),
+					number_format( $ratio, 2 )
+				),
+				'warning'
+			);
+		}
+
+		return $sanitized;
 	}
 
 	// Allowlist http(s) only — esc_url_raw alone permits mailto:/javascript:/etc.
@@ -442,13 +599,80 @@ final class Settings {
 		if ( function_exists( 'finfo_open' ) ) {
 			$finfo = finfo_open( FILEINFO_MIME_TYPE );
 			if ( $finfo ) {
+				// finfo_close() is deprecated as of PHP 8.5 (objects auto-free)
+				// and a no-op on earlier versions once $finfo falls out of scope.
 				$mime = finfo_file( $finfo, $path );
-				finfo_close( $finfo );
 				if ( ! is_string( $mime ) || ! in_array( $mime, self::LOGO_MIMES, true ) ) {
 					add_settings_error( self::OPTION_NAME, 'magicauth_logo_bad_mime', __( 'Logo: file content does not match a supported image format.', 'magicauth' ), 'error' );
 					return 0;
 				}
 			}
+		}
+
+		return $attachment_id;
+	}
+
+	// Validate background attachment. Raster only; SVG forbidden. Soft-warns
+	// above 1 MB but never blocks — admin knows their hosting better than we do.
+	private static function sanitize_background( int $attachment_id ): int {
+		if ( $attachment_id <= 0 ) {
+			return 0;
+		}
+		if ( ! wp_attachment_is_image( $attachment_id ) ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_bg_not_image',
+				__( 'Background: selected attachment is not an image.', 'magicauth' ),
+				'error'
+			);
+			return 0;
+		}
+		$path = get_attached_file( $attachment_id );
+		if ( ! is_string( $path ) || ! is_readable( $path ) ) {
+			return 0;
+		}
+
+		$check = wp_check_filetype_and_ext( $path, basename( $path ), self::BACKGROUND_MIMES );
+		if ( empty( $check['type'] ) || ! in_array( $check['type'], self::BACKGROUND_MIMES, true ) ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_bg_bad_ext',
+				__( 'Background: only PNG, JPG, or WebP are allowed.', 'magicauth' ),
+				'error'
+			);
+			return 0;
+		}
+
+		if ( function_exists( 'finfo_open' ) ) {
+			$finfo = finfo_open( FILEINFO_MIME_TYPE );
+			if ( $finfo ) {
+				// finfo_close() is deprecated as of PHP 8.5 (objects auto-free)
+				// and a no-op on earlier versions once $finfo falls out of scope.
+				$mime = finfo_file( $finfo, $path );
+				if ( ! is_string( $mime ) || ! in_array( $mime, self::BACKGROUND_MIMES, true ) ) {
+					add_settings_error(
+						self::OPTION_NAME,
+						'magicauth_bg_bad_mime',
+						__( 'Background: file content does not match a supported image format.', 'magicauth' ),
+						'error'
+					);
+					return 0;
+				}
+			}
+		}
+
+		$size = (int) @filesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( $size > self::BACKGROUND_SIZE_SOFT_LIMIT_BYTES ) {
+			add_settings_error(
+				self::OPTION_NAME,
+				'magicauth_bg_large',
+				sprintf(
+					/* translators: %s: file size in MB */
+					__( 'Background image saved. File is %s MB — consider compressing for faster page load.', 'magicauth' ),
+					number_format( $size / self::BACKGROUND_SIZE_SOFT_LIMIT_BYTES, 1 )
+				),
+				'warning'
+			);
 		}
 
 		return $attachment_id;
@@ -495,32 +719,17 @@ final class Settings {
 	}
 
 	public static function field_redirect_to_default(): void {
-		$value   = (string) magicauth_get_setting( 'redirect_to_default', 'auto' );
-		$name    = sprintf( '%s[redirect_to_default]', self::OPTION_NAME );
-		$options = [
-			'auto'  => __( 'Auto (admin or home, by capability)', 'magicauth' ),
-			'home'  => __( 'Site home', 'magicauth' ),
-			'admin' => __( 'Admin dashboard', 'magicauth' ),
-		];
-		?>
-		<div class="magicauth-row">
-			<div class="magicauth-row__main">
-				<span class="magicauth-row__label"><?php esc_html_e( 'Default redirect after sign-in', 'magicauth' ); ?></span>
-				<p class="magicauth-row__help"><?php esc_html_e( 'Where users land when no specific destination was requested.', 'magicauth' ); ?></p>
-			</div>
-			<div class="magicauth-row__control">
-				<div class="magicauth-select">
-					<select name="<?php echo esc_attr( $name ); ?>">
-						<?php foreach ( $options as $opt_value => $label ) : ?>
-							<option value="<?php echo esc_attr( $opt_value ); ?>" <?php selected( $value, $opt_value ); ?>>
-								<?php echo esc_html( $label ); ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
-				</div>
-			</div>
-		</div>
-		<?php
+		self::render_select_field(
+			'redirect_to_default',
+			(string) magicauth_get_setting( 'redirect_to_default', 'auto' ),
+			__( 'Default redirect after sign-in', 'magicauth' ),
+			__( 'Where users land when no specific destination was requested.', 'magicauth' ),
+			[
+				'auto'  => __( 'Auto (admin or home, by capability)', 'magicauth' ),
+				'home'  => __( 'Site home', 'magicauth' ),
+				'admin' => __( 'Admin dashboard', 'magicauth' ),
+			]
+		);
 	}
 
 	public static function field_replace_default( bool $weak_salts = false ): void {
@@ -594,6 +803,119 @@ final class Settings {
 			</div>
 		</div>
 		<?php
+	}
+
+	public static function field_page_color(): void {
+		$value = (string) magicauth_get_setting( 'page_color', '#eeeeee' );
+		$name  = sprintf( '%s[page_color]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Page background', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Color behind the sign-in card. Choose a value distinct from white so the card stays visible.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control magicauth-row__control--stack">
+				<div class="magicauth-color">
+					<input type="color" value="<?php echo esc_attr( $value ); ?>" aria-label="<?php esc_attr_e( 'Color picker', 'magicauth' ); ?>">
+					<input type="text" class="magicauth-input magicauth-input--mono" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="7" data-validate-hex>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_card_radius(): void {
+		$value = (int) magicauth_get_setting( 'card_radius', 6 );
+		$name  = sprintf( '%s[card_radius]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Card corner radius', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Sign-in card corner softness, in pixels. 0 is sharp; 32 is heavily rounded.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" min="0" max="32" step="1">
+				<span style="font-size:13px;color:var(--tx-muted);"><?php esc_html_e( 'px', 'magicauth' ); ?></span>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_card_width(): void {
+		$value = (int) magicauth_get_setting( 'card_width', 480 );
+		$name  = sprintf( '%s[card_width]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Card max width', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Card max width on desktop, in pixels. Shrinks below this on narrow viewports.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" min="360" max="640" step="20">
+				<span style="font-size:13px;color:var(--tx-muted);"><?php esc_html_e( 'px', 'magicauth' ); ?></span>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_font_stack(): void {
+		self::render_select_field(
+			'font_stack',
+			(string) magicauth_get_setting( 'font_stack', 'system' ),
+			__( 'Font family', 'magicauth' ),
+			__( 'Font used on the sign-in card. Each option is a stack of system-installed fonts — nothing is loaded from the network.', 'magicauth' ),
+			[
+				'system'      => __( 'System default', 'magicauth' ),
+				'sans-modern' => __( 'Modern sans (Inter)', 'magicauth' ),
+				'serif'       => __( 'Serif (Georgia)', 'magicauth' ),
+				'mono'        => __( 'Monospace', 'magicauth' ),
+				'rounded'     => __( 'Rounded', 'magicauth' ),
+			]
+		);
+	}
+
+	public static function field_link_color(): void {
+		$value         = (string) magicauth_get_setting( 'link_color', '' );
+		$brand_raw     = (string) magicauth_get_setting( 'brand_color', '#2271b1' );
+		$brand_default = (string) ( sanitize_hex_color( $brand_raw ) ?: '#2271b1' );
+		$name          = sprintf( '%s[link_color]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Link color', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'Color of text links on the sign-in card. Leave blank to follow brand color. Validated against the card surface for readability.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control magicauth-row__control--stack">
+				<div class="magicauth-color" data-magicauth-color-follows="brand_color">
+					<input type="color" value="<?php echo esc_attr( '' !== $value ? $value : $brand_default ); ?>" aria-label="<?php esc_attr_e( 'Color picker', 'magicauth' ); ?>">
+					<input type="text" class="magicauth-input magicauth-input--mono" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="7" placeholder="<?php esc_attr_e( '(brand color)', 'magicauth' ); ?>" data-validate-hex>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_color_mode(): void {
+		self::render_select_field(
+			'color_mode',
+			(string) magicauth_get_setting( 'color_mode', 'light' ),
+			__( 'Color mode', 'magicauth' ),
+			__( "Light, dark, or follow the visitor's system preference. Page background color applies in light mode; dark mode uses a curated dark palette.", 'magicauth' ),
+			[
+				'light' => __( 'Light', 'magicauth' ),
+				'dark'  => __( 'Dark', 'magicauth' ),
+				'auto'  => __( "Auto (follow visitor's browser preference)", 'magicauth' ),
+			]
+		);
+	}
+
+	public static function field_background_image(): void {
+		self::render_media_picker_field(
+			'background_attachment_id',
+			(int) magicauth_get_setting( 'background_attachment_id', 0 ),
+			__( 'Page background image', 'magicauth' ),
+			__( 'Optional. PNG, JPG, or WebP. Rendered as a cover-fitted, centered background behind the sign-in card. Page background color shows through transparent areas or if the image fails to load.', 'magicauth' )
+		);
 	}
 
 	public static function field_agency_credit_name(): void {
@@ -705,6 +1027,35 @@ final class Settings {
 				</div>
 			</div>
 		<?php endforeach;
+	}
+
+	/**
+	 * Shared <select> field markup. Same row scaffold as the v1.0 select fields;
+	 * keeps three field_* methods at ~4 LOC each instead of 25.
+	 *
+	 * @param array<string,string> $options Map of stored value => translated label.
+	 */
+	private static function render_select_field( string $option_key, string $value, string $label, string $help, array $options ): void {
+		$name = sprintf( '%s[%s]', self::OPTION_NAME, $option_key );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php echo esc_html( $label ); ?></span>
+				<p class="magicauth-row__help"><?php echo esc_html( $help ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<div class="magicauth-select">
+					<select name="<?php echo esc_attr( $name ); ?>">
+						<?php foreach ( $options as $opt_value => $opt_label ) : ?>
+							<option value="<?php echo esc_attr( (string) $opt_value ); ?>" <?php selected( $value, (string) $opt_value ); ?>>
+								<?php echo esc_html( $opt_label ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	// Shared media-picker markup. JS binds wp.media to any [data-magicauth-media-picker].

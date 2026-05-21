@@ -51,6 +51,11 @@ final class LoginScreen {
 	public static function login_init(): void {
 		// nosniff defense-in-depth (pentest H-1).
 		header( 'X-Content-Type-Options: nosniff' );
+		// wp-login.php is never legitimately framed. DENY is stricter than core's SAMEORIGIN.
+		header( 'X-Frame-Options: DENY' );
+		// replace=false so we don't silently strip a security plugin's earlier CSP;
+		// the browser intersects multiple CSPs (strictest wins on frame-ancestors).
+		header( "Content-Security-Policy: frame-ancestors 'none'", false );
 
 		if ( isset( $_GET['magicauth'] ) && 'off' === $_GET['magicauth'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_key( wp_unslash( (string) $_GET['_wpnonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -359,6 +364,10 @@ final class LoginScreen {
 
 	public static function filter_body_class( array $classes ): array {
 		$classes[] = 'magicauth-page';
+		$mode      = (string) magicauth_get_setting( 'color_mode', 'light' );
+		if ( in_array( $mode, [ 'light', 'dark', 'auto' ], true ) ) {
+			$classes[] = 'magicauth-mode-' . $mode;
+		}
 		return $classes;
 	}
 
