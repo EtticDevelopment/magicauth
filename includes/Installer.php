@@ -486,28 +486,39 @@ final class Installer {
 				'message' => __( 'The generated configuration failed a safety check, so nothing was written.', 'magicauth' ),
 			];
 		}
-		// Preserve the original file mode across the swap: move() uses rename(),
-		// so the destination would otherwise inherit the temp file's perms and
-		// silently widen a hardened wp-config.php (e.g. 0600 -> 0644). Applying
-		// the original mode to the temp before the move also keeps the brief
-		// temp-file window no more readable than the file it replaces.
-		$mode = $filesystem->getchmod( $path );
+		// Target mode: preserve the original file's permissions. move() uses
+		// rename() and put_contents() chmods to its $mode argument, either of
+		// which would otherwise widen a hardened wp-config.php (e.g. 0600 -> 0644).
+		// Fall back to the WordPress default when the mode can't be read.
+		$mode_str = $filesystem->getchmod( $path );
+		$chmod    = '' !== $mode_str ? (int) octdec( $mode_str ) : FS_CHMOD_FILE;
 
-		$temp = dirname( $path ) . '/.magicauth-wpconfig-' . bin2hex( random_bytes( 8 ) ) . '.tmp';
-		if ( ! $filesystem->put_contents( $temp, $updated, FS_CHMOD_FILE ) ) {
+		// Preferred path: atomic temp-file swap. Requires a writable *directory*
+		// (to create the sibling temp) and also keeps the brief temp window no
+		// more readable than the file it replaces.
+		$temp    = dirname( $path ) . '/.magicauth-wpconfig-' . bin2hex( random_bytes( 8 ) ) . '.tmp';
+		$written = false;
+		if ( $filesystem->put_contents( $temp, $updated, $chmod ) ) {
+			if ( $filesystem->move( $temp, $path, true ) ) {
+				$written = true;
+			} else {
+				$filesystem->delete( $temp );
+			}
+		}
+
+		// Fallback: overwrite wp-config.php in place. Covers the common hardening
+		// where wp-config.php itself is writable but its directory is not, so a
+		// sibling temp file can't be created. Overwriting an existing writable
+		// file needs no directory write access; the content was already validated
+		// by the safety gate above, so the (non-atomic) in-place write is sound.
+		if ( ! $written ) {
+			$written = $filesystem->put_contents( $path, $updated, $chmod );
+		}
+
+		if ( ! $written ) {
 			return [
 				'ok'      => false,
-				'message' => __( 'Could not write the new configuration. No changes were made.', 'magicauth' ),
-			];
-		}
-		if ( '' !== $mode ) {
-			$filesystem->chmod( $temp, (int) octdec( $mode ) );
-		}
-		if ( ! $filesystem->move( $temp, $path, true ) ) {
-			$filesystem->delete( $temp );
-			return [
-				'ok'      => false,
-				'message' => __( 'Could not replace wp-config.php. No changes were made.', 'magicauth' ),
+				'message' => __( 'Could not write to wp-config.php. Use the manual copy-and-paste option instead.', 'magicauth' ),
 			];
 		}
 		delete_transient( self::SALT_NOTICE_KEY );
