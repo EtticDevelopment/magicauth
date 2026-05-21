@@ -720,37 +720,14 @@
 			'<ul class="magicauth-modal-list">' +
 				'<li><strong>Everyone is signed out.</strong> All sessions (including yours) end — you will sign in again right after.</li>' +
 				'<li><strong>Pending sign-in links and codes stop working.</strong> They were signed with the old keys, so anyone mid-sign-in requests a fresh email.</li>' +
-				'<li><strong>The branded login screen stays off.</strong> This only clears the block; you turn the replacement on yourself when ready.</li>' +
+				'<li><strong>The branded login screen stays off.</strong> Fixing salts never flips that toggle — you turn the replacement on yourself when ready.</li>' +
 			'</ul>';
 
-		// Open the wizard for the writable (auto-write) case.
-		function openAutoWrite() {
-			showConfirm( {
-				title:       'Fix WordPress salts',
-				lede:        'wp-config.php is writable, so MagicAuth can update it for you.',
-				body:        effects + '<p>A backup is not left in the web root (it would expose your database credentials); the file is replaced atomically instead.</p>',
-				confirmText: 'Generate & write salts',
-				cancelText:  'Cancel',
-				onConfirm:   function () {
-					return post( 'apply' ).then( function ( payload ) {
-						if ( ! payload || ! payload.success ) {
-							showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Could not write wp-config.php.' } );
-							return;
-						}
-						showToast( { type: 'success', message: payload.data.message || 'Salts updated. Signing you out…' } );
-						setTimeout( function () { window.location.reload(); }, 1800 );
-					} ).catch( function () {
-						showToast( { type: 'error', message: 'Network error. Please try again.' } );
-					} );
-				}
-			} );
-		}
-
-		// Open the wizard for the manual (copy-and-paste) case.
+		// Open the salt-fix wizard: hand the admin fresh salts to paste in.
 		function openManual( block ) {
 			var body =
 				effects +
-				'<p>wp-config.php is not writable from PHP on this server, so copy these lines and replace the matching salt lines in <code>wp-config.php</code>, then save it:</p>' +
+				'<p>Copy these freshly generated salts and replace the matching <code>define()</code> lines in <code>wp-config.php</code>, then save the file. Need a hand? <a href="' + ( root.getAttribute( 'data-docs' ) || 'https://docs.ettic.nl/docs/magicauth/weak-salts' ) + '" target="_blank" rel="noopener">Read the step-by-step guide</a>.</p>' +
 				'<textarea class="magicauth-salt-block" readonly rows="8">' + escapeHtml( block ) + '</textarea>' +
 				'<button type="button" class="magicauth-btn magicauth-btn--ghost magicauth-btn--sm" data-salt-copy>Copy to clipboard</button>';
 
@@ -801,11 +778,7 @@
 					showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Could not start the wizard.' } );
 					return;
 				}
-				if ( payload.data.writable ) {
-					openAutoWrite();
-				} else {
-					openManual( payload.data.block || '' );
-				}
+				openManual( payload.data.block || '' );
 			} ).catch( function () {
 				setLoading( btn, false );
 				showToast( { type: 'error', message: 'Network error. Please try again.' } );

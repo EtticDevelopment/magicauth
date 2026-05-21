@@ -250,13 +250,14 @@ final class Settings {
 			</header>
 			<div class="magicauth-card magicauth-recovery"
 				data-ajaxurl="<?php echo esc_url( $ajaxurl ); ?>"
-				data-nonce="<?php echo esc_attr( $recovery_nonce ); ?>">
+				data-nonce="<?php echo esc_attr( $recovery_nonce ); ?>"
+					data-docs="<?php echo esc_url( Installer::DOCS_SALTS_URL ); ?>">
 
 				<?php if ( Installer::has_weak_salts() ) : ?>
 				<div class="magicauth-action-row magicauth-action-row--alert">
 					<div class="magicauth-action-row__main">
 						<h3><?php esc_html_e( 'Fix WordPress salts', 'magicauth' ); ?></h3>
-						<p><?php esc_html_e( 'Your security keys hold placeholder or empty values. Generate fresh ones and write them to wp-config.php. This does not turn on the branded login screen — you stay in control of that.', 'magicauth' ); ?></p>
+						<p><?php esc_html_e( 'Your security keys hold placeholder or empty values. Generate fresh ones and paste them into wp-config.php yourself. This does not turn on the branded login screen — you stay in control of that.', 'magicauth' ); ?></p>
 					</div>
 					<button type="button" class="magicauth-btn magicauth-btn--primary magicauth-btn--sm" data-magicauth-salt-fix>
 						<?php esc_html_e( 'Fix salts…', 'magicauth' ); ?>
@@ -338,18 +339,20 @@ final class Settings {
 			$out['throttle'] = $throttle;
 		}
 
-		// replace_default gated by salt strength.
-		$wants_replace = ! empty( $input['replace_default'] );
+		// Branded login replacement: allowed even with weak salts (informed consent).
+		// Weak salts are a site-wide WordPress hardening issue, not a property of the
+		// branded screen, and the toggle is never re-checked against salts at runtime,
+		// so blocking it would not make the site safer — it only locked correctly
+		// configured sites out of the feature. Save the choice; warn, do not block.
+		$wants_replace          = ! empty( $input['replace_default'] );
+		$out['replace_default'] = $wants_replace;
 		if ( $wants_replace && Installer::has_weak_salts() ) {
 			add_settings_error(
 				self::OPTION_NAME,
 				'magicauth_weak_salts',
-				__( 'Replace-default sign-in is unavailable while wp-config.php contains placeholder salts. Generate fresh salts and re-save.', 'magicauth' ),
-				'error'
+				__( 'Branded login is enabled, but your WordPress salts are still weak. Magic links each carry their own random secret so they stay safe; your session cookies and the 6-character codes are better protected once you fix the salts. See the weak-salt notice for how.', 'magicauth' ),
+				'warning'
 			);
-			$out['replace_default'] = false;
-		} else {
-			$out['replace_default'] = (bool) $wants_replace;
 		}
 
 		if ( isset( $input['company_name'] ) ) {
@@ -545,7 +548,7 @@ final class Settings {
 				<span class="magicauth-row__label">
 					<?php esc_html_e( 'Replace WordPress login screen', 'magicauth' ); ?>
 					<?php if ( $weak_salts ) : ?>
-						<button class="magicauth-tooltip-trigger" type="button" aria-label="<?php esc_attr_e( 'Why is this disabled?', 'magicauth' ); ?>">?<span class="magicauth-tooltip" role="tooltip"><strong><?php esc_html_e( 'Disabled: weak salts', 'magicauth' ); ?></strong><?php esc_html_e( 'Replace-default needs strong values in', 'magicauth' ); ?> <code style="background:rgba(255,255,255,0.06);color:#FFB070;padding:1px 5px;border-radius:3px;font-family:var(--ff-mono);font-size:11.5px;">wp-config.php</code>. <a href="https://api.wordpress.org/secret-key/1.1/salt/" target="_blank" rel="noopener"><?php esc_html_e( 'Generate fresh salts →', 'magicauth' ); ?></a></span></button>
+						<button class="magicauth-tooltip-trigger" type="button" aria-label="<?php esc_attr_e( 'Why is this flagged?', 'magicauth' ); ?>">!<span class="magicauth-tooltip" role="tooltip"><strong><?php esc_html_e( 'Heads up: weak salts', 'magicauth' ); ?></strong><?php esc_html_e( 'You can turn this on now, but the salts in', 'magicauth' ); ?> <code style="background:rgba(255,255,255,0.06);color:#FFB070;padding:1px 5px;border-radius:3px;font-family:var(--ff-mono);font-size:11.5px;">wp-config.php</code> <?php esc_html_e( 'are weak — fixing them first is recommended.', 'magicauth' ); ?> <a href="<?php echo esc_url( Installer::DOCS_SALTS_URL ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'How to fix →', 'magicauth' ); ?></a></span></button>
 					<?php endif; ?>
 				</span>
 				<p class="magicauth-row__help"><?php esc_html_e( 'Intercepts wp-login.php and serves the branded MagicAuth screen. The native form stays available at ?magicauth=off as a recovery path.', 'magicauth' ); ?></p>
@@ -553,7 +556,7 @@ final class Settings {
 			<div class="magicauth-row__control">
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0">
 				<label class="magicauth-toggle">
-					<input class="magicauth-toggle__input" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( $value ); ?> <?php disabled( $weak_salts ); ?>>
+					<input class="magicauth-toggle__input" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( $value ); ?>>
 					<span class="magicauth-toggle__thumb"></span>
 				</label>
 			</div>
@@ -822,13 +825,12 @@ final class Settings {
 	}
 
 	/**
-	 * AJAX: salt-fix wizard ("Fix WordPress salts"). Three modes:
-	 *  - preview: report whether wp-config.php is auto-writable; if not, return a
-	 *    ready-to-paste block of fresh salts for the manual path.
-	 *  - apply:   rewrite wp-config.php in place with fresh salts.
-	 *  - recheck: re-read wp-config.php and clear the notice if it is now clean
-	 *    (used after the admin pastes salts manually).
-	 * Never auto-enables the branded login replacement — only clears the block.
+	 * AJAX: salt-fix helper ("Fix WordPress salts"). Two modes:
+	 *  - preview: return a ready-to-paste block of freshly generated salts.
+	 *  - recheck: re-evaluate the salts and clear the notice once they are strong
+	 *    (used after the admin pastes the salts into wp-config.php).
+	 * MagicAuth never writes wp-config.php itself, and never auto-enables the
+	 * branded login replacement.
 	 */
 	public static function ajax_fix_salts(): void {
 		check_ajax_referer( 'magicauth-admin-recovery' );
@@ -841,15 +843,6 @@ final class Settings {
 			$mode = sanitize_key( wp_unslash( $_POST['mode'] ) );
 		}
 
-		if ( 'apply' === $mode ) {
-			$result = Installer::apply_salt_fix();
-			if ( ! $result['ok'] ) {
-				wp_send_json_error( [ 'message' => $result['message'] ] );
-			}
-			magicauth_debug_log( sprintf( 'admin recovery: fix_salts apply by user_id=%d', (int) get_current_user_id() ) );
-			wp_send_json_success( [ 'message' => $result['message'] ] );
-		}
-
 		if ( 'recheck' === $mode ) {
 			$result = Installer::recheck_salts_from_file();
 			if ( ! $result['ok'] ) {
@@ -858,13 +851,11 @@ final class Settings {
 			wp_send_json_success( [ 'message' => $result['message'] ] );
 		}
 
-		// Default: preview.
-		$writable = Installer::salt_autofix_available();
+		// Default: preview. MagicAuth never edits wp-config.php; it generates a
+		// fresh block of salts for the admin to paste in themselves.
 		wp_send_json_success(
 			[
-				'writable' => $writable,
-				// Only hand the browser fresh salts when it actually needs them to paste.
-				'block'    => $writable ? '' : Installer::generate_salt_block(),
+				'block' => Installer::generate_salt_block(),
 			]
 		);
 	}
