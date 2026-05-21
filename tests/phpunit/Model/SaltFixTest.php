@@ -103,6 +103,26 @@ final class SaltFixTest extends TestCase {
 		$this->assertNull( Installer::rewrite_salt_defines( $config, $this->strong_values() ) );
 	}
 
+	public function test_rewrite_and_detection_ignore_commented_define_lines(): void {
+		// A commented example sits above the real (placeholder) define. The first
+		// match must be the active define, not the comment.
+		$lines = [ '<?php', "// define( 'AUTH_KEY', 'commented-old-value' );" ];
+		foreach ( self::CONSTANTS as $name ) {
+			$lines[] = "define( '" . $name . "', 'put your unique phrase here' );";
+		}
+		$config = implode( "\n", $lines );
+
+		// Detection sees the active defines as weak, not the strong-looking comment.
+		$this->assertTrue( Installer::config_has_weak_salts( $config ) );
+
+		$updated = Installer::rewrite_salt_defines( $config, $this->strong_values() );
+		$this->assertIsString( $updated );
+		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
+		// The commented line is left verbatim; the active define is what changed.
+		$this->assertStringContainsString( "// define( 'AUTH_KEY', 'commented-old-value' );", $updated );
+		$this->assertStringNotContainsString( 'put your unique phrase here', $updated );
+	}
+
 	public function test_rewrite_handles_double_quotes_and_tight_spacing(): void {
 		$lines = [ '<?php' ];
 		foreach ( self::CONSTANTS as $name ) {

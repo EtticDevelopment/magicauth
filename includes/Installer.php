@@ -322,9 +322,14 @@ final class Installer {
 		return implode( "\n", $lines );
 	}
 
-	/** Regex capturing a single define() with its quote style and value (group 3). */
+	/**
+	 * Regex capturing a single define() with its quote style and value (group 3).
+	 * Anchored to a line start (multiline) so commented-out lines such as
+	 * `// define( 'AUTH_KEY', ... );` are skipped — PHP honours the first active
+	 * define, and matching a comment instead would corrupt detection/rewrite.
+	 */
 	private static function define_pattern( string $name ): string {
-		return '/define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\1\s*,\s*([\'"])(.*?)\2\s*\)\s*;/s';
+		return '/^[ \t]*define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\1\s*,\s*([\'"])(.*?)\2\s*\)\s*;/m';
 	}
 
 	/** True only when all eight salt defines are present in the given config text. */
@@ -372,7 +377,9 @@ final class Installer {
 				return null;
 			}
 			$value   = $values[ $name ];
-			$pattern = '/(define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\2\s*,\s*)([\'"]).*?\3(\s*\)\s*;)/s';
+			// Leading whitespace lives inside group 1 so indentation is preserved;
+			// the line-start anchor (multiline) skips commented-out defines.
+			$pattern = '/^([ \t]*define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\2\s*,\s*)([\'"]).*?\3(\s*\)\s*;)/m';
 			$count   = 0;
 			$result  = preg_replace_callback(
 				$pattern,
@@ -479,12 +486,22 @@ final class Installer {
 				'message' => __( 'The generated configuration failed a safety check, so nothing was written.', 'magicauth' ),
 			];
 		}
+		// Preserve the original file mode across the swap: move() uses rename(),
+		// so the destination would otherwise inherit the temp file's perms and
+		// silently widen a hardened wp-config.php (e.g. 0600 -> 0644). Applying
+		// the original mode to the temp before the move also keeps the brief
+		// temp-file window no more readable than the file it replaces.
+		$mode = $filesystem->getchmod( $path );
+
 		$temp = dirname( $path ) . '/.magicauth-wpconfig-' . bin2hex( random_bytes( 8 ) ) . '.tmp';
 		if ( ! $filesystem->put_contents( $temp, $updated, FS_CHMOD_FILE ) ) {
 			return [
 				'ok'      => false,
 				'message' => __( 'Could not write the new configuration. No changes were made.', 'magicauth' ),
 			];
+		}
+		if ( '' !== $mode ) {
+			$filesystem->chmod( $temp, (int) octdec( $mode ) );
 		}
 		if ( ! $filesystem->move( $temp, $path, true ) ) {
 			$filesystem->delete( $temp );
