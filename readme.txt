@@ -4,7 +4,7 @@ Tags: login, passwordless, magic link, authentication, security
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,9 @@ Yes. Templates can be overridden by copying them into `your-theme/magicauth/`. F
 MagicAuth registers a WordPress privacy exporter and eraser. Personal data stored is limited to: `user_id`, an HMAC of the user's email and IP, and timestamps for each sign-in attempt. Verifiers are not exportable; only metadata about issued/consumed tokens.
 
 == Changelog ==
+
+= 1.0.4 =
+* Fix: on the code-entry screen the in-card language switcher now stays anchored in a divided footer (with the same divider as the first screen) instead of dangling at the bottom of the card.
 
 = 1.0.3 =
 * Fix: sign-in emails are now sent from an address on your own site domain (configurable local part, default `login@`) instead of the WordPress admin address, so they pass SPF/DKIM/DMARC and are far less likely to be flagged as spam. A new "Sender email address" setting controls the local part.
