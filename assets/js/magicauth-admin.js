@@ -22,7 +22,6 @@
 		initToastFromUrl();
 		initDiscardFlash();
 		initRecoveryActions();
-		initSaltFix();
 		initUserProfile();
 	}
 
@@ -684,118 +683,6 @@
 				}
 			} );
 		} );
-	}
-
-	// Salt-fix wizard — "Fix WordPress salts"
-	function initSaltFix() {
-		var root = document.querySelector( '.magicauth-recovery' );
-		if ( ! root ) {
-			return;
-		}
-		var btn = root.querySelector( '[data-magicauth-salt-fix]' );
-		if ( ! btn ) {
-			return;
-		}
-
-		var ajaxurl = root.getAttribute( 'data-ajaxurl' ) || ( window.ajaxurl || '' );
-		var nonce   = root.getAttribute( 'data-nonce' ) || '';
-
-		function post( mode ) {
-			return fetch( ajaxurl, {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams( { action: 'magicauth_admin_fix_salts', mode: mode, _ajax_nonce: nonce } )
-			} ).then( function ( res ) { return res.json(); } );
-		}
-
-		function escapeHtml( str ) {
-			return String( str ).replace( /[&<>"']/g, function ( c ) {
-				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ];
-			} );
-		}
-
-		var effects =
-			'<p>Fresh, random values will be generated for all eight WordPress security keys.</p>' +
-			'<ul class="magicauth-modal-list">' +
-				'<li><strong>Everyone is signed out.</strong> All sessions (including yours) end — you will sign in again right after.</li>' +
-				'<li><strong>Pending sign-in links and codes stop working.</strong> They were signed with the old keys, so anyone mid-sign-in requests a fresh email.</li>' +
-				'<li><strong>The branded login screen stays off.</strong> Fixing salts never flips that toggle — you turn the replacement on yourself when ready.</li>' +
-			'</ul>';
-
-		// Open the salt-fix wizard: hand the admin fresh salts to paste in.
-		function openManual( block ) {
-			var body =
-				effects +
-				'<p>Copy these freshly generated salts and replace the matching <code>define()</code> lines in <code>wp-config.php</code>, then save the file. Need a hand? <a href="' + ( root.getAttribute( 'data-docs' ) || 'https://docs.ettic.nl/docs/magicauth/weak-salts' ) + '" target="_blank" rel="noopener">Read the step-by-step guide</a>.</p>' +
-				'<textarea class="magicauth-salt-block" readonly rows="8">' + escapeHtml( block ) + '</textarea>' +
-				'<button type="button" class="magicauth-btn magicauth-btn--ghost magicauth-btn--sm" data-salt-copy>Copy to clipboard</button>';
-
-			showConfirm( {
-				title:       'Fix WordPress salts',
-				lede:        'Copy these fresh salts into wp-config.php.',
-				body:        body,
-				confirmText: 'I have updated wp-config.php',
-				cancelText:  'Close',
-				onBody:      function ( bodyEl ) {
-					var copyBtn = bodyEl.querySelector( '[data-salt-copy]' );
-					var area    = bodyEl.querySelector( '.magicauth-salt-block' );
-					if ( ! copyBtn || ! area ) {
-						return;
-					}
-					copyBtn.addEventListener( 'click', function () {
-						area.focus();
-						area.select();
-						var done = function () { copyBtn.textContent = 'Copied'; setTimeout( function () { copyBtn.textContent = 'Copy to clipboard'; }, 1500 ); };
-						if ( navigator.clipboard && navigator.clipboard.writeText ) {
-							navigator.clipboard.writeText( area.value ).then( done, function () {} );
-						} else {
-							try { document.execCommand( 'copy' ); done(); } catch ( e ) {}
-						}
-					} );
-				},
-				onConfirm:   function () {
-					return post( 'recheck' ).then( function ( payload ) {
-						if ( ! payload || ! payload.success ) {
-							showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Still detecting weak salts.' } );
-							return false; // keep the modal open so they can fix and retry
-						}
-						showToast( { type: 'success', message: payload.data.message || 'Salts updated.' } );
-						setTimeout( function () { window.location.reload(); }, 1500 );
-					} ).catch( function () {
-						showToast( { type: 'error', message: 'Network error. Please try again.' } );
-						return false;
-					} );
-				}
-			} );
-		}
-
-		function openWizard() {
-			setLoading( btn, true, 'Checking…' );
-			post( 'preview' ).then( function ( payload ) {
-				setLoading( btn, false );
-				if ( ! payload || ! payload.success ) {
-					showToast( { type: 'error', message: ( payload && payload.data && payload.data.message ) || 'Could not start the wizard.' } );
-					return;
-				}
-				openManual( payload.data.block || '' );
-			} ).catch( function () {
-				setLoading( btn, false );
-				showToast( { type: 'error', message: 'Network error. Please try again.' } );
-			} );
-		}
-
-		btn.addEventListener( 'click', function ( ev ) {
-			ev.preventDefault();
-			openWizard();
-		} );
-
-		// Auto-open when arriving from the admin notice's "Fix it for me" button.
-		try {
-			if ( new URLSearchParams( window.location.search ).get( 'magicauth-fix-salts' ) === '1' ) {
-				openWizard();
-			}
-		} catch ( e ) {}
 	}
 
 	// User-profile actions — surfaced through toasts

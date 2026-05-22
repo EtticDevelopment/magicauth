@@ -45,8 +45,13 @@ final class Plugin {
 		add_action( 'admin_notices', [ Installer::class, 'render_salt_notice' ] );
 		add_action( 'admin_notices', [ Installer::class, 'render_fpm_notice' ] );
 
+		// Site-wide dismissal of the weak-salt notice. Registered here (not inside
+		// the is_admin() block below) so it wires for admin-ajax requests, which the
+		// notice's self-contained dismiss script POSTs to from any admin screen.
+		add_action( 'wp_ajax_magicauth_dismiss_salt_notice', [ Installer::class, 'ajax_dismiss_salt_notice' ] );
+
 		// Re-evaluate salt strength on each admin load so the notice tracks reality
-		// (e.g. salts provided by the environment, or fixed by hand outside the wizard).
+		// (e.g. salts provided by the environment, or fixed by hand).
 		add_action( 'admin_init', [ Installer::class, 'check_salts' ] );
 
 		Auth\Controller::setup();
