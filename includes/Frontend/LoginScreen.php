@@ -138,7 +138,7 @@ final class LoginScreen {
 		// dismissal, and history.replaceState so refresh doesn't re-trigger.
 		Toast::maybe_render( $state );
 
-		login_footer();
+		self::render_footer();
 		exit;
 	}
 
@@ -155,7 +155,7 @@ final class LoginScreen {
 
 			Toast::maybe_render( 'd' );
 
-			login_footer();
+			self::render_footer();
 			exit;
 		} catch ( \Throwable $e ) {
 			magicauth_debug_log( 'render_lostpassword_action threw: ' . $e->getMessage() );
@@ -200,7 +200,7 @@ final class LoginScreen {
 
 			Toast::maybe_render( 'e' );
 
-			login_footer();
+			self::render_footer();
 			exit;
 		} catch ( \Throwable $e ) {
 			magicauth_debug_log( 'render_resetpass_action threw: ' . $e->getMessage() );
@@ -257,7 +257,7 @@ final class LoginScreen {
 	}
 
 	/**
-	 * Render shell + form. Caller must follow with toast + login_footer + exit.
+	 * Render shell + form. Caller must follow with toast + self::render_footer() + exit.
 	 *
 	 * @param array<string,mixed> $context
 	 */
@@ -272,6 +272,27 @@ final class LoginScreen {
 				extract( $args, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 				include $tpl;
 			} )( $shell, $context + [ 'form_path' => $form ], $form );
+		}
+	}
+
+	/**
+	 * Emit core's login footer, optionally suppressing its language switcher.
+	 *
+	 * The switcher (WP core, `login_footer()`) renders as a sibling of the card
+	 * on multilingual sites. CSS stacks it under the card by default; when the
+	 * admin enables `hide_language_switcher`, core's own
+	 * `login_display_language_dropdown` filter drops it before any markup is
+	 * emitted. Scoped here — the only chokepoint for branded screens — so the
+	 * native `?magicauth=off` recovery login keeps the switcher untouched.
+	 */
+	private static function render_footer(): void {
+		$hide = (bool) magicauth_get_setting( 'hide_language_switcher', false );
+		if ( $hide ) {
+			add_filter( 'login_display_language_dropdown', '__return_false' );
+		}
+		login_footer();
+		if ( $hide ) {
+			remove_filter( 'login_display_language_dropdown', '__return_false' );
 		}
 	}
 

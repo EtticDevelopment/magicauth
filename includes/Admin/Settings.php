@@ -196,6 +196,7 @@ final class Settings {
 			</header>
 			<div class="magicauth-card">
 				<?php self::field_replace_default( $weak_salts ); ?>
+				<?php self::field_hide_language_switcher(); ?>
 				<?php self::field_company_name(); ?>
 				<?php self::field_logo(); ?>
 				<?php self::field_brand_color(); ?>
@@ -377,6 +378,8 @@ final class Settings {
 
 		$out['allow_password_login'] = ! empty( $input['allow_password_login'] );
 
+		$out['hide_language_switcher'] = ! empty( $input['hide_language_switcher'] );
+
 		return $out;
 	}
 
@@ -538,6 +541,31 @@ final class Settings {
 					<?php endif; ?>
 				</span>
 				<p class="magicauth-row__help"><?php esc_html_e( 'Intercepts wp-login.php and serves the branded MagicAuth screen. The native form stays available at ?magicauth=off as a recovery path.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0">
+				<label class="magicauth-toggle">
+					<input class="magicauth-toggle__input" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( $value ); ?>>
+					<span class="magicauth-toggle__thumb"></span>
+				</label>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_hide_language_switcher(): void {
+		$value = (bool) magicauth_get_setting( 'hide_language_switcher', false );
+		$name  = sprintf( '%s[hide_language_switcher]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label">
+					<?php
+					/* translators: "language switcher" is WordPress's own locale selector on the login screen. */
+					esc_html_e( 'Hide language switcher', 'magicauth' );
+					?>
+				</span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'WordPress adds a language selector to the login screen when extra languages are installed. MagicAuth places it under the card. Turn this on to hide it on the branded screen; the recovery login at ?magicauth=off keeps it.', 'magicauth' ); ?></p>
 			</div>
 			<div class="magicauth-row__control">
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0">

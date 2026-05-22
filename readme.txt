@@ -4,7 +4,7 @@ Tags: login, passwordless, magic link, authentication, security
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,10 @@ Yes. Templates can be overridden by copying them into `your-theme/magicauth/`. F
 MagicAuth registers a WordPress privacy exporter and eraser. Personal data stored is limited to: `user_id`, an HMAC of the user's email and IP, and timestamps for each sign-in attempt. Verifiers are not exportable; only metadata about issued/consumed tokens.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix: on multilingual sites, WordPress's login-screen language switcher no longer floats beside the branded sign-in card; it now sits centered below it.
+* New: "Hide language switcher" setting (Settings > MagicAuth > Branding) removes that selector from the branded login screen. The native recovery login at `?magicauth=off` always keeps it.
 
 = 1.0.1 =
 * Fix: the weak-salt warning tooltip on the settings screen was clipped by the card edge. It now displays in full, and its "!" marker is shown in red to draw attention.

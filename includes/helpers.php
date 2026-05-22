@@ -13,9 +13,9 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 	/** Settings merged onto defaults. */
 	function magicauth_get_settings(): array {
 		$defaults = [
-			'ttl_minutes'           => 10,
-			'max_link_uses'         => 2,
-			'throttle'              => [
+			'ttl_minutes'            => 10,
+			'max_link_uses'          => 2,
+			'throttle'               => [
 				'per_email_cooldown_sec'           => 60,
 				'per_ip_window_hours'              => 1,
 				'per_ip_max'                       => 10,
@@ -26,17 +26,18 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 				'per_ip_password_reset_window_min' => 60,
 				'per_ip_password_reset_max'        => 5,
 			],
-			'replace_default'       => false,
-			'company_name'          => '',
-			'logo_attachment_id'    => 0,
-			'brand_color'           => '#2271b1',
-			'agency_credit_name'    => '',
-			'agency_credit_url'     => '',
-			'agency_credit_icon_id' => 0,
-			'agency_credit_label'   => '',
-			'redirect_to_default'   => 'auto',
-			'allow_password_login'  => true,
-			'db_version'            => MAGICAUTH_DB_VERSION,
+			'replace_default'        => false,
+			'company_name'           => '',
+			'logo_attachment_id'     => 0,
+			'brand_color'            => '#2271b1',
+			'agency_credit_name'     => '',
+			'agency_credit_url'      => '',
+			'agency_credit_icon_id'  => 0,
+			'agency_credit_label'    => '',
+			'redirect_to_default'    => 'auto',
+			'allow_password_login'   => true,
+			'hide_language_switcher' => false,
+			'db_version'             => MAGICAUTH_DB_VERSION,
 		];
 
 		$saved = function_exists( 'get_option' ) ? get_option( 'magicauth_settings', [] ) : [];
