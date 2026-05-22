@@ -4,7 +4,7 @@ Tags: login, passwordless, magic link, authentication, security
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,9 @@ Yes. Templates can be overridden by copying them into `your-theme/magicauth/`. F
 MagicAuth registers a WordPress privacy exporter and eraser. Personal data stored is limited to: `user_id`, an HMAC of the user's email and IP, and timestamps for each sign-in attempt. Verifiers are not exportable; only metadata about issued/consumed tokens.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fix: the weak-salt warning tooltip on the settings screen was clipped by the card edge. It now displays in full, and its "!" marker is shown in red to draw attention.
 
 = 1.0.0 =
 * Initial release.

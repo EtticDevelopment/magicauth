@@ -1220,9 +1220,29 @@ body > .magicauth-modal-backdrop.is-leaving { animation: magicauth-backdrop-out 
 	box-shadow: 0 0 0 3px rgba(244, 165, 71, 0.22);
 }
 
+/* Alert variant — red "!" to flag the weak-salt warning more assertively.
+   Listed after the base :hover/:focus so it wins on equal specificity. */
+.magicauth-admin .magicauth-tooltip-trigger--alert,
+.magicauth-admin .magicauth-tooltip-trigger--alert:hover,
+.magicauth-admin .magicauth-tooltip-trigger--alert:focus {
+	border-color: #B32D2E;
+	color: #B32D2E;
+}
+
+.magicauth-admin .magicauth-tooltip-trigger--alert:hover,
+.magicauth-admin .magicauth-tooltip-trigger--alert:focus {
+	background: #FCEEED;
+}
+
+.magicauth-admin .magicauth-tooltip-trigger--alert:focus-visible {
+	box-shadow: 0 0 0 3px rgba(179, 45, 46, 0.22);
+}
+
 .magicauth-admin .magicauth-tooltip {
 	position: absolute;
-	bottom: calc(100% + 10px);
+	/* Opens downward: the trigger sits on the first row of a card whose
+	   `overflow: hidden` (for rounded corners) would clip an upward tooltip. */
+	top: calc(100% + 10px);
 	right: -10px;
 	background: #0E1A24;
 	color: rgba(255, 255, 255, 0.92);
@@ -1235,7 +1255,7 @@ body > .magicauth-modal-backdrop.is-leaving { animation: magicauth-backdrop-out 
 	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.06);
 	opacity: 0;
 	visibility: hidden;
-	transform: translateY(4px);
+	transform: translateY(-4px);
 	transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
 	z-index: 50;
 	text-align: left;
@@ -1246,11 +1266,11 @@ body > .magicauth-modal-backdrop.is-leaving { animation: magicauth-backdrop-out 
 .magicauth-admin .magicauth-tooltip::after {
 	content: '';
 	position: absolute;
-	top: 100%;
+	bottom: 100%;
 	right: 14px;
 	border-left: 6px solid transparent;
 	border-right: 6px solid transparent;
-	border-top: 6px solid #0E1A24;
+	border-bottom: 6px solid #0E1A24;
 }
 
 .magicauth-admin .magicauth-tooltip strong {
