@@ -391,11 +391,13 @@ switch ( $state ) {
 		// screen; D/E have their own back-links) on the left, compact language
 		// switcher on the right. Both sit inside the form; the switcher is <a>
 		// links (never a nested <form>), so a click is a plain GET that core
-		// turns into a wp_lang cookie + locale switch.
+		// turns into a wp_lang cookie + locale switch. The divider is always on
+		// when the footer shows — a lone switcher (e.g. the code screen) still
+		// reads as an anchored footer bar, not a control dangling at the bottom.
 		$pw_fallback = ( ! $is_state_b && ! $is_state_c && ! $is_state_d && ! $is_state_e && $show_pw && '' !== $password_url );
 		if ( $pw_fallback || null !== $language_switcher ) :
 			?>
-			<div class="magicauth-cardfoot<?php echo $pw_fallback ? ' magicauth-cardfoot--divided' : ''; ?>">
+			<div class="magicauth-cardfoot magicauth-cardfoot--divided">
 				<?php if ( $pw_fallback ) : ?>
 					<a class="magicauth-link magicauth-cardfoot__link" href="<?php echo esc_url( $password_url ); ?>">
 						<?php esc_html_e( 'Sign in with password', 'magicauth' ); ?>
