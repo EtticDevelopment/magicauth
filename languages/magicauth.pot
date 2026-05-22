@@ -1,0 +1,930 @@
+# Copyright (C) 2026 Ettic
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: MagicAuth 1.0.3\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/MagicAuth\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-22T18:57:38+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: magicauth\n"
+
+#. Plugin Name of the plugin
+#: magicauth.php
+#: includes/Admin/Settings.php:99
+#: includes/Admin/Settings.php:100
+#: includes/Admin/Settings.php:140
+#: includes/Admin/Settings.php:158
+#: includes/Admin/UserProfile.php:46
+msgid "MagicAuth"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: magicauth.php
+msgid "https://github.com/EtticDevelopment/magicauth"
+msgstr ""
+
+#. Description of the plugin
+#: magicauth.php
+msgid "Passwordless WordPress sign-in via email magic link or 6-character code."
+msgstr ""
+
+#. Author of the plugin
+#: magicauth.php
+msgid "Ettic"
+msgstr ""
+
+#. Author URI of the plugin
+#: magicauth.php
+msgid "https://ettic.nl"
+msgstr ""
+
+#: includes/Admin/Footer.php:29
+msgid "MagicAuth by Ettic."
+msgstr ""
+
+#: includes/Admin/Footer.php:30
+msgid "Focused, open-source WordPress plugins."
+msgstr ""
+
+#: includes/Admin/Footer.php:34
+msgid "MagicAuth resources"
+msgstr ""
+
+#: includes/Admin/Footer.php:35
+msgid "Docs"
+msgstr ""
+
+#: includes/Admin/Footer.php:37
+msgid "GitHub"
+msgstr ""
+
+#: includes/Admin/Footer.php:39
+msgid "Support"
+msgstr ""
+
+#: includes/Admin/Footer.php:41
+msgid "Report a vulnerability"
+msgstr ""
+
+#: includes/Admin/Footer.php:43
+msgid "Like MagicAuth? Leave a review and help us keep building open source."
+msgstr ""
+
+#: includes/Admin/Footer.php:43
+msgid "Leave a review"
+msgstr ""
+
+#: includes/Admin/Settings.php:77
+msgid "Settings"
+msgstr ""
+
+#: includes/Admin/Settings.php:151
+msgid "Discard"
+msgstr ""
+
+#: includes/Admin/Settings.php:152
+msgid "Save changes"
+msgstr ""
+
+#: includes/Admin/Settings.php:159
+msgid "Passwordless sign-in via magic link or 6-character code. Configure how it looks, how it behaves, and how it recovers from edge cases. All on one page."
+msgstr ""
+
+#: includes/Admin/Settings.php:179
+msgid "General"
+msgstr ""
+
+#: includes/Admin/Settings.php:180
+msgid "How long links live and where users land afterwards."
+msgstr ""
+
+#: includes/Admin/Settings.php:195
+msgid "Branding"
+msgstr ""
+
+#: includes/Admin/Settings.php:196
+msgid "How the sign-in card looks. Settings render on the branded login screen and in transactional emails."
+msgstr ""
+
+#: includes/Admin/Settings.php:214
+msgid "Agency credit"
+msgstr ""
+
+#: includes/Admin/Settings.php:215
+msgid "Optional \"Built by [Brand]\" line below the sign-in card. Renders only when name, URL, and favicon are all filled."
+msgstr ""
+
+#: includes/Admin/Settings.php:231
+msgid "Security &amp; throttling"
+msgstr ""
+
+#: includes/Admin/Settings.php:232
+msgid "Recovery layers and rate-limit caps. The \"Sign in with password\" link is the unconditional safety net. Disable it only after site-wide password auth is already off."
+msgstr ""
+
+#: includes/Admin/Settings.php:250
+msgid "Diagnostics &amp; recovery"
+msgstr ""
+
+#: includes/Admin/Settings.php:251
+msgid "One-shot tools for debugging and unsticking the plugin. Destructive actions ask for confirmation."
+msgstr ""
+
+#: includes/Admin/Settings.php:259
+msgid "Send test email"
+msgstr ""
+
+#: includes/Admin/Settings.php:260
+msgid "One-shot diagnostic. No tokens are issued. Forces the default brand color to verify rendering."
+msgstr ""
+
+#: includes/Admin/Settings.php:263
+msgid "Send to my account"
+msgstr ""
+
+#: includes/Admin/Settings.php:269
+msgid "Revoke all magic-links and codes"
+msgstr ""
+
+#: includes/Admin/Settings.php:270
+msgid "Marks every unconsumed token consumed site-wide. Already-active sessions are not signed out."
+msgstr ""
+
+#: includes/Admin/Settings.php:273
+msgid "Revoke now"
+msgstr ""
+
+#: includes/Admin/Settings.php:279
+msgid "Reset throttle counters"
+msgstr ""
+
+#: includes/Admin/Settings.php:280
+msgid "Deletes every magicauth_throttle_* transient. Object-cache safe."
+msgstr ""
+
+#: includes/Admin/Settings.php:283
+msgid "Reset now"
+msgstr ""
+
+#: includes/Admin/Settings.php:342
+msgid "Branded login is enabled, but your WordPress salts are still weak. Magic links each carry their own random secret so they stay safe; your session cookies and the 6-character codes are better protected once you fix the salts. See the weak-salt notice for how."
+msgstr ""
+
+#: includes/Admin/Settings.php:355
+msgid "Sender address: that value had no usable characters, so it was reset to \"login\"."
+msgstr ""
+
+#: includes/Admin/Settings.php:430
+msgid "Logo: selected attachment is not an image."
+msgstr ""
+
+#: includes/Admin/Settings.php:446
+msgid "Logo: SVG contains active content (script / event handlers / javascript:). Re-export without scripting."
+msgstr ""
+
+#: includes/Admin/Settings.php:454
+msgid "Logo: only PNG, JPG, WebP, or SVG are allowed."
+msgstr ""
+
+#: includes/Admin/Settings.php:464
+msgid "Logo: file content does not match a supported image format."
+msgstr ""
+
+#: includes/Admin/Settings.php:479
+msgid "Link &amp; code lifetime"
+msgstr ""
+
+#: includes/Admin/Settings.php:480
+msgid "Both the magic link and the typeable code share one expiry. Range 1–30 minutes."
+msgstr ""
+
+#: includes/Admin/Settings.php:484
+msgid "minutes"
+msgstr ""
+
+#: includes/Admin/Settings.php:496
+#: includes/Admin/Settings.php:500
+msgid "Max link uses"
+msgstr ""
+
+#: includes/Admin/Settings.php:497
+msgid "2 absorbs URL-scanner prefetch plus the user's click. Set to 1 for strict single-use."
+msgstr ""
+
+#: includes/Admin/Settings.php:517
+msgid "Auto (admin or home, by capability)"
+msgstr ""
+
+#: includes/Admin/Settings.php:518
+msgid "Site home"
+msgstr ""
+
+#: includes/Admin/Settings.php:519
+msgid "Admin dashboard"
+msgstr ""
+
+#: includes/Admin/Settings.php:524
+msgid "Default redirect after sign-in"
+msgstr ""
+
+#: includes/Admin/Settings.php:525
+msgid "Where users land when no specific destination was requested."
+msgstr ""
+
+#: includes/Admin/Settings.php:549
+msgid "Replace WordPress login screen"
+msgstr ""
+
+#: includes/Admin/Settings.php:551
+msgid "Why is this flagged?"
+msgstr ""
+
+#: includes/Admin/Settings.php:551
+msgid "Heads up: weak salts"
+msgstr ""
+
+#: includes/Admin/Settings.php:551
+msgid "You can turn this on now, but the salts in"
+msgstr ""
+
+#: includes/Admin/Settings.php:551
+msgid "are weak — fixing them first is recommended."
+msgstr ""
+
+#: includes/Admin/Settings.php:551
+msgid "How to fix →"
+msgstr ""
+
+#: includes/Admin/Settings.php:554
+msgid "Intercepts wp-login.php and serves the branded MagicAuth screen. The native form stays available at ?magicauth=off as a recovery path."
+msgstr ""
+
+#. translators: "language switcher" is WordPress's own locale selector on the login screen.
+#: includes/Admin/Settings.php:576
+msgid "Hide language switcher"
+msgstr ""
+
+#: includes/Admin/Settings.php:579
+msgid "WordPress adds a language selector to the login screen when extra languages are installed. MagicAuth places it under the card. Turn this on to hide it on the branded screen; the recovery login at ?magicauth=off keeps it."
+msgstr ""
+
+#: includes/Admin/Settings.php:598
+msgid "Company name"
+msgstr ""
+
+#: includes/Admin/Settings.php:599
+msgid "Your short business name. No taglines, slogans, or separators."
+msgstr ""
+
+#: includes/Admin/Settings.php:616
+msgid "Sender email address"
+msgstr ""
+
+#: includes/Admin/Settings.php:617
+msgid "The address sign-in emails are sent from. Only the part before the @ is editable — it stays on your own domain so messages pass spam checks (SPF/DKIM/DMARC) instead of being flagged as forged. Letters, digits, and . _ - + only."
+msgstr ""
+
+#: includes/Admin/Settings.php:631
+msgid "Logo"
+msgstr ""
+
+#: includes/Admin/Settings.php:632
+msgid "PNG, JPG, or WebP. Existing SVG attachments may also be selected. Capped at 48px height on the sign-in card."
+msgstr ""
+
+#: includes/Admin/Settings.php:643
+msgid "Brand color"
+msgstr ""
+
+#: includes/Admin/Settings.php:645
+msgid "Auto-derives readable button text via YIQ luminance. Current contrast:"
+msgstr ""
+
+#: includes/Admin/Settings.php:651
+msgid "Color picker"
+msgstr ""
+
+#: includes/Admin/Settings.php:665
+msgid "Brand name"
+msgstr ""
+
+#: includes/Admin/Settings.php:666
+msgid "Shown bold in the credit line."
+msgstr ""
+
+#: includes/Admin/Settings.php:669
+msgid "Acme Studio"
+msgstr ""
+
+#: includes/Admin/Settings.php:681
+msgid "Brand URL"
+msgstr ""
+
+#: includes/Admin/Settings.php:682
+msgid "Opens in a new tab. Must start with http:// or https://."
+msgstr ""
+
+#: includes/Admin/Settings.php:695
+msgid "Brand favicon"
+msgstr ""
+
+#: includes/Admin/Settings.php:696
+msgid "Square 32×32 or larger. PNG, JPG, WebP, or SVG."
+msgstr ""
+
+#: includes/Admin/Settings.php:706
+msgid "Credit label"
+msgstr ""
+
+#: includes/Admin/Settings.php:707
+msgid "Text shown before the brand name. Leave blank for the default (\"Built by\")."
+msgstr ""
+
+#: includes/Admin/Settings.php:710
+msgid "Built by"
+msgstr ""
+
+#: includes/Admin/Settings.php:722
+msgid "\"Sign in with password\" link"
+msgstr ""
+
+#: includes/Admin/Settings.php:723
+msgid "Always-visible recovery link on every form. Only disable this if you have already disabled WordPress password authentication site-wide."
+msgstr ""
+
+#: includes/Admin/Settings.php:740
+msgid "Per-IP window (hours)"
+msgstr ""
+
+#: includes/Admin/Settings.php:741
+msgid "Per-IP max requests"
+msgstr ""
+
+#: includes/Admin/Settings.php:742
+msgid "Per-IP code window (hours)"
+msgstr ""
+
+#: includes/Admin/Settings.php:743
+msgid "Per-IP max code attempts"
+msgstr ""
+
+#: includes/Admin/Settings.php:748
+msgid "Per-email cooldown"
+msgstr ""
+
+#: includes/Admin/Settings.php:749
+msgid "Seconds between consecutive link requests for the same email. 0 disables. Default 60. Replaced the per-email hard cap in v1.3.7. That cap was a DoS primitive any IP could weaponize against any victim email."
+msgstr ""
+
+#: includes/Admin/Settings.php:753
+msgid "seconds"
+msgstr ""
+
+#: includes/Admin/Settings.php:790
+msgid "Replace"
+msgstr ""
+
+#: includes/Admin/Settings.php:791
+msgid "Remove"
+msgstr ""
+
+#: includes/Admin/Settings.php:806
+#: includes/Admin/Settings.php:829
+#: includes/Admin/Settings.php:852
+#: includes/Admin/UserProfile.php:180
+#: includes/Installer.php:304
+msgid "You are not allowed to do this."
+msgstr ""
+
+#. translators: %d: number of tokens revoked
+#: includes/Admin/Settings.php:841
+#, php-format
+msgid "%d outstanding token revoked."
+msgid_plural "%d outstanding tokens revoked."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of throttle counters cleared
+#: includes/Admin/Settings.php:864
+#, php-format
+msgid "%d throttle counter cleared."
+msgid_plural "%d throttle counters cleared."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/UserProfile.php:52
+msgid "Per-user controls"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:56
+msgid "Disable magic-link sign-in for this user"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:59
+msgid "Saving with this checked invalidates all outstanding sign-in links for this user immediately."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:64
+msgid "Magic-link actions"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:67
+msgid "Create magic-link"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:70
+msgid "Send link to user"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:73
+msgid "Reset all magic-links"
+msgstr ""
+
+#: includes/Admin/UserProfile.php:79
+msgid "Cleared on next page load. Copy now."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:126
+#: includes/Admin/UserProfile.php:143
+msgid "Could not issue link."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:131
+msgid "Link created. Copy the URL now. It disappears on reload."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:147
+msgid "wp_mail returned false. Check the server's mail configuration."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:149
+msgid "Link sent."
+msgstr ""
+
+#. translators: %d: number of tokens reset
+#: includes/Admin/UserProfile.php:159
+#, php-format
+msgid "%d outstanding link reset."
+msgid_plural "%d outstanding links reset."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Admin/UserProfile.php:176
+msgid "Missing user."
+msgstr ""
+
+#: includes/Admin/UserProfile.php:185
+msgid "User not found."
+msgstr ""
+
+#: includes/Auth/Controller.php:468
+msgid "This sign-in link is for a different account."
+msgstr ""
+
+#: includes/Auth/Controller.php:469
+msgid "Sign out first if you need to switch accounts."
+msgstr ""
+
+#: includes/Auth/Controller.php:735
+msgid "Back to site"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:46
+#: includes/Auth/TokenManager.php:420
+msgid "If an account exists for that email, we sent a sign-in link."
+msgstr ""
+
+#: includes/Auth/TokenManager.php:352
+msgid "MagicAuth sign-in tokens"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:356
+msgid "Selector"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:360
+msgid "Issued"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:364
+msgid "Expires"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:368
+msgid "Consumed"
+msgstr ""
+
+#: includes/Auth/TokenManager.php:369
+msgid "not yet"
+msgstr ""
+
+#. translators: 1: formatted sign-in code (XXX-XXX), 2: company name
+#: includes/Email/Mailer.php:100
+#, php-format
+msgid "%1$s is your %2$s-code"
+msgstr ""
+
+#. translators: %s: company name
+#: includes/Email/Mailer.php:166
+#: templates/email-disabled-notice-plain.php:19
+#: templates/email-disabled-notice.php:22
+#: templates/email-disabled-notice.php:41
+#, php-format
+msgid "About your sign-in request for %s"
+msgstr ""
+
+#. translators: %s: company name
+#: includes/Frontend/LoginScreen.php:266
+#: templates/email-magic-link.php:88
+#: templates/email-magic-link.php:93
+#: templates/login-form.php:63
+#: templates/login-form.php:75
+#: templates/login-form.php:201
+#: templates/login-form.php:257
+msgid "Sign in"
+msgstr ""
+
+#. translators: %s display name
+#: includes/Frontend/Shortcode.php:178
+#, php-format
+msgid "You're already signed in as %s."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php:186
+msgid "Sign out"
+msgstr ""
+
+#: includes/Frontend/Toast.php:20
+msgid "That reset link has expired or already been used. Request a new one below."
+msgstr ""
+
+#: includes/Frontend/Toast.php:21
+msgid "That sign-in link has expired or already been used. Request a new code or link below."
+msgstr ""
+
+#: includes/Frontend/Toast.php:48
+msgid "If an account exists for that email, we sent a password reset link."
+msgstr ""
+
+#: includes/Frontend/Toast.php:49
+msgid "Email sent. Check your mail app."
+msgstr ""
+
+#: includes/Frontend/Toast.php:58
+msgid "That code is invalid or has expired. Try again, or request a new code."
+msgstr ""
+
+#: includes/Frontend/Toast.php:60
+msgid "Sign-in failed. Check your username and password, or use a magic link instead."
+msgstr ""
+
+#: includes/Frontend/Toast.php:62
+msgid "Could not set a new password. Make sure both fields match and try again."
+msgstr ""
+
+#. translators: %d: remaining cooldown seconds
+#: includes/Frontend/Toast.php:75
+#, php-format
+msgid "Please wait %d seconds before requesting another link for this email."
+msgstr ""
+
+#: includes/Frontend/Toast.php:79
+msgid "Please wait a moment before requesting another link for this email."
+msgstr ""
+
+#: includes/Frontend/Toast.php:81
+msgid "Too many sign-in requests from your network. Please try again later, or sign in with a password."
+msgstr ""
+
+#: includes/Frontend/Toast.php:83
+msgid "Too many code attempts from your network. Please request a new sign-in link."
+msgstr ""
+
+#: includes/Frontend/Toast.php:85
+msgid "Too many sign-in attempts. Please wait a few minutes before trying again."
+msgstr ""
+
+#: includes/Frontend/Toast.php:87
+msgid "Too many password-reset requests. Please wait an hour before trying again."
+msgstr ""
+
+#: includes/Frontend/Toast.php:89
+msgid "Too many incorrect codes for this link. Please request a new sign-in link."
+msgstr ""
+
+#: includes/Frontend/Toast.php:126
+#: assets/js/magicauth-admin.js:412
+msgid "Dismiss"
+msgstr ""
+
+#: includes/Installer.php:232
+msgid "MagicAuth: response-flush helper unavailable."
+msgstr ""
+
+#: includes/Installer.php:233
+msgid "Your PHP runtime does not provide fastcgi_finish_request(). MagicAuth cannot defer email sending until after the response, so SMTP latency may leak whether an account exists. Switch to PHP-FPM (or LiteSpeed) for full timing parity."
+msgstr ""
+
+#: includes/Installer.php:266
+msgid "MagicAuth: weak WordPress salts detected."
+msgstr ""
+
+#: includes/Installer.php:267
+msgid "Your security keys still hold placeholder or empty values, so token and session secrets are not unique to this site. Your magic links stay safe (each carries its own random secret), but fixing this is recommended — especially before turning on the branded login replacement."
+msgstr ""
+
+#: includes/Installer.php:270
+msgid "Learn how to fix this"
+msgstr ""
+
+#: includes/Plugin.php:94
+#: includes/Plugin.php:108
+msgid "MagicAuth login activity"
+msgstr ""
+
+#. translators: %s agency brand name (rendered bold)
+#: templates/agency-credit.php:21
+#, php-format
+msgid "Built by %s"
+msgstr ""
+
+#. translators: %s: company name
+#: templates/email-disabled-notice-plain.php:23
+#: templates/email-disabled-notice.php:54
+#, php-format
+msgid "A sign-in code was just requested for your account at %s."
+msgstr ""
+
+#: templates/email-disabled-notice-plain.php:27
+#: templates/email-disabled-notice.php:63
+msgid "Magic link and code sign-in is currently turned off for your account, so no code was sent. This is a setting managed by your site administrator and is often part of routine account changes."
+msgstr ""
+
+#: templates/email-disabled-notice-plain.php:30
+#: templates/email-disabled-notice.php:69
+msgid "You may still be able to sign in with your password through the regular sign-in screen. If you are not sure whether your account should have access, please contact your site administrator."
+msgstr ""
+
+#: templates/email-disabled-notice-plain.php:32
+#: templates/email-disabled-notice.php:75
+msgid "If you have questions about your account access, please contact your site administrator."
+msgstr ""
+
+#: templates/email-disabled-notice-plain.php:35
+#: templates/email-disabled-notice.php:81
+msgid "If you did not request a sign-in code, you can ignore this message. No further action is needed."
+msgstr ""
+
+#. translators: %s: company name
+#: templates/email-magic-link-plain.php:24
+#: templates/email-magic-link.php:38
+#: templates/email-magic-link.php:55
+#: templates/login-form.php:62
+#: templates/login-form.php:74
+#, php-format
+msgid "Sign in to %s"
+msgstr ""
+
+#. translators: %d: TTL minutes
+#: templates/email-magic-link-plain.php:28
+#, php-format
+msgid "Use the code below or open the sign-in link. Both expire in %d minutes."
+msgstr ""
+
+#: templates/email-magic-link-plain.php:32
+msgid "Sign-in code:"
+msgstr ""
+
+#: templates/email-magic-link-plain.php:34
+msgid "Sign-in link:"
+msgstr ""
+
+#: templates/email-magic-link-plain.php:37
+#: templates/email-magic-link.php:100
+msgid "If you didn't request this, you can safely ignore this email."
+msgstr ""
+
+#: templates/email-magic-link-plain.php:43
+msgid "(This is a test send from the MagicAuth diagnostics screen.)"
+msgstr ""
+
+#. translators: %d: TTL minutes
+#: templates/email-magic-link.php:65
+#, php-format
+msgid "Use the code below or click the button to sign in. Both expire in %d minutes."
+msgstr ""
+
+#: templates/email-magic-link.php:109
+msgid "Test send"
+msgstr ""
+
+#: templates/login-form.php:58
+msgid "Check your email"
+msgstr ""
+
+#: templates/login-form.php:66
+msgid "Reset your password"
+msgstr ""
+
+#: templates/login-form.php:69
+msgid "Set a new password"
+msgstr ""
+
+#. translators: %s email address
+#: templates/login-form.php:122
+#, php-format
+msgid "Enter the verification code we sent to %s."
+msgstr ""
+
+#: templates/login-form.php:129
+msgid "Enter the 6-character code we just emailed you."
+msgstr ""
+
+#: templates/login-form.php:134
+msgid "Enter your username or email and we will send a link to set a new password."
+msgstr ""
+
+#: templates/login-form.php:138
+msgid "Choose a strong password. You will be signed in once it is saved."
+msgstr ""
+
+#: templates/login-form.php:177
+msgid "6-character verification code"
+msgstr ""
+
+#: templates/login-form.php:210
+msgid "Use a different email"
+msgstr ""
+
+#: templates/login-form.php:218
+#: templates/login-form.php:225
+#: templates/login-form.php:282
+#: templates/login-form.php:289
+msgid "Username or email"
+msgstr ""
+
+#: templates/login-form.php:234
+#: templates/login-form.php:241
+msgid "Password"
+msgstr ""
+
+#: templates/login-form.php:250
+msgid "Remember me"
+msgstr ""
+
+#: templates/login-form.php:267
+msgid "Forgot password?"
+msgstr ""
+
+#: templates/login-form.php:274
+msgid "Use a magic link instead"
+msgstr ""
+
+#: templates/login-form.php:299
+msgid "Send Reset Link"
+msgstr ""
+
+#: templates/login-form.php:308
+msgid "Back to sign in"
+msgstr ""
+
+#: templates/login-form.php:316
+#: templates/login-form.php:323
+msgid "New password"
+msgstr ""
+
+#: templates/login-form.php:332
+#: templates/login-form.php:339
+msgid "Confirm new password"
+msgstr ""
+
+#: templates/login-form.php:350
+msgid "Save and sign in"
+msgstr ""
+
+#: templates/login-form.php:361
+msgid "Email address"
+msgstr ""
+
+#: templates/login-form.php:369
+msgid "you@example.com"
+msgstr ""
+
+#: templates/login-form.php:380
+msgid "Send Link"
+msgstr ""
+
+#: templates/login-form.php:401
+msgid "Sign in with password"
+msgstr ""
+
+#: templates/login-form.php:411
+msgid "Change language. Current:"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:54
+msgid "Choose image"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:55
+msgid "Use this image"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:264
+msgid " unsaved change"
+msgid_plural " unsaved changes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/magicauth-admin.js:316
+msgid "Use a 6-character hex like"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:341
+#: assets/js/magicauth-admin.js:342
+msgid "Saving…"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:434
+msgid "Settings saved."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:443
+msgid "Test email sent. Check your inbox (and spam folder)."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:451
+msgid "wp_mail returned false. Check your server's mail configuration."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:475
+msgid "Changes discarded."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:513
+msgid "Confirm"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:514
+#: assets/js/magicauth-admin.js:660
+msgid "Cancel"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:575
+msgid "Working…"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:652
+msgid "Revoke all magic-links and codes?"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:652
+msgid "Reset throttle counters?"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:654
+msgid "This invalidates every outstanding sign-in link and code site-wide."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:655
+msgid "This clears every per-IP, per-email, and per-row rate-limit counter."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:657
+msgid "<p>Anyone with an unconsumed link in their inbox will need to request a new one.</p><p>Active sessions are <strong>not</strong> signed out. This cannot be undone.</p>"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:658
+msgid "<p>Use this when a probe has pinned the throttle and locked out legitimate users.</p>"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:659
+msgid "Revoke all"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:659
+msgid "Reset counters"
+msgstr ""
+
+#: assets/js/magicauth-admin.js:677
+#: assets/js/magicauth-admin.js:729
+msgid "Request failed."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:683
+msgid "Done."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:687
+msgid "Network error. Please try again."
+msgstr ""
+
+#: assets/js/magicauth-admin.js:745
+msgid "Network error."
+msgstr ""

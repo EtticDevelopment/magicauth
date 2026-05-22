@@ -1,0 +1,829 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: MagicAuth 1.0.3\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/magicauth\n"
+"Last-Translator: Ettic <support@ettic.nl>\n"
+"Language-Team: Dutch\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-22T19:10:14+00:00\n"
+"PO-Revision-Date: 2026-05-22\n"
+"Language: nl_NL\n"
+"X-Generator: MagicAuth i18n generator\n"
+"X-Domain: magicauth\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Plugin Name of the plugin
+#: magicauth.php
+#: includes/Admin/Settings.php:99
+#: includes/Admin/Settings.php:100
+#: includes/Admin/Settings.php:140
+#: includes/Admin/Settings.php:158
+#: includes/Admin/UserProfile.php:46
+msgid "MagicAuth"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: magicauth.php
+msgid "https://github.com/EtticDevelopment/magicauth"
+msgstr ""
+
+#. Description of the plugin
+#: magicauth.php
+msgid "Passwordless WordPress sign-in via email magic link or 6-character code."
+msgstr "Wachtwoordloos inloggen op WordPress via een magische e-maillink of een 6-tekens code."
+
+#. Author of the plugin
+#: magicauth.php
+msgid "Ettic"
+msgstr ""
+
+#. Author URI of the plugin
+#: magicauth.php
+msgid "https://ettic.nl"
+msgstr ""
+
+#: includes/Admin/Footer.php:29
+msgid "MagicAuth by Ettic."
+msgstr "MagicAuth van Ettic."
+
+#: includes/Admin/Footer.php:30
+msgid "Focused, open-source WordPress plugins."
+msgstr "Gerichte, open-source WordPress-plug-ins."
+
+#: includes/Admin/Footer.php:34
+msgid "MagicAuth resources"
+msgstr "MagicAuth-bronnen"
+
+#: includes/Admin/Footer.php:35
+msgid "Docs"
+msgstr "Documentatie"
+
+#: includes/Admin/Footer.php:37
+msgid "GitHub"
+msgstr ""
+
+#: includes/Admin/Footer.php:39
+msgid "Support"
+msgstr "Ondersteuning"
+
+#: includes/Admin/Footer.php:41
+msgid "Report a vulnerability"
+msgstr "Een kwetsbaarheid melden"
+
+#: includes/Admin/Footer.php:43
+msgid "Like MagicAuth? Leave a review and help us keep building open source."
+msgstr "Vind je MagicAuth goed? Laat een review achter en help ons open source te blijven bouwen."
+
+#: includes/Admin/Footer.php:43
+msgid "Leave a review"
+msgstr "Laat een review achter"
+
+#: includes/Admin/Settings.php:77
+msgid "Settings"
+msgstr "Instellingen"
+
+#: includes/Admin/Settings.php:151
+msgid "Discard"
+msgstr "Verwerpen"
+
+#: includes/Admin/Settings.php:152
+msgid "Save changes"
+msgstr "Wijzigingen opslaan"
+
+#: includes/Admin/Settings.php:159
+msgid "Passwordless sign-in via magic link or 6-character code. Configure how it looks, how it behaves, and how it recovers from edge cases. All on one page."
+msgstr "Wachtwoordloos inloggen via een magische link of een 6-tekens code. Stel in hoe het eruitziet, hoe het zich gedraagt en hoe het herstelt bij randgevallen. Allemaal op één pagina."
+
+#: includes/Admin/Settings.php:179
+msgid "General"
+msgstr "Algemeen"
+
+#: includes/Admin/Settings.php:180
+msgid "How long links live and where users land afterwards."
+msgstr "Hoe lang links geldig blijven en waar gebruikers daarna terechtkomen."
+
+#: includes/Admin/Settings.php:195
+msgid "Branding"
+msgstr "Branding"
+
+#: includes/Admin/Settings.php:196
+msgid "How the sign-in card looks. Settings render on the branded login screen and in transactional emails."
+msgstr "Hoe de inlogkaart eruitziet. Deze instellingen verschijnen op het gebrande inlogscherm en in transactionele e-mails."
+
+#: includes/Admin/Settings.php:214
+msgid "Agency credit"
+msgstr "Bureaucredit"
+
+#: includes/Admin/Settings.php:215
+msgid "Optional \"Built by [Brand]\" line below the sign-in card. Renders only when name, URL, and favicon are all filled."
+msgstr "Optionele regel \"Gemaakt door [Merk]\" onder de inlogkaart. Verschijnt alleen als naam, URL en favicon allemaal zijn ingevuld."
+
+#: includes/Admin/Settings.php:231
+msgid "Security &amp; throttling"
+msgstr "Beveiliging &amp; throttling"
+
+#: includes/Admin/Settings.php:232
+msgid "Recovery layers and rate-limit caps. The \"Sign in with password\" link is the unconditional safety net. Disable it only after site-wide password auth is already off."
+msgstr "Herstellagen en rate-limietplafonds. De link \"Inloggen met wachtwoord\" is het onvoorwaardelijke vangnet. Schakel deze pas uit nadat wachtwoordauthenticatie sitebreed al is uitgeschakeld."
+
+#: includes/Admin/Settings.php:250
+msgid "Diagnostics &amp; recovery"
+msgstr "Diagnose &amp; herstel"
+
+#: includes/Admin/Settings.php:251
+msgid "One-shot tools for debugging and unsticking the plugin. Destructive actions ask for confirmation."
+msgstr "Eenmalige hulpmiddelen om te debuggen en de plug-in weer vlot te trekken. Destructieve acties vragen om bevestiging."
+
+#: includes/Admin/Settings.php:259
+msgid "Send test email"
+msgstr "Test-e-mail versturen"
+
+#: includes/Admin/Settings.php:260
+msgid "One-shot diagnostic. No tokens are issued. Forces the default brand color to verify rendering."
+msgstr "Eenmalige diagnose. Er worden geen tokens uitgegeven. Forceert de standaard merkkleur om de weergave te controleren."
+
+#: includes/Admin/Settings.php:263
+msgid "Send to my account"
+msgstr "Naar mijn account sturen"
+
+#: includes/Admin/Settings.php:269
+msgid "Revoke all magic-links and codes"
+msgstr "Alle magische links en codes intrekken"
+
+#: includes/Admin/Settings.php:270
+msgid "Marks every unconsumed token consumed site-wide. Already-active sessions are not signed out."
+msgstr "Markeert elk niet-gebruikt token sitebreed als gebruikt. Reeds actieve sessies worden niet uitgelogd."
+
+#: includes/Admin/Settings.php:273
+msgid "Revoke now"
+msgstr "Nu intrekken"
+
+#: includes/Admin/Settings.php:279
+msgid "Reset throttle counters"
+msgstr "Throttle-tellers resetten"
+
+#: includes/Admin/Settings.php:280
+msgid "Deletes every magicauth_throttle_* transient. Object-cache safe."
+msgstr "Verwijdert elke magicauth_throttle_*-transient. Veilig voor object-cache."
+
+#: includes/Admin/Settings.php:283
+msgid "Reset now"
+msgstr "Nu resetten"
+
+#: includes/Admin/Settings.php:342
+msgid "Branded login is enabled, but your WordPress salts are still weak. Magic links each carry their own random secret so they stay safe; your session cookies and the 6-character codes are better protected once you fix the salts. See the weak-salt notice for how."
+msgstr "Het gebrande inlogscherm staat aan, maar je WordPress-salts zijn nog steeds zwak. Elke magische link draagt zijn eigen willekeurige geheim, dus die blijven veilig; je sessiecookies en de 6-tekens codes zijn beter beschermd zodra je de salts herstelt. Zie de melding over zwakke salts voor hoe."
+
+#: includes/Admin/Settings.php:355
+msgid "Sender address: that value had no usable characters, so it was reset to \"login\"."
+msgstr "Afzenderadres: die waarde bevatte geen bruikbare tekens en is teruggezet op \"login\"."
+
+#: includes/Admin/Settings.php:430
+msgid "Logo: selected attachment is not an image."
+msgstr "Logo: het geselecteerde bestand is geen afbeelding."
+
+#: includes/Admin/Settings.php:446
+msgid "Logo: SVG contains active content (script / event handlers / javascript:). Re-export without scripting."
+msgstr "Logo: SVG bevat actieve inhoud (script / event-handlers / javascript:). Exporteer opnieuw zonder scripting."
+
+#: includes/Admin/Settings.php:454
+msgid "Logo: only PNG, JPG, WebP, or SVG are allowed."
+msgstr "Logo: alleen PNG, JPG, WebP of SVG zijn toegestaan."
+
+#: includes/Admin/Settings.php:464
+msgid "Logo: file content does not match a supported image format."
+msgstr "Logo: de bestandsinhoud komt niet overeen met een ondersteund afbeeldingsformaat."
+
+#: includes/Admin/Settings.php:479
+msgid "Link &amp; code lifetime"
+msgstr "Levensduur van link &amp; code"
+
+#: includes/Admin/Settings.php:480
+msgid "Both the magic link and the typeable code share one expiry. Range 1–30 minutes."
+msgstr "De magische link en de typbare code delen één vervaltijd. Bereik 1–30 minuten."
+
+#: includes/Admin/Settings.php:484
+msgid "minutes"
+msgstr "minuten"
+
+#: includes/Admin/Settings.php:496
+#: includes/Admin/Settings.php:500
+msgid "Max link uses"
+msgstr "Max. linkgebruik"
+
+#: includes/Admin/Settings.php:497
+msgid "2 absorbs URL-scanner prefetch plus the user's click. Set to 1 for strict single-use."
+msgstr "2 vangt prefetch door URL-scanners op plus de klik van de gebruiker. Stel in op 1 voor strikt eenmalig gebruik."
+
+#: includes/Admin/Settings.php:517
+msgid "Auto (admin or home, by capability)"
+msgstr "Automatisch (beheer of home, op basis van rechten)"
+
+#: includes/Admin/Settings.php:518
+msgid "Site home"
+msgstr "Sitehome"
+
+#: includes/Admin/Settings.php:519
+msgid "Admin dashboard"
+msgstr "Beheerdashboard"
+
+#: includes/Admin/Settings.php:524
+msgid "Default redirect after sign-in"
+msgstr "Standaard doorverwijzing na inloggen"
+
+#: includes/Admin/Settings.php:525
+msgid "Where users land when no specific destination was requested."
+msgstr "Waar gebruikers terechtkomen als er geen specifieke bestemming is opgevraagd."
+
+#: includes/Admin/Settings.php:549
+msgid "Replace WordPress login screen"
+msgstr "WordPress-inlogscherm vervangen"
+
+#: includes/Admin/Settings.php:551
+msgid "Why is this flagged?"
+msgstr "Waarom is dit gemarkeerd?"
+
+#: includes/Admin/Settings.php:551
+msgid "Heads up: weak salts"
+msgstr "Let op: zwakke salts"
+
+#: includes/Admin/Settings.php:551
+msgid "You can turn this on now, but the salts in"
+msgstr "Je kunt dit nu inschakelen, maar de salts in"
+
+#: includes/Admin/Settings.php:551
+msgid "are weak — fixing them first is recommended."
+msgstr "zijn zwak — het wordt aanbevolen die eerst te herstellen."
+
+#: includes/Admin/Settings.php:551
+msgid "How to fix →"
+msgstr "Hoe te herstellen →"
+
+#: includes/Admin/Settings.php:554
+msgid "Intercepts wp-login.php and serves the branded MagicAuth screen. The native form stays available at ?magicauth=off as a recovery path."
+msgstr "Onderschept wp-login.php en toont het gebrande MagicAuth-scherm. Het oorspronkelijke formulier blijft beschikbaar via ?magicauth=off als herstelpad."
+
+#. translators: "language switcher" is WordPress's own locale selector on the login screen.
+#: includes/Admin/Settings.php:576
+msgid "Hide language switcher"
+msgstr "Taalwisselaar verbergen"
+
+#: includes/Admin/Settings.php:579
+msgid "WordPress adds a language selector to the login screen when extra languages are installed. MagicAuth places it under the card. Turn this on to hide it on the branded screen; the recovery login at ?magicauth=off keeps it."
+msgstr "WordPress voegt een taalkeuze toe aan het inlogscherm wanneer er extra talen zijn geïnstalleerd. MagicAuth plaatst die onder de kaart. Schakel dit in om de taalkeuze op het gebrande scherm te verbergen; de herstel-login op ?magicauth=off behoudt die."
+
+#: includes/Admin/Settings.php:598
+msgid "Company name"
+msgstr "Bedrijfsnaam"
+
+#: includes/Admin/Settings.php:599
+msgid "Your short business name. No taglines, slogans, or separators."
+msgstr "Je korte bedrijfsnaam. Geen taglines, slogans of scheidingstekens."
+
+#: includes/Admin/Settings.php:616
+msgid "Sender email address"
+msgstr "Afzender-e-mailadres"
+
+#: includes/Admin/Settings.php:617
+msgid "The address sign-in emails are sent from. Only the part before the @ is editable — it stays on your own domain so messages pass spam checks (SPF/DKIM/DMARC) instead of being flagged as forged. Letters, digits, and . _ - + only."
+msgstr "Het adres waarvandaan inlogmails worden verstuurd. Alleen het deel vóór de @ is bewerkbaar — het blijft op je eigen domein, zodat berichten de spamcontroles (SPF/DKIM/DMARC) doorstaan in plaats van als vervalst te worden gemarkeerd. Alleen letters, cijfers en . _ - +."
+
+#: includes/Admin/Settings.php:631
+msgid "Logo"
+msgstr ""
+
+#: includes/Admin/Settings.php:632
+msgid "PNG, JPG, or WebP. Existing SVG attachments may also be selected. Capped at 48px height on the sign-in card."
+msgstr "PNG, JPG of WebP. Bestaande SVG-bijlagen kunnen ook worden geselecteerd. Beperkt tot 48px hoogte op de inlogkaart."
+
+#: includes/Admin/Settings.php:643
+msgid "Brand color"
+msgstr "Merkkleur"
+
+#: includes/Admin/Settings.php:645
+msgid "Auto-derives readable button text via YIQ luminance. Current contrast:"
+msgstr "Leidt automatisch leesbare knoptekst af via YIQ-luminantie. Huidig contrast:"
+
+#: includes/Admin/Settings.php:651
+msgid "Color picker"
+msgstr "Kleurkiezer"
+
+#: includes/Admin/Settings.php:665
+msgid "Brand name"
+msgstr "Merknaam"
+
+#: includes/Admin/Settings.php:666
+msgid "Shown bold in the credit line."
+msgstr "Vetgedrukt weergegeven in de creditregel."
+
+#: includes/Admin/Settings.php:669
+msgid "Acme Studio"
+msgstr ""
+
+#: includes/Admin/Settings.php:681
+msgid "Brand URL"
+msgstr "Merk-URL"
+
+#: includes/Admin/Settings.php:682
+msgid "Opens in a new tab. Must start with http:// or https://."
+msgstr "Opent in een nieuw tabblad. Moet beginnen met http:// of https://."
+
+#: includes/Admin/Settings.php:695
+msgid "Brand favicon"
+msgstr "Merk-favicon"
+
+#: includes/Admin/Settings.php:696
+msgid "Square 32×32 or larger. PNG, JPG, WebP, or SVG."
+msgstr "Vierkant 32×32 of groter. PNG, JPG, WebP of SVG."
+
+#: includes/Admin/Settings.php:706
+msgid "Credit label"
+msgstr "Creditlabel"
+
+#: includes/Admin/Settings.php:707
+msgid "Text shown before the brand name. Leave blank for the default (\"Built by\")."
+msgstr "Tekst die vóór de merknaam wordt getoond. Laat leeg voor de standaard (\"Gemaakt door\")."
+
+#: includes/Admin/Settings.php:710
+msgid "Built by"
+msgstr "Gemaakt door"
+
+#: includes/Admin/Settings.php:722
+msgid "\"Sign in with password\" link"
+msgstr "Link \"Inloggen met wachtwoord\""
+
+#: includes/Admin/Settings.php:723
+msgid "Always-visible recovery link on every form. Only disable this if you have already disabled WordPress password authentication site-wide."
+msgstr "Altijd zichtbare herstellink op elk formulier. Schakel dit alleen uit als je WordPress-wachtwoordauthenticatie al sitebreed hebt uitgeschakeld."
+
+#: includes/Admin/Settings.php:740
+msgid "Per-IP window (hours)"
+msgstr "Venster per IP (uren)"
+
+#: includes/Admin/Settings.php:741
+msgid "Per-IP max requests"
+msgstr "Max. verzoeken per IP"
+
+#: includes/Admin/Settings.php:742
+msgid "Per-IP code window (hours)"
+msgstr "Codevenster per IP (uren)"
+
+#: includes/Admin/Settings.php:743
+msgid "Per-IP max code attempts"
+msgstr "Max. codepogingen per IP"
+
+#: includes/Admin/Settings.php:748
+msgid "Per-email cooldown"
+msgstr "Afkoeltijd per e-mail"
+
+#: includes/Admin/Settings.php:749
+msgid "Seconds between consecutive link requests for the same email. 0 disables. Default 60. Replaced the per-email hard cap in v1.3.7. That cap was a DoS primitive any IP could weaponize against any victim email."
+msgstr "Seconden tussen opeenvolgende linkverzoeken voor hetzelfde e-mailadres. 0 schakelt het uit. Standaard 60. Verving de harde limiet per e-mail in v1.3.7. Die limiet was een DoS-primitief dat elk IP tegen elk slachtoffer-e-mailadres kon inzetten."
+
+#: includes/Admin/Settings.php:753
+msgid "seconds"
+msgstr "seconden"
+
+#: includes/Admin/Settings.php:790
+msgid "Replace"
+msgstr "Vervangen"
+
+#: includes/Admin/Settings.php:791
+msgid "Remove"
+msgstr "Verwijderen"
+
+#: includes/Admin/Settings.php:806
+#: includes/Admin/Settings.php:829
+#: includes/Admin/Settings.php:852
+#: includes/Admin/UserProfile.php:180
+#: includes/Installer.php:304
+msgid "You are not allowed to do this."
+msgstr "Je mag dit niet doen."
+
+#. translators: %d: number of tokens revoked
+#: includes/Admin/Settings.php:841
+#, php-format
+msgid "%d outstanding token revoked."
+msgid_plural "%d outstanding tokens revoked."
+msgstr[0] "%d openstaand token ingetrokken."
+msgstr[1] "%d openstaande tokens ingetrokken."
+
+#. translators: %d: number of throttle counters cleared
+#: includes/Admin/Settings.php:864
+#, php-format
+msgid "%d throttle counter cleared."
+msgid_plural "%d throttle counters cleared."
+msgstr[0] "%d throttle-teller gewist."
+msgstr[1] "%d throttle-tellers gewist."
+
+#: includes/Admin/UserProfile.php:52
+msgid "Per-user controls"
+msgstr "Instellingen per gebruiker"
+
+#: includes/Admin/UserProfile.php:56
+msgid "Disable magic-link sign-in for this user"
+msgstr "Inloggen met magische link uitschakelen voor deze gebruiker"
+
+#: includes/Admin/UserProfile.php:59
+msgid "Saving with this checked invalidates all outstanding sign-in links for this user immediately."
+msgstr "Opslaan met dit aangevinkt maakt alle openstaande inloglinks voor deze gebruiker direct ongeldig."
+
+#: includes/Admin/UserProfile.php:64
+msgid "Magic-link actions"
+msgstr "Acties voor magische link"
+
+#: includes/Admin/UserProfile.php:67
+msgid "Create magic-link"
+msgstr "Magische link aanmaken"
+
+#: includes/Admin/UserProfile.php:70
+msgid "Send link to user"
+msgstr "Link naar gebruiker sturen"
+
+#: includes/Admin/UserProfile.php:73
+msgid "Reset all magic-links"
+msgstr "Alle magische links resetten"
+
+#: includes/Admin/UserProfile.php:79
+msgid "Cleared on next page load. Copy now."
+msgstr "Wordt gewist bij de volgende paginalading. Kopieer nu."
+
+#: includes/Admin/UserProfile.php:126
+#: includes/Admin/UserProfile.php:143
+msgid "Could not issue link."
+msgstr "Kon geen link uitgeven."
+
+#: includes/Admin/UserProfile.php:131
+msgid "Link created. Copy the URL now. It disappears on reload."
+msgstr "Link aangemaakt. Kopieer de URL nu. Hij verdwijnt bij herladen."
+
+#: includes/Admin/UserProfile.php:147
+msgid "wp_mail returned false. Check the server's mail configuration."
+msgstr "wp_mail gaf false terug. Controleer de mailconfiguratie van de server."
+
+#: includes/Admin/UserProfile.php:149
+msgid "Link sent."
+msgstr "Link verstuurd."
+
+#. translators: %d: number of tokens reset
+#: includes/Admin/UserProfile.php:159
+#, php-format
+msgid "%d outstanding link reset."
+msgid_plural "%d outstanding links reset."
+msgstr[0] "%d openstaande link gereset."
+msgstr[1] "%d openstaande links gereset."
+
+#: includes/Admin/UserProfile.php:176
+msgid "Missing user."
+msgstr "Gebruiker ontbreekt."
+
+#: includes/Admin/UserProfile.php:185
+msgid "User not found."
+msgstr "Gebruiker niet gevonden."
+
+#: includes/Auth/Controller.php:468
+msgid "This sign-in link is for a different account."
+msgstr "Deze inloglink is voor een ander account."
+
+#: includes/Auth/Controller.php:469
+msgid "Sign out first if you need to switch accounts."
+msgstr "Log eerst uit als je van account wilt wisselen."
+
+#: includes/Auth/Controller.php:735
+msgid "Back to site"
+msgstr "Terug naar de site"
+
+#: includes/Auth/TokenManager.php:46
+#: includes/Auth/TokenManager.php:420
+msgid "If an account exists for that email, we sent a sign-in link."
+msgstr "Als er een account bestaat voor dat e-mailadres, hebben we een inloglink verstuurd."
+
+#: includes/Auth/TokenManager.php:352
+msgid "MagicAuth sign-in tokens"
+msgstr "MagicAuth-inlogtokens"
+
+#: includes/Auth/TokenManager.php:356
+msgid "Selector"
+msgstr "Selector"
+
+#: includes/Auth/TokenManager.php:360
+msgid "Issued"
+msgstr "Uitgegeven"
+
+#: includes/Auth/TokenManager.php:364
+msgid "Expires"
+msgstr "Verloopt"
+
+#: includes/Auth/TokenManager.php:368
+msgid "Consumed"
+msgstr "Gebruikt"
+
+#: includes/Auth/TokenManager.php:369
+msgid "not yet"
+msgstr "nog niet"
+
+#. translators: 1: formatted sign-in code (XXX-XXX), 2: company name
+#: includes/Email/Mailer.php:100
+#, php-format
+msgid "%1$s is your %2$s-code"
+msgstr "%1$s is je %2$s-code"
+
+#. translators: %s: company name
+#: includes/Email/Mailer.php:166
+#: templates/email-disabled-notice-plain.php:19
+#: templates/email-disabled-notice.php:22
+#: templates/email-disabled-notice.php:41
+#, php-format
+msgid "About your sign-in request for %s"
+msgstr "Over je inlogverzoek voor %s"
+
+#. translators: %s: company name
+#: includes/Frontend/LoginScreen.php:266
+#: templates/email-magic-link.php:88
+#: templates/email-magic-link.php:93
+#: templates/login-form.php:63
+#: templates/login-form.php:75
+#: templates/login-form.php:201
+#: templates/login-form.php:257
+msgid "Sign in"
+msgstr "Inloggen"
+
+#. translators: %s display name
+#: includes/Frontend/Shortcode.php:178
+#, php-format
+msgid "You're already signed in as %s."
+msgstr "Je bent al ingelogd als %s."
+
+#: includes/Frontend/Shortcode.php:186
+msgid "Sign out"
+msgstr "Uitloggen"
+
+#: includes/Frontend/Toast.php:20
+msgid "That reset link has expired or already been used. Request a new one below."
+msgstr "Die herstellink is verlopen of al gebruikt. Vraag hieronder een nieuwe aan."
+
+#: includes/Frontend/Toast.php:21
+msgid "That sign-in link has expired or already been used. Request a new code or link below."
+msgstr "Die inloglink is verlopen of al gebruikt. Vraag hieronder een nieuwe code of link aan."
+
+#: includes/Frontend/Toast.php:48
+msgid "If an account exists for that email, we sent a password reset link."
+msgstr "Als er een account bestaat voor dat e-mailadres, hebben we een link voor wachtwoordherstel verstuurd."
+
+#: includes/Frontend/Toast.php:49
+msgid "Email sent. Check your mail app."
+msgstr "E-mail verstuurd. Controleer je mailapp."
+
+#: includes/Frontend/Toast.php:58
+msgid "That code is invalid or has expired. Try again, or request a new code."
+msgstr "Die code is ongeldig of verlopen. Probeer het opnieuw of vraag een nieuwe code aan."
+
+#: includes/Frontend/Toast.php:60
+msgid "Sign-in failed. Check your username and password, or use a magic link instead."
+msgstr "Inloggen mislukt. Controleer je gebruikersnaam en wachtwoord, of gebruik anders een magische link."
+
+#: includes/Frontend/Toast.php:62
+msgid "Could not set a new password. Make sure both fields match and try again."
+msgstr "Kon geen nieuw wachtwoord instellen. Zorg dat beide velden overeenkomen en probeer het opnieuw."
+
+#. translators: %d: remaining cooldown seconds
+#: includes/Frontend/Toast.php:75
+#, php-format
+msgid "Please wait %d seconds before requesting another link for this email."
+msgstr "Wacht %d seconden voordat je opnieuw een link aanvraagt voor dit e-mailadres."
+
+#: includes/Frontend/Toast.php:79
+msgid "Please wait a moment before requesting another link for this email."
+msgstr "Wacht even voordat je opnieuw een link aanvraagt voor dit e-mailadres."
+
+#: includes/Frontend/Toast.php:81
+msgid "Too many sign-in requests from your network. Please try again later, or sign in with a password."
+msgstr "Te veel inlogverzoeken vanaf je netwerk. Probeer het later opnieuw of log in met een wachtwoord."
+
+#: includes/Frontend/Toast.php:83
+msgid "Too many code attempts from your network. Please request a new sign-in link."
+msgstr "Te veel codepogingen vanaf je netwerk. Vraag een nieuwe inloglink aan."
+
+#: includes/Frontend/Toast.php:85
+msgid "Too many sign-in attempts. Please wait a few minutes before trying again."
+msgstr "Te veel inlogpogingen. Wacht een paar minuten voordat je het opnieuw probeert."
+
+#: includes/Frontend/Toast.php:87
+msgid "Too many password-reset requests. Please wait an hour before trying again."
+msgstr "Te veel verzoeken voor wachtwoordherstel. Wacht een uur voordat je het opnieuw probeert."
+
+#: includes/Frontend/Toast.php:89
+msgid "Too many incorrect codes for this link. Please request a new sign-in link."
+msgstr "Te veel onjuiste codes voor deze link. Vraag een nieuwe inloglink aan."
+
+#: includes/Frontend/Toast.php:126
+#: assets/js/magicauth-admin.js:412
+msgid "Dismiss"
+msgstr "Sluiten"
+
+#: includes/Installer.php:232
+msgid "MagicAuth: response-flush helper unavailable."
+msgstr "MagicAuth: hulpfunctie voor response-flush niet beschikbaar."
+
+#: includes/Installer.php:233
+msgid "Your PHP runtime does not provide fastcgi_finish_request(). MagicAuth cannot defer email sending until after the response, so SMTP latency may leak whether an account exists. Switch to PHP-FPM (or LiteSpeed) for full timing parity."
+msgstr "Je PHP-runtime biedt geen fastcgi_finish_request(). MagicAuth kan het versturen van e-mail niet uitstellen tot na de respons, waardoor SMTP-latentie kan verraden of een account bestaat. Stap over naar PHP-FPM (of LiteSpeed) voor volledige timing-pariteit."
+
+#: includes/Installer.php:266
+msgid "MagicAuth: weak WordPress salts detected."
+msgstr "MagicAuth: zwakke WordPress-salts gedetecteerd."
+
+#: includes/Installer.php:267
+msgid "Your security keys still hold placeholder or empty values, so token and session secrets are not unique to this site. Your magic links stay safe (each carries its own random secret), but fixing this is recommended — especially before turning on the branded login replacement."
+msgstr "Je beveiligingssleutels bevatten nog placeholder- of lege waarden, dus token- en sessiegeheimen zijn niet uniek voor deze site. Je magische links blijven veilig (elke link draagt zijn eigen willekeurige geheim), maar dit herstellen wordt aanbevolen — vooral voordat je de gebrande inlogvervanging inschakelt."
+
+#: includes/Installer.php:270
+msgid "Learn how to fix this"
+msgstr "Lees hoe je dit herstelt"
+
+#: includes/Plugin.php:94
+#: includes/Plugin.php:108
+msgid "MagicAuth login activity"
+msgstr "MagicAuth-inlogactiviteit"
+
+#. translators: %s agency brand name (rendered bold)
+#: templates/agency-credit.php:21
+#, php-format
+msgid "Built by %s"
+msgstr "Gemaakt door %s"
+
+#. translators: %s: company name
+#: templates/email-disabled-notice-plain.php:23
+#: templates/email-disabled-notice.php:54
+#, php-format
+msgid "A sign-in code was just requested for your account at %s."
+msgstr "Er is zojuist een inlogcode aangevraagd voor je account bij %s."
+
+#: templates/email-disabled-notice-plain.php:27
+#: templates/email-disabled-notice.php:63
+msgid "Magic link and code sign-in is currently turned off for your account, so no code was sent. This is a setting managed by your site administrator and is often part of routine account changes."
+msgstr "Inloggen met magische link en code is momenteel uitgeschakeld voor je account, dus er is geen code verstuurd. Dit is een instelling die door je sitebeheerder wordt beheerd en maakt vaak deel uit van routinematige accountwijzigingen."
+
+#: templates/email-disabled-notice-plain.php:30
+#: templates/email-disabled-notice.php:69
+msgid "You may still be able to sign in with your password through the regular sign-in screen. If you are not sure whether your account should have access, please contact your site administrator."
+msgstr "Je kunt mogelijk nog steeds inloggen met je wachtwoord via het gewone inlogscherm. Als je niet zeker weet of je account toegang hoort te hebben, neem dan contact op met je sitebeheerder."
+
+#: templates/email-disabled-notice-plain.php:32
+#: templates/email-disabled-notice.php:75
+msgid "If you have questions about your account access, please contact your site administrator."
+msgstr "Heb je vragen over de toegang tot je account, neem dan contact op met je sitebeheerder."
+
+#: templates/email-disabled-notice-plain.php:35
+#: templates/email-disabled-notice.php:81
+msgid "If you did not request a sign-in code, you can ignore this message. No further action is needed."
+msgstr "Heb je geen inlogcode aangevraagd, dan kun je dit bericht negeren. Er is geen verdere actie nodig."
+
+#. translators: %s: company name
+#: templates/email-magic-link-plain.php:24
+#: templates/email-magic-link.php:38
+#: templates/email-magic-link.php:55
+#: templates/login-form.php:62
+#: templates/login-form.php:74
+#, php-format
+msgid "Sign in to %s"
+msgstr "Inloggen bij %s"
+
+#. translators: %d: TTL minutes
+#: templates/email-magic-link-plain.php:28
+#, php-format
+msgid "Use the code below or open the sign-in link. Both expire in %d minutes."
+msgstr "Gebruik de onderstaande code of open de inloglink. Beide verlopen over %d minuten."
+
+#: templates/email-magic-link-plain.php:32
+msgid "Sign-in code:"
+msgstr "Inlogcode:"
+
+#: templates/email-magic-link-plain.php:34
+msgid "Sign-in link:"
+msgstr "Inloglink:"
+
+#: templates/email-magic-link-plain.php:37
+#: templates/email-magic-link.php:100
+msgid "If you didn't request this, you can safely ignore this email."
+msgstr "Heb je dit niet aangevraagd, dan kun je deze e-mail veilig negeren."
+
+#: templates/email-magic-link-plain.php:43
+msgid "(This is a test send from the MagicAuth diagnostics screen.)"
+msgstr "(Dit is een testverzending vanaf het MagicAuth-diagnosescherm.)"
+
+#. translators: %d: TTL minutes
+#: templates/email-magic-link.php:65
+#, php-format
+msgid "Use the code below or click the button to sign in. Both expire in %d minutes."
+msgstr "Gebruik de onderstaande code of klik op de knop om in te loggen. Beide verlopen over %d minuten."
+
+#: templates/email-magic-link.php:109
+msgid "Test send"
+msgstr "Testverzending"
+
+#: templates/login-form.php:58
+msgid "Check your email"
+msgstr "Controleer je e-mail"
+
+#: templates/login-form.php:66
+msgid "Reset your password"
+msgstr "Stel je wachtwoord opnieuw in"
+
+#: templates/login-form.php:69
+msgid "Set a new password"
+msgstr "Stel een nieuw wachtwoord in"
+
+#. translators: %s email address
+#: templates/login-form.php:122
+#, php-format
+msgid "Enter the verification code we sent to %s."
+msgstr "Voer de verificatiecode in die we naar %s hebben gestuurd."
+
+#: templates/login-form.php:129
+msgid "Enter the 6-character code we just emailed you."
+msgstr "Voer de 6-tekens code in die we je zojuist hebben gemaild."
+
+#: templates/login-form.php:134
+msgid "Enter your username or email and we will send a link to set a new password."
+msgstr "Voer je gebruikersnaam of e-mailadres in en we sturen een link om een nieuw wachtwoord in te stellen."
+
+#: templates/login-form.php:138
+msgid "Choose a strong password. You will be signed in once it is saved."
+msgstr "Kies een sterk wachtwoord. Je wordt ingelogd zodra het is opgeslagen."
+
+#: templates/login-form.php:177
+msgid "6-character verification code"
+msgstr "6-tekens verificatiecode"
+
+#: templates/login-form.php:210
+msgid "Use a different email"
+msgstr "Een ander e-mailadres gebruiken"
+
+#: templates/login-form.php:218
+#: templates/login-form.php:225
+#: templates/login-form.php:282
+#: templates/login-form.php:289
+msgid "Username or email"
+msgstr "Gebruikersnaam of e-mailadres"
+
+#: templates/login-form.php:234
+#: templates/login-form.php:241
+msgid "Password"
+msgstr "Wachtwoord"
+
+#: templates/login-form.php:250
+msgid "Remember me"
+msgstr "Onthoud mij"
+
+#: templates/login-form.php:267
+msgid "Forgot password?"
+msgstr "Wachtwoord vergeten?"
+
+#: templates/login-form.php:274
+msgid "Use a magic link instead"
+msgstr "Gebruik in plaats daarvan een magische link"
+
+#: templates/login-form.php:299
+msgid "Send Reset Link"
+msgstr "Herstellink versturen"
+
+#: templates/login-form.php:308
+msgid "Back to sign in"
+msgstr "Terug naar inloggen"
+
+#: templates/login-form.php:316
+#: templates/login-form.php:323
+msgid "New password"
+msgstr "Nieuw wachtwoord"
+
+#: templates/login-form.php:332
+#: templates/login-form.php:339
+msgid "Confirm new password"
+msgstr "Bevestig nieuw wachtwoord"
+
+#: templates/login-form.php:350
+msgid "Save and sign in"
+msgstr "Opslaan en inloggen"
+
+#: templates/login-form.php:361
+msgid "Email address"
+msgstr "E-mailadres"
+
+#: templates/login-form.php:369
+msgid "you@example.com"
+msgstr ""
+
+#: templates/login-form.php:380
+msgid "Send Link"
+msgstr "Link versturen"
+
+#: templates/login-form.php:401
+msgid "Sign in with password"
+msgstr "Inloggen met wachtwoord"
+
+#: templates/login-form.php:411
+msgid "Change language. Current:"
+msgstr "Taal wijzigen. Huidig:"

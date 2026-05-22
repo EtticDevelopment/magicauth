@@ -59,7 +59,7 @@ switch ( $state ) {
 		break;
 	case 'c':
 		$heading_default = '' !== $brand
-			? sprintf( /* translators: %s site brand */ __( 'Sign in to %s', 'magicauth' ), $brand )
+			? sprintf( /* translators: %s: company name */ __( 'Sign in to %s', 'magicauth' ), $brand )
 			: __( 'Sign in', 'magicauth' );
 		break;
 	case 'd':
@@ -71,7 +71,7 @@ switch ( $state ) {
 	case 'a':
 	default:
 		$heading_default = '' !== $brand
-			? sprintf( /* translators: %s site brand */ __( 'Sign in to %s', 'magicauth' ), $brand )
+			? sprintf( /* translators: %s: company name */ __( 'Sign in to %s', 'magicauth' ), $brand )
 			: __( 'Sign in', 'magicauth' );
 		break;
 }

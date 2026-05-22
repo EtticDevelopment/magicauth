@@ -107,7 +107,7 @@ final class Mailer {
 
 		$from = (array) apply_filters(
 			'magicauth_email_from',
-			[ magicauth_get_company_name(), get_option( 'admin_email' ) ],
+			[ magicauth_get_company_name(), magicauth_get_from_email() ],
 			$user
 		);
 
@@ -162,7 +162,7 @@ final class Mailer {
 		$subject = (string) apply_filters(
 			'magicauth_disabled_notice_subject',
 			sprintf(
-				/* translators: %s company name */
+				/* translators: %s: company name */
 				__( 'About your sign-in request for %s', 'magicauth' ),
 				$args['company_name']
 			),
@@ -172,7 +172,7 @@ final class Mailer {
 
 		$from = (array) apply_filters(
 			'magicauth_email_from',
-			[ magicauth_get_company_name(), get_option( 'admin_email' ) ],
+			[ magicauth_get_company_name(), magicauth_get_from_email() ],
 			$user
 		);
 

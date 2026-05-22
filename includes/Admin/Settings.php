@@ -114,10 +114,11 @@ final class Settings {
 		wp_enqueue_script(
 			'magicauth-admin',
 			MAGICAUTH_URL . 'assets/js/magicauth-admin.js',
-			[],
+			[ 'wp-i18n' ],
 			MAGICAUTH_VERSION,
 			true
 		);
+		wp_set_script_translations( 'magicauth-admin', 'magicauth', MAGICAUTH_DIR . 'languages' );
 	}
 
 	public static function render_page(): void {
@@ -198,6 +199,7 @@ final class Settings {
 				<?php self::field_replace_default( $weak_salts ); ?>
 				<?php self::field_hide_language_switcher(); ?>
 				<?php self::field_company_name(); ?>
+				<?php self::field_from_email_local(); ?>
 				<?php self::field_logo(); ?>
 				<?php self::field_brand_color(); ?>
 			</div>
@@ -344,6 +346,15 @@ final class Settings {
 
 		if ( isset( $input['company_name'] ) ) {
 			$out['company_name'] = self::sanitize_company_name( (string) $input['company_name'] );
+		}
+
+		if ( isset( $input['from_email_local'] ) ) {
+			$local = magicauth_sanitize_email_local( (string) $input['from_email_local'] );
+			if ( '' === $local ) {
+				$local = 'login';
+				add_settings_error( self::OPTION_NAME, 'magicauth_from_email_local', __( 'Sender address: that value had no usable characters, so it was reset to "login".', 'magicauth' ), 'warning' );
+			}
+			$out['from_email_local'] = $local;
 		}
 
 		if ( isset( $input['logo_attachment_id'] ) ) {
@@ -589,6 +600,25 @@ final class Settings {
 			</div>
 			<div class="magicauth-row__control magicauth-row__control--stack">
 				<input type="text" class="magicauth-input magicauth-input--md" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="60" data-counter>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_from_email_local(): void {
+		$value  = magicauth_sanitize_email_local( (string) magicauth_get_setting( 'from_email_local', 'login' ) );
+		$value  = '' !== $value ? $value : 'login';
+		$domain = magicauth_site_email_domain();
+		$name   = sprintf( '%s[from_email_local]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Sender email address', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'The address sign-in emails are sent from. Only the part before the @ is editable — it stays on your own domain so messages pass spam checks (SPF/DKIM/DMARC) instead of being flagged as forged. Letters, digits, and . _ - + only.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="text" class="magicauth-input magicauth-input--md" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>" maxlength="64" placeholder="login" inputmode="email" autocapitalize="off" autocomplete="off" spellcheck="false">
+				<span style="font-size:13px;color:var(--tx-muted);">@<?php echo esc_html( $domain ); ?></span>
 			</div>
 		</div>
 		<?php

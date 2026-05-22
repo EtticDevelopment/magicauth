@@ -3,6 +3,12 @@
 (function () {
 	'use strict';
 
+	// Translation helpers. wp-i18n is a script dependency; the fallbacks keep the
+	// UI working (in English) on the off chance it failed to load.
+	var i18n = ( window.wp && wp.i18n ) || {};
+	var __ = i18n.__ || function ( s ) { return s; };
+	var _n = i18n._n || function ( single, plural, n ) { return 1 === n ? single : plural; };
+
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', init );
 	} else {
@@ -45,8 +51,8 @@
 			ev.preventDefault();
 			if ( ! frame ) {
 				frame = wp.media( {
-					title: pickBtn.textContent || 'Choose image',
-					button: { text: 'Use this image' },
+					title: pickBtn.textContent || __( 'Choose image', 'magicauth' ),
+					button: { text: __( 'Use this image', 'magicauth' ) },
 					library: { type: [ 'image/png', 'image/jpeg', 'image/webp', 'image/svg+xml' ] },
 					multiple: false
 				} );
@@ -255,7 +261,7 @@
 				numEl.textContent = count;
 			}
 			if ( labelEl ) {
-				labelEl.textContent = count === 1 ? ' unsaved change' : ' unsaved changes';
+				labelEl.textContent = _n( ' unsaved change', ' unsaved changes', count, 'magicauth' );
 			}
 			if ( saveBtn ) {
 				saveBtn.removeAttribute( 'disabled' );
@@ -307,7 +313,7 @@
 					if ( ! msgEl ) {
 						msgEl = document.createElement( 'div' );
 						msgEl.className = 'magicauth-field-msg magicauth-field-msg--error';
-						msgEl.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="5"/><line x1="6" y1="3.5" x2="6" y2="6.5"/><circle cx="6" cy="8.5" r="0.6" fill="currentColor"/></svg><span>Use a 6-character hex like <code>#0F5CFA</code></span>';
+						msgEl.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="5"/><line x1="6" y1="3.5" x2="6" y2="6.5"/><circle cx="6" cy="8.5" r="0.6" fill="currentColor"/></svg><span>' + __( 'Use a 6-character hex like', 'magicauth' ) + ' <code>#0F5CFA</code></span>';
 						colorEl.parentNode.appendChild( msgEl );
 					}
 				} else {
@@ -332,8 +338,8 @@
 
 		form.addEventListener( 'submit', function () {
 			// Loading state before browser navigates.
-			setLoading( saveBtn, true, 'Saving…' );
-			setLoading( discardBtn, true, 'Saving…' );
+			setLoading( saveBtn, true, __( 'Saving…', 'magicauth' ) );
+			setLoading( discardBtn, true, __( 'Saving…', 'magicauth' ) );
 		} );
 
 		if ( discardBtn ) {
@@ -403,7 +409,7 @@
 		toast.innerHTML =
 			'<span class="magicauth-toast__icon">' + toastIcon( type ) + '</span>' +
 			'<span class="magicauth-toast__msg"></span>' +
-			'<button class="magicauth-toast__close" aria-label="Dismiss" type="button">&times;</button>';
+			'<button class="magicauth-toast__close" aria-label="' + __( 'Dismiss', 'magicauth' ) + '" type="button">&times;</button>';
 		toast.querySelector( '.magicauth-toast__msg' ).textContent = message;
 		stack.appendChild( toast );
 
@@ -425,7 +431,7 @@
 		var changed = false;
 
 		if ( params.get( 'settings-updated' ) === 'true' ) {
-			showToast( { type: 'success', message: 'Settings saved.', duration: 7000 } );
+			showToast( { type: 'success', message: __( 'Settings saved.', 'magicauth' ), duration: 7000 } );
 			params.delete( 'settings-updated' );
 			changed = true;
 		}
@@ -434,7 +440,7 @@
 		if ( test === 'sent' ) {
 			showToast( {
 				type: 'success',
-				message: 'Test email sent. Check your inbox (and spam folder).',
+				message: __( 'Test email sent. Check your inbox (and spam folder).', 'magicauth' ),
 				duration: 9000
 			} );
 			params.delete( 'magicauth-test' );
@@ -442,7 +448,7 @@
 		} else if ( test === 'fail' ) {
 			showToast( {
 				type: 'error',
-				message: "wp_mail returned false. Check your server's mail configuration.",
+				message: __( "wp_mail returned false. Check your server's mail configuration.", 'magicauth' ),
 				duration: 12000
 			} );
 			params.delete( 'magicauth-test' );
@@ -466,7 +472,7 @@
 			}
 		} catch ( err ) { return; }
 		if ( flag === '1' ) {
-			showToast( { type: 'info', message: 'Changes discarded.', duration: 6000 } );
+			showToast( { type: 'info', message: __( 'Changes discarded.', 'magicauth' ), duration: 6000 } );
 		}
 	}
 
@@ -504,8 +510,8 @@
 		var title       = opts.title;
 		var lede        = opts.lede || '';
 		var body        = opts.body || '';
-		var confirmText = opts.confirmText || 'Confirm';
-		var cancelText  = opts.cancelText || 'Cancel';
+		var confirmText = opts.confirmText || __( 'Confirm', 'magicauth' );
+		var cancelText  = opts.cancelText || __( 'Cancel', 'magicauth' );
 		var danger      = ! ! opts.danger;
 		var onConfirm   = opts.onConfirm;
 
@@ -566,7 +572,7 @@
 			if ( confirmBtn.classList.contains( 'magicauth-btn--loading' ) ) {
 				return;
 			}
-			setLoading( confirmBtn, true, 'Working…' );
+			setLoading( confirmBtn, true, __( 'Working…', 'magicauth' ) );
 			cancelBtn.setAttribute( 'disabled', '' );
 			Promise.resolve( onConfirm && onConfirm() ).then( function ( keepOpen ) {
 				setLoading( confirmBtn, false );
@@ -643,15 +649,15 @@
 			var isRevoke = action === 'revoke_all_tokens';
 
 			showConfirm( {
-				title:       isRevoke ? 'Revoke all magic-links and codes?' : 'Reset throttle counters?',
+				title:       isRevoke ? __( 'Revoke all magic-links and codes?', 'magicauth' ) : __( 'Reset throttle counters?', 'magicauth' ),
 				lede:        isRevoke
-					? 'This invalidates every outstanding sign-in link and code site-wide.'
-					: 'This clears every per-IP, per-email, and per-row rate-limit counter.',
+					? __( 'This invalidates every outstanding sign-in link and code site-wide.', 'magicauth' )
+					: __( 'This clears every per-IP, per-email, and per-row rate-limit counter.', 'magicauth' ),
 				body:        isRevoke
-					? '<p>Anyone with an unconsumed link in their inbox will need to request a new one.</p><p>Active sessions are <strong>not</strong> signed out. This cannot be undone.</p>'
-					: '<p>Use this when a probe has pinned the throttle and locked out legitimate users.</p>',
-				confirmText: isRevoke ? 'Revoke all' : 'Reset counters',
-				cancelText:  'Cancel',
+					? __( '<p>Anyone with an unconsumed link in their inbox will need to request a new one.</p><p>Active sessions are <strong>not</strong> signed out. This cannot be undone.</p>', 'magicauth' )
+					: __( '<p>Use this when a probe has pinned the throttle and locked out legitimate users.</p>', 'magicauth' ),
+				confirmText: isRevoke ? __( 'Revoke all', 'magicauth' ) : __( 'Reset counters', 'magicauth' ),
+				cancelText:  __( 'Cancel', 'magicauth' ),
 				danger:      isRevoke,
 				onConfirm:   function () {
 					return fetch( ajaxurl, {
@@ -668,17 +674,17 @@
 							if ( ! payload || ! payload.success ) {
 								showToast( {
 									type: 'error',
-									message: ( payload && payload.data && payload.data.message ) || 'Request failed.'
+									message: ( payload && payload.data && payload.data.message ) || __( 'Request failed.', 'magicauth' )
 								} );
 								return;
 							}
 							showToast( {
 								type: 'success',
-								message: ( payload.data && payload.data.message ) || 'Done.'
+								message: ( payload.data && payload.data.message ) || __( 'Done.', 'magicauth' )
 							} );
 						} )
 						.catch( function () {
-							showToast( { type: 'error', message: 'Network error. Please try again.' } );
+							showToast( { type: 'error', message: __( 'Network error. Please try again.', 'magicauth' ) } );
 						} );
 				}
 			} );
@@ -720,7 +726,7 @@
 					if ( ! payload || ! payload.success ) {
 						showToast( {
 							type: 'error',
-							message: ( payload && payload.data && payload.data.message ) || 'Request failed.'
+							message: ( payload && payload.data && payload.data.message ) || __( 'Request failed.', 'magicauth' )
 						} );
 						return;
 					}
@@ -736,7 +742,7 @@
 					}
 				} )
 				.catch( function () {
-					showToast( { type: 'error', message: 'Network error.' } );
+					showToast( { type: 'error', message: __( 'Network error.', 'magicauth' ) } );
 				} );
 		} );
 	}

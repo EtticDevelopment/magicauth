@@ -37,6 +37,7 @@ if ( ! function_exists( 'magicauth_get_settings' ) ) {
 			'redirect_to_default'    => 'auto',
 			'allow_password_login'   => true,
 			'hide_language_switcher' => false,
+			'from_email_local'       => 'login',
 			'db_version'             => MAGICAUTH_DB_VERSION,
 		];
 
@@ -70,6 +71,55 @@ if ( ! function_exists( 'magicauth_get_company_name' ) ) {
 			return $saved;
 		}
 		return function_exists( 'get_bloginfo' ) ? (string) get_bloginfo( 'name' ) : '';
+	}
+}
+
+if ( ! function_exists( 'magicauth_site_email_domain' ) ) {
+	/**
+	 * The site's own domain, for use as the sender's email domain. Derived from
+	 * the site URL (not REMOTE host / SERVER_NAME, which are request-spoofable),
+	 * lowercased, with a leading "www." stripped. Keeping the From address on the
+	 * site's own domain is what lets it pass SPF/DKIM/DMARC.
+	 */
+	function magicauth_site_email_domain(): string {
+		$host = '';
+		if ( function_exists( 'home_url' ) && function_exists( 'wp_parse_url' ) ) {
+			$host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+		}
+		$host = strtolower( trim( $host ) );
+		if ( 0 === strpos( $host, 'www.' ) ) {
+			$host = substr( $host, 4 );
+		}
+		return '' !== $host ? $host : 'localhost';
+	}
+}
+
+if ( ! function_exists( 'magicauth_sanitize_email_local' ) ) {
+	/**
+	 * Sanitize the local part (before the @) of the sender address. Allows the
+	 * common, header-safe subset (letters, digits, . _ - +); strips everything
+	 * else, collapses leading/trailing dots, caps at the RFC 64-char limit.
+	 * Returns '' when nothing usable survives, so callers can fall back.
+	 */
+	function magicauth_sanitize_email_local( string $value ): string {
+		$value = strtolower( trim( $value ) );
+		$value = preg_replace( '/[^a-z0-9._+\-]/', '', $value );
+		$value = trim( (string) $value, '.' );
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $value, 0, 64 );
+		}
+		return substr( $value, 0, 64 );
+	}
+}
+
+if ( ! function_exists( 'magicauth_get_from_email' ) ) {
+	/** Sender address: configurable local part @ the site's own domain. */
+	function magicauth_get_from_email(): string {
+		$local = magicauth_sanitize_email_local( (string) magicauth_get_setting( 'from_email_local', 'login' ) );
+		if ( '' === $local ) {
+			$local = 'login';
+		}
+		return $local . '@' . magicauth_site_email_domain();
 	}
 }
 

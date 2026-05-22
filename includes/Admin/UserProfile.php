@@ -113,7 +113,8 @@ final class UserProfile {
 			return;
 		}
 		wp_enqueue_style( 'magicauth-admin', MAGICAUTH_URL . 'assets/css/magicauth-admin.css', [], MAGICAUTH_VERSION );
-		wp_enqueue_script( 'magicauth-admin', MAGICAUTH_URL . 'assets/js/magicauth-admin.js', [ 'jquery' ], MAGICAUTH_VERSION, true );
+		wp_enqueue_script( 'magicauth-admin', MAGICAUTH_URL . 'assets/js/magicauth-admin.js', [ 'jquery', 'wp-i18n' ], MAGICAUTH_VERSION, true );
+		wp_set_script_translations( 'magicauth-admin', 'magicauth', MAGICAUTH_DIR . 'languages' );
 	}
 
 	// -------- AJAX endpoints --------

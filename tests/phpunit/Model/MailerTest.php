@@ -131,6 +131,31 @@ final class MailerTest extends TestCase {
 		$this->assertStringStartsWith( 'Custom:', (string) $magicauth_test_state['mail'][0]['subject'] );
 	}
 
+	public function test_from_address_uses_site_domain_not_admin_email(): void {
+		// Default local part "login" @ the site domain (home_url host = example.test).
+		Mailer::send_magic_link( self::USER_ID, 'https://example.test/v', 'ABCDEF', '2026-05-02 12:00:00' );
+
+		global $magicauth_test_state;
+		$headers = (array) $magicauth_test_state['mail'][0]['headers'];
+		$from    = implode( "\n", array_filter( $headers, static fn( $h ) => 0 === stripos( (string) $h, 'From:' ) ) );
+
+		$this->assertStringContainsString( 'login@example.test', $from, 'From address is local-part@site-domain' );
+		$this->assertStringNotContainsString( 'admin@', $from, 'From address no longer derives from admin_email' );
+	}
+
+	public function test_from_local_part_setting_is_honored_and_sanitized(): void {
+		global $magicauth_test_state;
+		// Mixed case + an illegal char ("!") that must be stripped.
+		$magicauth_test_state['options']['magicauth_settings'] = [ 'from_email_local' => 'No-Reply!' ];
+
+		Mailer::send_magic_link( self::USER_ID, 'https://example.test/v', 'ABCDEF', '2026-05-02 12:00:00' );
+
+		$headers = (array) $magicauth_test_state['mail'][0]['headers'];
+		$from    = implode( "\n", array_filter( $headers, static fn( $h ) => 0 === stripos( (string) $h, 'From:' ) ) );
+
+		$this->assertStringContainsString( 'no-reply@example.test', $from );
+	}
+
 	public function test_email_send_filter_short_circuits_wp_mail(): void {
 		add_filter(
 			'magicauth_email_send',

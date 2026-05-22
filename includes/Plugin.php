@@ -36,6 +36,12 @@ final class Plugin {
 		}
 		$this->booted = true;
 
+		// Bundled translations. Hooked on init — WP 6.7+ emits a _doing_it_wrong
+		// notice when a text domain loads before init, and just-in-time loading
+		// needs the path registered for .mo files shipped in the plugin's own
+		// /languages folder.
+		add_action( 'init', [ $this, 'load_textdomain' ] );
+
 		// Privacy hooks live here so they wire even when admin/frontend modules don't load.
 		add_filter( 'wp_privacy_personal_data_exporters', [ $this, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ $this, 'register_eraser' ] );
@@ -64,6 +70,17 @@ final class Plugin {
 		}
 
 		do_action( 'magicauth_booted' );
+	}
+
+	/**
+	 * Load the plugin's bundled translations from /languages.
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain(
+			'magicauth',
+			false,
+			dirname( plugin_basename( MAGICAUTH_FILE ) ) . '/languages'
+		);
 	}
 
 	/**

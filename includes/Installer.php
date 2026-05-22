@@ -151,6 +151,7 @@ final class Installer {
 			'redirect_to_default'    => 'auto',
 			'allow_password_login'   => true,
 			'hide_language_switcher' => false,
+			'from_email_local'       => 'login',
 			'db_version'             => MAGICAUTH_DB_VERSION,
 		];
 	}

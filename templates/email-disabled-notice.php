@@ -37,7 +37,7 @@ echo esc_html( sprintf( __( 'About your sign-in request for %s', 'magicauth' ), 
 						<?php
 						echo esc_html(
 							sprintf(
-								/* translators: %s company name */
+								/* translators: %s: company name */
 								__( 'About your sign-in request for %s', 'magicauth' ),
 								$company_name
 							)
@@ -50,7 +50,7 @@ echo esc_html( sprintf( __( 'About your sign-in request for %s', 'magicauth' ), 
 						<?php
 						echo esc_html(
 							sprintf(
-								/* translators: %s company name */
+								/* translators: %s: company name */
 								__( 'A sign-in code was just requested for your account at %s.', 'magicauth' ),
 								$company_name
 							)
