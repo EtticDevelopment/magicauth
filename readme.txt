@@ -60,6 +60,10 @@ Three layers, in order of effort:
 2. Append `?magicauth=off` to your `wp-login.php` URL.
 3. Add `define('MAGICAUTH_DISABLE', true);` to `wp-config.php` (file-system access required).
 
+= MagicAuth says my WordPress salts (security keys) are weak. What do I do? =
+
+Generate fresh keys at https://api.wordpress.org/secret-key/1.1/salt/, paste the eight `define()` lines into `wp-config.php` (replacing the existing ones), save, and reload the MagicAuth settings page. The notice clears itself. It is advisory and does not block the branded login screen. Full guide: https://docs.ettic.nl/docs/magicauth/weak-salts
+
 = Does MagicAuth replace passwords? =
 
 By default, no. Passwords still work. Enable "Replace default sign-in" in Settings to make MagicAuth the primary sign-in surface; the password link remains visible for recovery.
@@ -71,3 +75,8 @@ Yes. Templates can be overridden by copying them into `your-theme/magicauth/`. F
 == Privacy ==
 
 MagicAuth registers a WordPress privacy exporter and eraser. Personal data stored is limited to: `user_id`, an HMAC of the user's email and IP, and timestamps for each sign-in attempt. Verifiers are not exportable; only metadata about issued/consumed tokens.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release.

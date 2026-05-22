@@ -1,9 +1,10 @@
 <?php
 /**
- * Salt-fix wizard: pure salt generation, detection, and config rewriting.
+ * Salt-fix helper: pure salt generation and detection.
  *
- * Covers the file-I/O-free core of the "Fix WordPress salts" feature. The
- * WP_Filesystem write path is exercised manually, not unit-tested here.
+ * Covers the file-I/O-free core of the "Fix WordPress salts" feature: local
+ * salt generation, the ready-to-paste block, and weak-salt detection. MagicAuth
+ * no longer writes wp-config.php, so there is no write path to exercise.
  *
  * @package MagicAuth\Tests
  */
@@ -27,15 +28,6 @@ final class SaltFixTest extends TestCase {
 		'LOGGED_IN_SALT',
 		'NONCE_SALT',
 	];
-
-	/** A full set of strong salt values keyed by constant name (no network). */
-	private function strong_values(): array {
-		$values = [];
-		foreach ( self::CONSTANTS as $name ) {
-			$values[ $name ] = Installer::generate_salt_value();
-		}
-		return $values;
-	}
 
 	/** A wp-config slice carrying all eight placeholder defines plus unrelated lines. */
 	private function placeholder_config(): string {
@@ -67,6 +59,11 @@ final class SaltFixTest extends TestCase {
 		$this->assertFalse( Installer::config_has_weak_salts( $block ), 'A freshly generated block is not weak.' );
 	}
 
+	public function test_generated_block_is_locally_random(): void {
+		// Local generation only: two blocks must differ (no fixed or remote source).
+		$this->assertNotSame( Installer::generate_salt_block(), Installer::generate_salt_block() );
+	}
+
 	public function test_placeholder_config_reads_as_weak(): void {
 		$this->assertTrue( Installer::config_has_weak_salts( $this->placeholder_config() ) );
 	}
@@ -82,54 +79,32 @@ final class SaltFixTest extends TestCase {
 		$this->assertTrue( Installer::config_has_weak_salts( $config ) );
 	}
 
-	public function test_rewrite_replaces_placeholders_with_strong_salts(): void {
-		$original = $this->placeholder_config();
-		$updated  = Installer::rewrite_salt_defines( $original, $this->strong_values() );
-
-		$this->assertIsString( $updated );
-		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
-		$this->assertStringNotContainsString( 'put your unique phrase here', $updated );
-		// Unrelated lines survive untouched.
-		$this->assertStringContainsString( "define( 'DB_NAME', 'wordpress' );", $updated );
-		$this->assertStringContainsString( "\$table_prefix = 'wp_';", $updated );
-		// Still eight defines for the salt constants.
+	public function test_strong_config_reads_as_clean(): void {
+		$lines = [ '<?php' ];
 		foreach ( self::CONSTANTS as $name ) {
-			$this->assertStringContainsString( "define( '" . $name . "',", $updated );
+			$lines[] = "define( '" . $name . "', '" . Installer::generate_salt_value() . "' );";
 		}
+		$this->assertFalse( Installer::config_has_weak_salts( implode( "\n", $lines ) ) );
 	}
 
-	public function test_rewrite_returns_null_when_a_define_is_missing(): void {
-		$config = "<?php\ndefine( 'AUTH_KEY', 'put your unique phrase here' );";
-		$this->assertNull( Installer::rewrite_salt_defines( $config, $this->strong_values() ) );
-	}
-
-	public function test_rewrite_and_detection_ignore_commented_define_lines(): void {
-		// A commented example sits above the real (placeholder) define. The first
-		// match must be the active define, not the comment.
+	public function test_detection_ignores_commented_define_lines(): void {
+		// A commented, strong-looking define sits above the active placeholder
+		// defines. Detection must read the active defines (weak), not the comment.
 		$lines = [ '<?php', "// define( 'AUTH_KEY', 'commented-old-value' );" ];
 		foreach ( self::CONSTANTS as $name ) {
 			$lines[] = "define( '" . $name . "', 'put your unique phrase here' );";
 		}
-		$config = implode( "\n", $lines );
-
-		// Detection sees the active defines as weak, not the strong-looking comment.
-		$this->assertTrue( Installer::config_has_weak_salts( $config ) );
-
-		$updated = Installer::rewrite_salt_defines( $config, $this->strong_values() );
-		$this->assertIsString( $updated );
-		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
-		// The commented line is left verbatim; the active define is what changed.
-		$this->assertStringContainsString( "// define( 'AUTH_KEY', 'commented-old-value' );", $updated );
-		$this->assertStringNotContainsString( 'put your unique phrase here', $updated );
+		$this->assertTrue( Installer::config_has_weak_salts( implode( "\n", $lines ) ) );
 	}
 
-	public function test_rewrite_handles_double_quotes_and_tight_spacing(): void {
-		$lines = [ '<?php' ];
+	public function test_detection_handles_double_quoted_defines(): void {
+		$weak   = [ '<?php' ];
+		$strong = [ '<?php' ];
 		foreach ( self::CONSTANTS as $name ) {
-			$lines[] = 'define("' . $name . '","put your unique phrase here");';
+			$weak[]   = 'define("' . $name . '","put your unique phrase here");';
+			$strong[] = 'define("' . $name . '","' . Installer::generate_salt_value() . '");';
 		}
-		$updated = Installer::rewrite_salt_defines( implode( "\n", $lines ), $this->strong_values() );
-		$this->assertIsString( $updated );
-		$this->assertFalse( Installer::config_has_weak_salts( $updated ) );
+		$this->assertTrue( Installer::config_has_weak_salts( implode( "\n", $weak ) ) );
+		$this->assertFalse( Installer::config_has_weak_salts( implode( "\n", $strong ) ) );
 	}
 }

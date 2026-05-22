@@ -45,6 +45,10 @@ final class Plugin {
 		add_action( 'admin_notices', [ Installer::class, 'render_salt_notice' ] );
 		add_action( 'admin_notices', [ Installer::class, 'render_fpm_notice' ] );
 
+		// Re-evaluate salt strength on each admin load so the notice tracks reality
+		// (e.g. salts provided by the environment, or fixed by hand outside the wizard).
+		add_action( 'admin_init', [ Installer::class, 'check_salts' ] );
+
 		Auth\Controller::setup();
 		Frontend\Shortcode::setup();
 		Frontend\LoginScreen::setup();
