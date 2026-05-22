@@ -43,7 +43,6 @@ final class Settings {
 		add_action( 'admin_post_magicauth_send_test_email', [ self::class, 'handle_test_send' ] );
 		add_action( 'wp_ajax_magicauth_admin_revoke_all_tokens', [ self::class, 'ajax_revoke_all_tokens' ] );
 		add_action( 'wp_ajax_magicauth_admin_reset_throttle', [ self::class, 'ajax_reset_throttle' ] );
-		add_action( 'wp_ajax_magicauth_admin_fix_salts', [ self::class, 'ajax_fix_salts' ] );
 		add_action( 'current_screen', [ self::class, 'suppress_foreign_notices' ] );
 		add_filter( 'plugin_action_links_' . plugin_basename( MAGICAUTH_FILE ), [ self::class, 'plugin_action_links' ] );
 	}
@@ -250,20 +249,7 @@ final class Settings {
 			</header>
 			<div class="magicauth-card magicauth-recovery"
 				data-ajaxurl="<?php echo esc_url( $ajaxurl ); ?>"
-				data-nonce="<?php echo esc_attr( $recovery_nonce ); ?>"
-					data-docs="<?php echo esc_url( Installer::DOCS_SALTS_URL ); ?>">
-
-				<?php if ( Installer::has_weak_salts() ) : ?>
-				<div class="magicauth-action-row magicauth-action-row--alert">
-					<div class="magicauth-action-row__main">
-						<h3><?php esc_html_e( 'Fix WordPress salts', 'magicauth' ); ?></h3>
-						<p><?php esc_html_e( 'Your security keys hold placeholder or empty values. Generate fresh ones and paste them into wp-config.php yourself. This does not turn on the branded login screen — you stay in control of that.', 'magicauth' ); ?></p>
-					</div>
-					<button type="button" class="magicauth-btn magicauth-btn--primary magicauth-btn--sm" data-magicauth-salt-fix>
-						<?php esc_html_e( 'Fix salts…', 'magicauth' ); ?>
-					</button>
-				</div>
-				<?php endif; ?>
+				data-nonce="<?php echo esc_attr( $recovery_nonce ); ?>">
 
 				<div class="magicauth-action-row">
 					<div class="magicauth-action-row__main">
@@ -820,42 +806,6 @@ final class Settings {
 					_n( '%d throttle counter cleared.', '%d throttle counters cleared.', $count, 'magicauth' ),
 					$count
 				),
-			]
-		);
-	}
-
-	/**
-	 * AJAX: salt-fix helper ("Fix WordPress salts"). Two modes:
-	 *  - preview: return a ready-to-paste block of freshly generated salts.
-	 *  - recheck: re-evaluate the salts and clear the notice once they are strong
-	 *    (used after the admin pastes the salts into wp-config.php).
-	 * MagicAuth never writes wp-config.php itself, and never auto-enables the
-	 * branded login replacement.
-	 */
-	public static function ajax_fix_salts(): void {
-		check_ajax_referer( 'magicauth-admin-recovery' );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'You are not allowed to do this.', 'magicauth' ) ], 403 );
-		}
-
-		$mode = 'preview';
-		if ( isset( $_POST['mode'] ) && is_string( $_POST['mode'] ) ) {
-			$mode = sanitize_key( wp_unslash( $_POST['mode'] ) );
-		}
-
-		if ( 'recheck' === $mode ) {
-			$result = Installer::recheck_salts_from_file();
-			if ( ! $result['ok'] ) {
-				wp_send_json_error( [ 'message' => $result['message'] ] );
-			}
-			wp_send_json_success( [ 'message' => $result['message'] ] );
-		}
-
-		// Default: preview. MagicAuth never edits wp-config.php; it generates a
-		// fresh block of salts for the admin to paste in themselves.
-		wp_send_json_success(
-			[
-				'block' => Installer::generate_salt_block(),
 			]
 		);
 	}

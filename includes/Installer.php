@@ -13,6 +13,17 @@ final class Installer {
 
 	private const SALT_NOTICE_KEY = 'magicauth_salt_notice';
 
+	/**
+	 * Site option set when an admin dismisses the weak-salt notice. Site-wide
+	 * (a single option, not per-user meta), so one admin dismissing hides the
+	 * notice for every admin. check_salts() clears it if salts ever return to
+	 * strong, so the notice re-arms on a future regression.
+	 */
+	private const SALT_NOTICE_DISMISSED_OPTION = 'magicauth_salt_notice_dismissed';
+
+	/** Nonce action backing the AJAX dismissal of the weak-salt notice. */
+	private const SALT_NOTICE_DISMISS_NONCE = 'magicauth_dismiss_salt_notice';
+
 	/** The eight key/salt constants WordPress derives wp_salt() from. */
 	private const SALT_CONSTANTS = [
 		'AUTH_KEY',
@@ -169,8 +180,10 @@ final class Installer {
 	/**
 	 * Keep the weak-salt admin-notice transient in sync with runtime reality.
 	 * Runs on activation and on every admin_init, so a site whose salts are
-	 * provided by the environment, or fixed outside the wizard, clears the notice
-	 * on its own without a false "still weak" nag. Writes only on a state change.
+	 * provided by the environment, or fixed by hand, clears the notice on its
+	 * own without a false "still weak" nag. Writes only on a state change. When
+	 * salts test strong again it also drops the site-wide dismissal so a later
+	 * regression re-arms the notice.
 	 */
 	public static function check_salts(): void {
 		$weak    = self::runtime_salts_weak();
@@ -179,6 +192,12 @@ final class Installer {
 			set_transient( self::SALT_NOTICE_KEY, 1, WEEK_IN_SECONDS );
 		} elseif ( ! $weak && $flagged ) {
 			delete_transient( self::SALT_NOTICE_KEY );
+		}
+
+		// Re-arm the dismissible notice if salts return to strong. Guarded so we
+		// only write on an actual state change.
+		if ( ! $weak && false !== get_option( self::SALT_NOTICE_DISMISSED_OPTION, false ) ) {
+			delete_option( self::SALT_NOTICE_DISMISSED_OPTION );
 		}
 	}
 
@@ -215,187 +234,74 @@ final class Installer {
 		<?php
 	}
 
-	/** Admin notice for weak salts. */
+	/**
+	 * Admin notice for weak salts. Shown to manage_options users on every admin
+	 * screen until the salts are fixed or an admin dismisses it. MagicAuth does
+	 * not generate salts or edit wp-config.php; the notice points to the docs,
+	 * where the fix is "generate at api.wordpress.org, paste into wp-config.php,
+	 * reload". Dismissal is site-wide (one option) and persisted via the AJAX
+	 * handler below; check_salts() re-arms it if salts ever regress. The notice
+	 * carries a small self-contained dismiss script because it renders on admin
+	 * screens where magicauth-admin.js is not enqueued.
+	 */
 	public static function render_salt_notice(): void {
 		if ( ! self::has_weak_salts() ) {
+			return;
+		}
+		if ( get_option( self::SALT_NOTICE_DISMISSED_OPTION ) ) {
 			return;
 		}
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$fix_url = add_query_arg(
-			[
-				'page'                => 'magicauth',
-				'magicauth-fix-salts' => '1',
-			],
-			admin_url( 'options-general.php' )
-		);
+		$nonce = wp_create_nonce( self::SALT_NOTICE_DISMISS_NONCE );
 		?>
-		<div class="notice notice-warning">
+		<div class="notice notice-warning is-dismissible magicauth-salt-notice"
+			data-magicauth-salt-notice
+			data-nonce="<?php echo esc_attr( $nonce ); ?>"
+			data-ajaxurl="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
 			<p>
 				<strong><?php esc_html_e( 'MagicAuth: weak WordPress salts detected.', 'magicauth' ); ?></strong>
 				<?php esc_html_e( 'Your security keys still hold placeholder or empty values, so token and session secrets are not unique to this site. Your magic links stay safe (each carries its own random secret), but fixing this is recommended — especially before turning on the branded login replacement.', 'magicauth' ); ?>
 			</p>
 			<p>
-				<a href="<?php echo esc_url( $fix_url ); ?>" class="button button-primary"><?php esc_html_e( 'Fix it for me', 'magicauth' ); ?></a>
-				<?php
-				echo ' ';
-				echo wp_kses(
-					sprintf(
-						/* translators: 1: documentation guide URL, 2: salt generator URL */
-						__( 'Read the <a href="%1$s" target="_blank" rel="noopener">step-by-step guide</a>, or generate fresh salts at <a href="%2$s" target="_blank" rel="noopener">api.wordpress.org/secret-key</a> and paste them into <code>wp-config.php</code>.', 'magicauth' ),
-						esc_url( self::DOCS_SALTS_URL ),
-						'https://api.wordpress.org/secret-key/1.1/salt/'
-					),
-					[
-						'a'    => [
-							'href'   => true,
-							'target' => true,
-							'rel'    => true,
-						],
-						'code' => [],
-					]
-				);
-				?>
+				<a href="<?php echo esc_url( self::DOCS_SALTS_URL ); ?>" class="button button-primary" target="_blank" rel="noopener"><?php esc_html_e( 'Learn how to fix this', 'magicauth' ); ?></a>
 			</p>
 		</div>
+		<script>
+		( function () {
+			document.addEventListener( 'click', function ( ev ) {
+				var dismiss = ev.target.closest ? ev.target.closest( '.notice-dismiss' ) : null;
+				if ( ! dismiss ) { return; }
+				var notice = dismiss.closest( '[data-magicauth-salt-notice]' );
+				if ( ! notice ) { return; }
+				fetch( notice.getAttribute( 'data-ajaxurl' ), {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams( {
+						action: 'magicauth_dismiss_salt_notice',
+						_ajax_nonce: notice.getAttribute( 'data-nonce' )
+					} )
+				} );
+			} );
+		} )();
+		</script>
 		<?php
 	}
 
-	/** One strong salt value: 48 random bytes, base64-encoded (64 chars, quote-safe). */
-	public static function generate_salt_value(): string {
-		return base64_encode( random_bytes( 48 ) );
-	}
-
 	/**
-	 * The eight fresh salt values for the copy-and-paste block. Generated locally
-	 * with random_bytes and never sent over the network, so the secrets the admin
-	 * is about to paste are never transmitted, observed, or tampered with in
-	 * transit. Local generation is strictly safer than fetching a remote endpoint
-	 * for a value we only ever display for the admin to paste themselves.
-	 *
-	 * @return array<string,string>
+	 * AJAX: persist a site-wide dismissal of the weak-salt notice. One admin
+	 * dismissing hides it for every admin (a single site option, not per-user
+	 * meta). check_salts() clears the option if salts ever return to strong, so
+	 * the notice re-arms on a future regression.
 	 */
-	private static function salt_values(): array {
-		$values = [];
-		foreach ( self::SALT_CONSTANTS as $name ) {
-			$values[ $name ] = self::generate_salt_value();
+	public static function ajax_dismiss_salt_notice(): void {
+		check_ajax_referer( self::SALT_NOTICE_DISMISS_NONCE );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => __( 'You are not allowed to do this.', 'magicauth' ) ], 403 );
 		}
-		return $values;
-	}
-
-	/**
-	 * Build a ready-to-paste block of all eight define() lines with fresh salts.
-	 * Used for the manual copy-and-paste path when wp-config.php is not writable.
-	 */
-	public static function generate_salt_block(): string {
-		$lines = [];
-		foreach ( self::salt_values() as $name => $value ) {
-			$lines[] = sprintf( "define( '%s', '%s' );", $name, $value );
-		}
-		return implode( "\n", $lines );
-	}
-
-	/**
-	 * Regex capturing a single define() with its quote style and value (group 3).
-	 * Anchored to a line start (multiline) so commented-out lines such as
-	 * `// define( 'AUTH_KEY', ... );` are skipped — PHP honours the first active
-	 * define, and matching a comment instead would corrupt detection/rewrite.
-	 */
-	private static function define_pattern( string $name ): string {
-		return '/^[ \t]*define\(\s*([\'"])' . preg_quote( $name, '/' ) . '\1\s*,\s*([\'"])(.*?)\2\s*\)\s*;/m';
-	}
-
-	/**
-	 * File-based weak-salt detection (operates on wp-config text, not runtime
-	 * constants). A salt is weak if missing, empty, or placeholder.
-	 */
-	public static function config_has_weak_salts( string $contents ): bool {
-		foreach ( self::SALT_CONSTANTS as $name ) {
-			if ( ! preg_match( self::define_pattern( $name ), $contents, $matches ) ) {
-				return true;
-			}
-			$value = $matches[3];
-			if ( '' === trim( $value ) ) {
-				return true;
-			}
-			foreach ( self::PLACEHOLDER_MARKERS as $marker ) {
-				if ( false !== stripos( $value, $marker ) ) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/** Resolve wp-config.php the same way wp-load.php does (ABSPATH or one level up). */
-	public static function locate_wp_config(): ?string {
-		$candidate = ABSPATH . 'wp-config.php';
-		if ( file_exists( $candidate ) ) {
-			return $candidate;
-		}
-		$parent = dirname( ABSPATH ) . '/wp-config.php';
-		if ( file_exists( $parent ) && ! file_exists( dirname( ABSPATH ) . '/wp-settings.php' ) ) {
-			return $parent;
-		}
-		return null;
-	}
-
-	/** WP_Filesystem in the credential-free 'direct' mode, or null if unavailable. */
-	private static function filesystem(): ?\WP_Filesystem_Base {
-		if ( ! function_exists( 'WP_Filesystem' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
-		if ( 'direct' !== get_filesystem_method() ) {
-			return null;
-		}
-		if ( ! WP_Filesystem() ) {
-			return null;
-		}
-		global $wp_filesystem;
-		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
-	}
-
-	/**
-	 * Verify salts after a manual edit and clear the notice if they are now strong.
-	 * The running AJAX request has already reloaded wp-config.php, so the runtime
-	 * constants are authoritative and cover environment- or include-provided salts
-	 * that never appear as a literal define(). The located wp-config.php text is a
-	 * secondary signal only.
-	 *
-	 * @return array{ok:bool,message:string}
-	 */
-	public static function recheck_salts_from_file(): array {
-		$ok_message = __( 'Salts look good now. You can enable the branded login replacement whenever you like.', 'magicauth' );
-
-		// Authoritative: runtime constants reflect the current file plus any
-		// environment/included salts. If they are strong, the salts are fixed.
-		if ( ! self::runtime_salts_weak() ) {
-			delete_transient( self::SALT_NOTICE_KEY );
-			return [
-				'ok'      => true,
-				'message' => $ok_message,
-			];
-		}
-
-		// Secondary: scan the located wp-config.php directly, in case this request
-		// did not pick up the edit.
-		$path = self::locate_wp_config();
-		if ( null !== $path ) {
-			$filesystem = self::filesystem();
-			$contents   = null !== $filesystem ? $filesystem->get_contents( $path ) : null;
-			if ( is_string( $contents ) && '' !== $contents && ! self::config_has_weak_salts( $contents ) ) {
-				delete_transient( self::SALT_NOTICE_KEY );
-				return [
-					'ok'      => true,
-					'message' => $ok_message,
-				];
-			}
-		}
-
-		return [
-			'ok'      => false,
-			'message' => __( 'Still detecting placeholder or empty salts. Make sure you replaced all eight lines and saved wp-config.php.', 'magicauth' ),
-		];
+		update_option( self::SALT_NOTICE_DISMISSED_OPTION, 1 );
+		wp_send_json_success();
 	}
 }

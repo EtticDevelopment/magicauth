@@ -841,14 +841,6 @@ body.admin-bar .magicauth-admin .magicauth-topbar__bar { top: 32px; }
 .magicauth-admin .magicauth-row + .magicauth-action-row,
 .magicauth-admin .magicauth-action-row + .magicauth-row { border-top: 1px solid var(--ettic-border); }
 
-.magicauth-admin .magicauth-action-row--alert {
-	background: #FEF2F2;
-	border-radius: 8px;
-	padding-left: 14px;
-	padding-right: 14px;
-	box-shadow: inset 3px 0 0 #DC2626;
-}
-
 .magicauth-admin .magicauth-action-row__main h3 {
 	margin: 0;
 	font-size: 13.5px;
@@ -1093,27 +1085,6 @@ body > .magicauth-modal-backdrop.is-leaving { animation: magicauth-backdrop-out 
 	border-radius: 4px;
 	font-size: 12px;
 	font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-}
-
-.magicauth-modal-backdrop .magicauth-modal-list {
-	margin: 10px 0 0;
-	padding-left: 18px;
-}
-.magicauth-modal-backdrop .magicauth-modal-list li { margin: 0 0 4px; }
-
-.magicauth-modal-backdrop .magicauth-salt-block {
-	width: 100%;
-	margin: 10px 0;
-	padding: 10px 12px;
-	border: 1px solid #E2E5E9;
-	border-radius: 6px;
-	background: #F5F7FA;
-	font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-	font-size: 11.5px;
-	line-height: 1.5;
-	color: #1F2733;
-	resize: vertical;
-	white-space: pre;
 }
 
 .magicauth-modal-backdrop .magicauth-modal__foot {
