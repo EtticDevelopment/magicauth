@@ -253,6 +253,7 @@ final class LoginScreen {
 			'password_url'      => esc_url( $password_url ),
 			'lostpassword_url'  => esc_url( $lostpassword_url ),
 			'magic_link_url'    => esc_url( $magic_link_url ),
+			'language_switcher' => self::language_switcher(),
 		];
 	}
 
@@ -276,24 +277,63 @@ final class LoginScreen {
 	}
 
 	/**
-	 * Emit core's login footer, optionally suppressing its language switcher.
+	 * Emit core's login footer, always suppressing its language switcher.
 	 *
-	 * The switcher (WP core, `login_footer()`) renders as a sibling of the card
-	 * on multilingual sites. CSS stacks it under the card by default; when the
-	 * admin enables `hide_language_switcher`, core's own
-	 * `login_display_language_dropdown` filter drops it before any markup is
-	 * emitted. Scoped here — the only chokepoint for branded screens — so the
-	 * native `?magicauth=off` recovery login keeps the switcher untouched.
+	 * Core's switcher (WP `login_footer()`) renders full-width and detached
+	 * below the card. We render our own compact one inside the card instead, so
+	 * we drop core's via its `login_display_language_dropdown` filter before any
+	 * markup is emitted. Scoped here — the only chokepoint for branded screens —
+	 * so the native `?magicauth=off` recovery login keeps core's switcher.
 	 */
 	private static function render_footer(): void {
-		$hide = (bool) magicauth_get_setting( 'hide_language_switcher', false );
-		if ( $hide ) {
-			add_filter( 'login_display_language_dropdown', '__return_false' );
-		}
+		add_filter( 'login_display_language_dropdown', '__return_false' );
 		login_footer();
-		if ( $hide ) {
-			remove_filter( 'login_display_language_dropdown', '__return_false' );
+		remove_filter( 'login_display_language_dropdown', '__return_false' );
+	}
+
+	/**
+	 * Compact in-card language switcher data, or null when there is nothing to
+	 * switch (one language) or the admin disabled it. Each option links to the
+	 * current screen with `?wp_lang=<locale>`; core sets the wp_lang cookie and
+	 * switches the locale on that GET, exactly as its own switcher does.
+	 *
+	 * @return array{current_code:string,options:array<int,array{url:string,code:string,name:string,active:bool}>}|null
+	 */
+	private static function language_switcher(): ?array {
+		if ( magicauth_get_setting( 'hide_language_switcher', false ) || ! function_exists( 'get_available_languages' ) ) {
+			return null;
 		}
+
+		// Selectable = built-in en_US plus every installed translation pack.
+		$locales = array_values( array_unique( array_merge( [ 'en_US' ], (array) get_available_languages() ) ) );
+		if ( count( $locales ) < 2 ) {
+			return null;
+		}
+
+		$current = function_exists( 'determine_locale' ) ? (string) determine_locale() : 'en_US';
+
+		// Normalize the raw request URI before manipulating it, and drop the
+		// transient feedback params so switching language never replays a toast.
+		$current_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) ) : '';
+		$base        = remove_query_arg(
+			[ 'magicauth_error', 'magicauth_sent', 'magicauth_link_invalid', 'magicauth_blocked', 'magicauth_block_secs', 'wp_lang', '_wpnonce' ],
+			$current_uri
+		);
+
+		$options = [];
+		foreach ( $locales as $loc ) {
+			$options[] = [
+				'url'    => add_query_arg( 'wp_lang', $loc, $base ),
+				'code'   => magicauth_locale_short_code( $loc ),
+				'name'   => magicauth_locale_label( $loc, $current ),
+				'active' => ( $loc === $current ),
+			];
+		}
+
+		return [
+			'current_code' => magicauth_locale_short_code( $current ),
+			'options'      => $options,
+		];
 	}
 
 	/** Read transient session email hint; prefer explicit $session_id over cookie. */

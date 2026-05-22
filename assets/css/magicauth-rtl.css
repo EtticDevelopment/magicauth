@@ -13,3 +13,14 @@
 	text-align: center;
 	direction: ltr;
 }
+
+/* Language switcher: push to the left edge, flip the dropdown's anchor side. */
+.magicauth-lang {
+	margin-left: 0;
+	margin-right: auto;
+}
+
+.magicauth-lang__menu {
+	right: auto;
+	left: 0;
+}

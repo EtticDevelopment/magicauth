@@ -38,6 +38,10 @@ $magic_link_url   = isset( $magic_link_url ) ? (string) $magic_link_url : '';
 $reset_key        = isset( $reset_key ) ? (string) $reset_key : '';
 $reset_login      = isset( $reset_login ) ? (string) $reset_login : '';
 
+// Only the branded wp-login screen sets this (LoginScreen::build_context);
+// the shortcode never does, so the switcher stays off front-end pages.
+$language_switcher = isset( $language_switcher ) && is_array( $language_switcher ) ? $language_switcher : null;
+
 // Prefer company name; else strip taglines off site name ("Ettic » Tagline" → "Ettic").
 if ( '' !== $company_name ) {
 	$brand = $company_name;
@@ -383,14 +387,46 @@ switch ( $state ) {
 		<?php endif; ?>
 
 		<?php
-		// Password fallback: state A only (C is the password screen; D/E have own back-links).
-		if ( ! $is_state_b && ! $is_state_c && ! $is_state_d && ! $is_state_e && $show_pw && '' !== $password_url ) :
+		// Card footer: password fallback (state A only — C is the password
+		// screen; D/E have their own back-links) on the left, compact language
+		// switcher on the right. Both sit inside the form; the switcher is <a>
+		// links (never a nested <form>), so a click is a plain GET that core
+		// turns into a wp_lang cookie + locale switch.
+		$pw_fallback = ( ! $is_state_b && ! $is_state_c && ! $is_state_d && ! $is_state_e && $show_pw && '' !== $password_url );
+		if ( $pw_fallback || null !== $language_switcher ) :
 			?>
-			<p class="magicauth-helper magicauth-helper--small magicauth-fallback">
-				<a class="magicauth-link" href="<?php echo esc_url( $password_url ); ?>">
-					<?php esc_html_e( 'Sign in with password', 'magicauth' ); ?>
-				</a>
-			</p>
+			<div class="magicauth-cardfoot<?php echo $pw_fallback ? ' magicauth-cardfoot--divided' : ''; ?>">
+				<?php if ( $pw_fallback ) : ?>
+					<a class="magicauth-link magicauth-cardfoot__link" href="<?php echo esc_url( $password_url ); ?>">
+						<?php esc_html_e( 'Sign in with password', 'magicauth' ); ?>
+					</a>
+				<?php endif; ?>
+
+				<?php if ( null !== $language_switcher ) : ?>
+					<details class="magicauth-lang">
+						<summary class="magicauth-lang__summary">
+							<svg class="magicauth-lang__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+								<path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+							</svg>
+							<span class="magicauth-sr-only"><?php esc_html_e( 'Change language. Current:', 'magicauth' ); ?></span>
+							<span class="magicauth-lang__code"><?php echo esc_html( $language_switcher['current_code'] ); ?></span>
+							<svg class="magicauth-lang__caret" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+								<path fill="currentColor" d="M7 10l5 5 5-5z"/>
+							</svg>
+						</summary>
+						<ul class="magicauth-lang__menu" role="list">
+							<?php foreach ( $language_switcher['options'] as $opt ) : ?>
+								<li>
+									<a class="magicauth-lang__opt<?php echo $opt['active'] ? ' is-active' : ''; ?>" href="<?php echo esc_url( $opt['url'] ); ?>"<?php echo $opt['active'] ? ' aria-current="true"' : ''; ?>>
+										<span class="magicauth-lang__opt-code"><?php echo esc_html( $opt['code'] ); ?></span>
+										<span class="magicauth-lang__opt-name"><?php echo esc_html( $opt['name'] ); ?></span>
+									</a>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					</details>
+				<?php endif; ?>
+			</div>
 		<?php endif; ?>
 	</form>
 

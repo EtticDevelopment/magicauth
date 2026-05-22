@@ -55,13 +55,6 @@ body.login #login {
 	margin: 0;
 	padding: 0;
 }
-/* WP core's login language switcher renders only on multilingual sites, as a
-   sibling of #login. Keep it usable but stack it neatly below the card. The
-   "Hide language switcher" setting suppresses it before it ever renders. */
-body.login .language-switcher {
-	margin: 16px 0 0;
-	text-align: center;
-}
 /* Hide WP's logo h1; :not() guard preserves our heading. */
 body.login h1:not(.magicauth-heading) {
 	display: none;

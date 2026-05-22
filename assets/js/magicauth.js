@@ -20,6 +20,52 @@
 
 		attachSubmitLoading();
 		initToast();
+		initLangSwitcher();
+	}
+
+	// Language switcher: native <details> handles open/close on its own. This
+	// adds outside-click + Escape dismissal and mirrors aria-expanded on the
+	// summary for screen readers. Fully functional without JS.
+	function initLangSwitcher() {
+		var widgets = document.querySelectorAll( '.magicauth-lang' );
+		if ( ! widgets.length ) {
+			return;
+		}
+
+		Array.prototype.forEach.call( widgets, function ( details ) {
+			var summary = details.querySelector( 'summary' );
+			if ( ! summary ) {
+				return;
+			}
+			summary.setAttribute( 'aria-expanded', details.open ? 'true' : 'false' );
+			details.addEventListener( 'toggle', function () {
+				summary.setAttribute( 'aria-expanded', details.open ? 'true' : 'false' );
+			} );
+		} );
+
+		document.addEventListener( 'click', function ( ev ) {
+			Array.prototype.forEach.call( widgets, function ( details ) {
+				if ( details.open && ! details.contains( ev.target ) ) {
+					details.removeAttribute( 'open' );
+				}
+			} );
+		} );
+
+		document.addEventListener( 'keydown', function ( ev ) {
+			if ( 'Escape' !== ev.key && 'Esc' !== ev.key ) {
+				return;
+			}
+			Array.prototype.forEach.call( widgets, function ( details ) {
+				if ( ! details.open ) {
+					return;
+				}
+				details.removeAttribute( 'open' );
+				var summary = details.querySelector( 'summary' );
+				if ( summary ) {
+					summary.focus();
+				}
+			} );
+		} );
 	}
 
 	// Submit-loading state; page navigates after, so no cleanup. Skip if button disabled.

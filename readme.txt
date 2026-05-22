@@ -79,8 +79,8 @@ MagicAuth registers a WordPress privacy exporter and eraser. Personal data store
 == Changelog ==
 
 = 1.0.2 =
-* Fix: on multilingual sites, WordPress's login-screen language switcher no longer floats beside the branded sign-in card; it now sits centered below it.
-* New: "Hide language switcher" setting (Settings > MagicAuth > Branding) removes that selector from the branded login screen. The native recovery login at `?magicauth=off` always keeps it.
+* New: a compact, on-brand language switcher in the branded sign-in card footer on multilingual sites (translate icon plus the current language), replacing WordPress's full-width selector that rendered detached below the card.
+* New: "Hide language switcher" setting (Settings > MagicAuth > Branding) to remove it entirely. The native recovery login at `?magicauth=off` always keeps the WordPress default.
 
 = 1.0.1 =
 * Fix: the weak-salt warning tooltip on the settings screen was clipped by the card edge. It now displays in full, and its "!" marker is shown in red to draw attention.

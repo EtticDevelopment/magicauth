@@ -165,6 +165,39 @@ if ( ! function_exists( 'magicauth_yiq_text_color' ) ) {
 	}
 }
 
+if ( ! function_exists( 'magicauth_locale_short_code' ) ) {
+	/** Uppercase language-subtag badge for a locale (nl_NL → NL, en_US → EN, pt_BR → PT). */
+	function magicauth_locale_short_code( string $locale ): string {
+		$locale = trim( $locale );
+		if ( '' === $locale ) {
+			return '';
+		}
+		$lang = strtok( $locale, '_-' );
+		if ( ! is_string( $lang ) || '' === $lang ) {
+			$lang = $locale;
+		}
+		return strtoupper( $lang );
+	}
+}
+
+if ( ! function_exists( 'magicauth_locale_label' ) ) {
+	/**
+	 * Human-readable language name for a locale, written in $display_locale's
+	 * language. Region-qualified via the intl extension when present (so
+	 * pt_BR and pt_PT stay distinct); falls back to the raw locale code.
+	 */
+	function magicauth_locale_label( string $locale, string $display_locale = '' ): string {
+		if ( class_exists( '\Locale' ) ) {
+			$display = '' !== $display_locale ? $display_locale : $locale;
+			$name    = \Locale::getDisplayName( $locale, $display );
+			if ( is_string( $name ) && '' !== $name ) {
+				return $name;
+			}
+		}
+		return $locale;
+	}
+}
+
 if ( ! function_exists( 'magicauth_current_user_can_control_user' ) ) {
 	/** Cap gate: edit_user + same-or-higher role. Filterable for custom hierarchies. */
 	function magicauth_current_user_can_control_user( int $target_user_id ): bool {
