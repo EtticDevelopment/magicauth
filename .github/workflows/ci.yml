@@ -39,12 +39,60 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Run Plugin Check
-        uses: wordpress/plugin-check-action@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          ignore-warnings: true
-          exclude-directories: 'build,tests,_dev'
-          exclude-files: 'phpstan.neon.dist,phpunit.xml.dist,composer.json,composer.lock'
+          node-version: '20'
+
+      # wordpress/plugin-check-action@v1 installs the LATEST @wordpress/env
+      # unpinned; the 11.x line changed `wp-env start` so the environment never
+      # initialized on the runner and the check silently never ran (red on every
+      # commit, incl. shipped releases). Self-manage wp-env pinned to the last
+      # stable 10.x so the check actually executes and its exit code is a real gate.
+      - name: Install pinned wp-env
+        run: npm install -g @wordpress/env@10.33.1
+
+      - name: Write wp-env config
+        run: |
+          cat > .wp-env.json <<'JSON'
+          {
+            "core": null,
+            "plugins": [ ".", "https://downloads.wordpress.org/plugin/plugin-check.zip" ]
+          }
+          JSON
+
+      - name: Start wp-env
+        run: wp-env start --update
+
+      - name: Activate plugins
+        run: |
+          wp-env run cli wp plugin activate magicauth
+          wp-env run cli wp plugin activate plugin-check
+
+      - name: Run Plugin Check
+        run: |
+          set -o pipefail
+          wp-env run cli wp plugin check magicauth \
+            --format=json \
+            --ignore-warnings \
+            --exclude-directories=build,tests,_dev \
+            --exclude-files=phpstan.neon.dist,phpunit.xml.dist,composer.json,composer.lock,.wp-env.json \
+            > results.json
+          echo "--- Plugin Check raw results ---"
+          cat results.json
+          echo ""
+          # Fail on any ERROR-severity finding (warnings already excluded above).
+          # Recursive walk tolerates either a flat array or a file-keyed object.
+          ERRORS=$(jq '[.. | objects | select(.type? == "ERROR")] | length' results.json)
+          echo "Plugin Check ERROR count: ${ERRORS}"
+          if [ "${ERRORS}" != "0" ]; then
+            echo "::error::WordPress Plugin Check reported ${ERRORS} error(s)."
+            exit 1
+          fi
+
+      - name: Stop wp-env
+        if: always()
+        run: wp-env stop || true
 
   phpstan:
     name: PHPStan
