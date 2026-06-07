@@ -71,24 +71,35 @@ jobs:
 
       - name: Run Plugin Check
         run: |
-          set -o pipefail
+          # wp-cli's ℹ/✔ wrapper lines go to stderr; only the check payload lands
+          # on stdout. With zero findings the CLI prints a human "Success:" string
+          # (not JSON), so guard that case before parsing. `|| true` because the
+          # command may exit non-zero when errors exist — our parse is the gate.
           wp-env run cli wp plugin check magicauth \
             --format=json \
             --ignore-warnings \
             --exclude-directories=build,tests,_dev \
             --exclude-files=phpstan.neon.dist,phpunit.xml.dist,composer.json,composer.lock,.wp-env.json \
-            > results.json
+            > results.txt 2>/dev/null || true
           echo "--- Plugin Check raw results ---"
-          cat results.json
+          cat results.txt
           echo ""
-          # Fail on any ERROR-severity finding (warnings already excluded above).
-          # Recursive walk tolerates either a flat array or a file-keyed object.
-          ERRORS=$(jq '[.. | objects | select(.type? == "ERROR")] | length' results.json)
+          if grep -qi "No errors found" results.txt; then
+            echo "Plugin Check: clean (no errors)."
+            exit 0
+          fi
+          # Otherwise expect a JSON array of findings; count ERROR-severity ones.
+          ERRORS=$(jq '[.. | objects | select(.type? == "ERROR")] | length' results.txt 2>/dev/null || echo "NaN")
           echo "Plugin Check ERROR count: ${ERRORS}"
+          if [ "${ERRORS}" = "NaN" ]; then
+            echo "::error::Unexpected Plugin Check output (neither the success string nor parseable JSON)."
+            exit 1
+          fi
           if [ "${ERRORS}" != "0" ]; then
             echo "::error::WordPress Plugin Check reported ${ERRORS} error(s)."
             exit 1
           fi
+          echo "Plugin Check: clean."
 
       - name: Stop wp-env
         if: always()
