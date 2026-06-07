@@ -29,9 +29,14 @@ final class TokenManager {
 	 * Issue a token. Invalidates outstanding rows for this email.
 	 * Returns plaintext URL+code; only hashes are stored.
 	 *
+	 * $redirect_to (optional) is the post-login destination to bake into the
+	 * emailed link so the link path matches the code path. Pass the same
+	 * validated value the form carried; build_verify_url re-validates it.
+	 * Empty for admin-issued links (UserProfile), keeping those URLs clean.
+	 *
 	 * @return array{link_url:string,code_plaintext:string,selector:string,expires_at:string}|WP_Error
 	 */
-	public static function issue( int $user_id, string $email ) {
+	public static function issue( int $user_id, string $email, string $redirect_to = '' ) {
 		if ( $user_id <= 0 ) {
 			return self::generic_error();
 		}
@@ -88,7 +93,7 @@ final class TokenManager {
 			return self::generic_error();
 		}
 
-		$verify_url = self::build_verify_url( $selector, $link_plaintext );
+		$verify_url = self::build_verify_url( $selector, $link_plaintext, $redirect_to );
 
 		do_action( 'magicauth_token_issued', $user_id, $selector );
 
@@ -421,17 +426,34 @@ final class TokenManager {
 		);
 	}
 
-	/** Build the public verify URL. */
-	public static function build_verify_url( string $selector, string $link_plaintext ): string {
+	/**
+	 * Build the public verify URL.
+	 *
+	 * When a post-login `$redirect_to` is supplied it is threaded onto the link
+	 * so the link path lands the user on the same destination the code path
+	 * already honors. The value is re-validated here (defense in depth — the
+	 * consume side in Controller::redirect_after_login validates again) against
+	 * the same-host allowlist, and wp-login.php targets are dropped so a clicked
+	 * link never bounces back into the login form post-auth. redirect_to is not
+	 * part of the HMAC verifier, so a tampered value can only ever resolve to a
+	 * same-host target or the default — it cannot forge authentication.
+	 */
+	public static function build_verify_url( string $selector, string $link_plaintext, string $redirect_to = '' ): string {
 		$base = function_exists( 'home_url' ) ? home_url( '/' ) : '/';
-		return add_query_arg(
-			[
-				'magicauth' => 'verify',
-				's'         => $selector,
-				'v'         => $link_plaintext,
-			],
-			$base
-		);
+		$args = [
+			'magicauth' => 'verify',
+			's'         => $selector,
+			'v'         => $link_plaintext,
+		];
+
+		if ( '' !== $redirect_to && function_exists( 'wp_validate_redirect' ) ) {
+			$safe = wp_validate_redirect( $redirect_to, '' );
+			if ( '' !== $safe && false === stripos( $safe, '/wp-login.php' ) ) {
+				$args['redirect_to'] = $safe;
+			}
+		}
+
+		return add_query_arg( $args, $base );
 	}
 
 	/** Fully-qualified table name. */

@@ -198,7 +198,11 @@ final class Controller {
 		$user     = get_user_by( 'email', $email );
 		$selector = '';
 		if ( $user instanceof WP_User ) {
-			$issued = TokenManager::issue( (int) $user->ID, $email );
+			// Thread the form's validated redirect_to onto the emailed link so the
+			// link path lands where the code path already does. $redirect_to is
+			// already wp_validate_redirect'd by sanitize_redirect(); issue() ->
+			// build_verify_url() re-validates and drops wp-login.php targets.
+			$issued = TokenManager::issue( (int) $user->ID, $email, $redirect_to );
 			if ( is_array( $issued ) ) {
 				// Defer wp_mail until after response flush — SMTP latency leaks
 				// into response time (2026-05-04 study: ~61ms Happy−Unknown delta

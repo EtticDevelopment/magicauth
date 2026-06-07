@@ -527,4 +527,44 @@ final class TokenManagerTest extends TestCase {
 			$seen[] = $selector;
 		}
 	}
+
+	/**
+	 * Link-path redirect parity: a validated same-host redirect_to is threaded
+	 * onto the emailed verify URL so the link lands where the code path does.
+	 */
+	public function test_issue_threads_validated_redirect_to_into_link_url(): void {
+		$dest   = home_url( '/members/course-5' );
+		$result = TokenManager::issue( self::USER_ID, self::EMAIL, $dest );
+		$this->assertIsArray( $result );
+
+		$this->assertStringContainsString( 'redirect_to', $result['link_url'] );
+		// add_query_arg url-encodes the value; decode the query before asserting.
+		$query = (string) parse_url( $result['link_url'], PHP_URL_QUERY );
+		parse_str( $query, $args );
+		$this->assertSame( $dest, (string) ( $args['redirect_to'] ?? '' ), 'emailed link carries the validated destination' );
+	}
+
+	/** Off-host redirect_to is dropped at embed time (defense in depth). */
+	public function test_issue_drops_offhost_redirect_to_from_link_url(): void {
+		$result = TokenManager::issue( self::USER_ID, self::EMAIL, 'https://evil.example/phish' );
+		$this->assertIsArray( $result );
+		$this->assertStringNotContainsString( 'evil.example', $result['link_url'], 'off-host destination never reaches the email' );
+		$this->assertStringNotContainsString( 'redirect_to', $result['link_url'], 'rejected destination is omitted, not defaulted into the URL' );
+	}
+
+	/** wp-login.php targets are dropped so a clicked link never loops back to the form. */
+	public function test_issue_drops_wp_login_redirect_to_from_link_url(): void {
+		$result = TokenManager::issue( self::USER_ID, self::EMAIL, home_url( '/wp-login.php?action=foo' ) );
+		$this->assertIsArray( $result );
+		$this->assertStringNotContainsString( 'wp-login.php', $result['link_url'] );
+		$this->assertStringNotContainsString( 'redirect_to', $result['link_url'] );
+	}
+
+	/** No redirect_to supplied (e.g. admin-issued link) keeps the URL clean. */
+	public function test_issue_without_redirect_to_keeps_link_clean(): void {
+		$result = TokenManager::issue( self::USER_ID, self::EMAIL );
+		$this->assertIsArray( $result );
+		$this->assertStringContainsString( 'magicauth=verify', $result['link_url'] );
+		$this->assertStringNotContainsString( 'redirect_to', $result['link_url'] );
+	}
 }
