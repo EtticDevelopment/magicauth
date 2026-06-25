@@ -120,7 +120,7 @@ jobs:
           tools: composer
 
       - name: Cache Composer packages
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.json') }}
@@ -152,7 +152,7 @@ jobs:
           tools: composer
 
       - name: Cache Composer packages
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: vendor
           key: composer-${{ matrix.php }}-${{ hashFiles('composer.json') }}
