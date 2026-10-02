@@ -46,6 +46,10 @@ final class Plugin {
 		add_filter( 'wp_privacy_personal_data_exporters', [ $this, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ $this, 'register_eraser' ] );
 
+		// DB migrations: first request after a file deploy. wp_loaded (after init)
+		// keeps dbDelta's admin includes out of every plugin's early boot.
+		add_action( 'wp_loaded', [ Installer::class, 'maybe_upgrade' ], 1 );
+
 		add_action( 'magicauth_daily_cleanup', [ Installer::class, 'daily_cleanup' ] );
 
 		add_action( 'admin_notices', [ Installer::class, 'render_salt_notice' ] );
@@ -63,6 +67,11 @@ final class Plugin {
 		Auth\Controller::setup();
 		Frontend\Shortcode::setup();
 		Frontend\LoginScreen::setup();
+
+		// Passkeys: always-on data hooks (a deleted user's sign-in rows and
+		// passkeys go with the account, any request type), then init:0 decides
+		// the toggle after themes have added their filters.
+		Passkeys\Module::setup();
 
 		if ( is_admin() ) {
 			Admin\Settings::setup();
@@ -84,7 +93,9 @@ final class Plugin {
 	}
 
 	/**
-	 * Privacy exporter registration. Callback lives in Auth\TokenManager.
+	 * Privacy exporter registration. Callbacks live in Auth\TokenManager and,
+	 * for passkeys, Passkeys\Privacy (always registered: data may exist from
+	 * an earlier "on" period).
 	 *
 	 * @param array<string,array<string,mixed>> $exporters
 	 * @return array<string,array<string,mixed>>
@@ -94,11 +105,16 @@ final class Plugin {
 			'exporter_friendly_name' => __( 'MagicAuth login activity', 'magicauth' ),
 			'callback'               => [ Auth\TokenManager::class, 'export' ],
 		];
+		$exporters[ Passkeys\Privacy::KEY ] = [
+			'exporter_friendly_name' => __( 'MagicAuth passkeys', 'magicauth' ),
+			'callback'               => [ Passkeys\Privacy::class, 'export' ],
+		];
 		return $exporters;
 	}
 
 	/**
-	 * Privacy eraser registration. TokenManager::erase deletes user rows and resets throttle counters.
+	 * Privacy eraser registration. TokenManager::erase deletes user rows and resets throttle counters;
+	 * Passkeys\Privacy::erase deletes passkeys, their challenge and session state rows and meta.
 	 *
 	 * @param array<string,array<string,mixed>> $erasers
 	 * @return array<string,array<string,mixed>>
@@ -107,6 +123,10 @@ final class Plugin {
 		$erasers['magicauth'] = [
 			'eraser_friendly_name' => __( 'MagicAuth login activity', 'magicauth' ),
 			'callback'             => [ Auth\TokenManager::class, 'erase' ],
+		];
+		$erasers[ Passkeys\Privacy::KEY ] = [
+			'eraser_friendly_name' => __( 'MagicAuth passkeys', 'magicauth' ),
+			'callback'             => [ Passkeys\Privacy::class, 'erase' ],
 		];
 		return $erasers;
 	}

@@ -35,7 +35,13 @@ final class CapabilityTest extends TestCase {
 		);
 	}
 
-	public function test_administrator_can_control_editor(): void {
+	/**
+	 * Documents B17 (pre-existing, SPEC Appendix D): core merges role names
+	 * into allcaps, so the editor's allcaps holds `editor`, which the
+	 * administrator's lacks, and the rank check refuses. Kept as in 1.0.5
+	 * until the rank model is decided (r2-regress-01 reverted K2).
+	 */
+	public function test_b17_administrator_is_refused_on_editor_as_in_1_0_5(): void {
 		$editor_id = 101;
 		$admin_id  = 201;
 		magicauth_test_register_user( $editor_id, 'editor2@example.test', [ 'editor' ] );
@@ -43,7 +49,10 @@ final class CapabilityTest extends TestCase {
 
 		magicauth_test_login_as( $admin_id );
 
-		$this->assertTrue( magicauth_current_user_can_control_user( $editor_id ) );
+		$this->assertFalse(
+			magicauth_current_user_can_control_user( $editor_id ),
+			'B17: with core-accurate allcaps the 1.0.5 rank check refuses an administrator on another role'
+		);
 	}
 
 	public function test_administrator_can_control_self(): void {

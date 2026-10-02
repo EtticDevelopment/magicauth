@@ -37,5 +37,11 @@ if ( ! class_exists( 'WP_Error' ) ) {
 			$code = '' === $code ? $this->get_error_code() : $code;
 			return $this->errors[ $code ][0] ?? '';
 		}
+
+		/** Core WP_Error::get_error_data(): data of $code (default: the first code), or null. */
+		public function get_error_data( string $code = '' ) {
+			$code = '' === $code ? $this->get_error_code() : $code;
+			return $this->error_data[ $code ] ?? null;
+		}
 	}
 }

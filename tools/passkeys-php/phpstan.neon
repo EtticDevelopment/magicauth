@@ -1,0 +1,9 @@
+# Vendored passkeys library (includes/ThirdParty), SPEC 4.9: level 0 with the
+# plugin's PHP 8.0 floor, so 8.1+ syntax or API use fails. The main config
+# (phpstan.neon.dist) only scans it for symbols. Run from the repo root:
+#   vendor/bin/phpstan analyse -c tools/passkeys-php/phpstan.neon --no-progress
+parameters:
+    level: 0
+    phpVersion: 80000
+    paths:
+        - ../../includes/ThirdParty

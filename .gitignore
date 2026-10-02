@@ -45,6 +45,8 @@ build/
 # present, so contributors can shadow the defaults locally.
 phpcs.xml
 phpstan.neon
+# ...except the vendored library config, which is the committed file (SPEC 4.9).
+!/tools/passkeys-php/phpstan.neon
 phpunit.xml
 wp-tests-config.php
 

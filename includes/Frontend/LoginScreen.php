@@ -13,6 +13,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Frontend;
 
+use MagicAuth\Email\Mailer;
+
 defined( 'ABSPATH' ) || exit;
 
 final class LoginScreen {
@@ -116,7 +118,7 @@ final class LoginScreen {
 		// wp-login.php?action=magicauth; without this, the form re-renders
 		// instead of bouncing the user to admin.
 		if ( is_user_logged_in() ) {
-			$incoming = isset( $_GET['redirect_to'] ) ? wp_unslash( (string) $_GET['redirect_to'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$incoming = isset( $_GET['redirect_to'] ) ? wp_unslash( (string) $_GET['redirect_to'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by wp_validate_redirect() below.
 			$default  = function_exists( 'admin_url' ) ? admin_url() : home_url( '/' );
 			$target   = '' !== $incoming ? wp_validate_redirect( $incoming, $default ) : $default;
 			if ( '' === $target ) {
@@ -173,8 +175,8 @@ final class LoginScreen {
 				exit;
 			}
 
-			$key   = isset( $_GET['key'] ) ? trim( (string) wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$login = isset( $_GET['login'] ) ? trim( (string) wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$key   = isset( $_GET['key'] ) ? trim( (string) wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- checked by check_password_reset_key(), esc_attr()'d in the template.
+			$login = isset( $_GET['login'] ) ? trim( (string) wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- as above.
 
 			$user = ( '' !== $key && '' !== $login ) ? check_password_reset_key( $key, $login ) : new \WP_Error( 'invalid_key' );
 
@@ -207,8 +209,12 @@ final class LoginScreen {
 		}
 	}
 
-	/** Map magicauth_step query var to internal state code. */
-	private static function resolve_state( string $step ): string {
+	/**
+	 * Map magicauth_step query var to internal state code.
+	 *
+	 * @internal Public so asset loading decides the state with the same function as the render paths.
+	 */
+	public static function resolve_state( string $step ): string {
 		switch ( $step ) {
 			case 'code':
 				return 'b';
@@ -265,10 +271,11 @@ final class LoginScreen {
 	private static function render_shell( array $context ): void {
 		login_header( __( 'Sign in', 'magicauth' ), '', null );
 
-		$shell = MAGICAUTH_DIR . 'templates/login-shell.php';
-		$form  = MAGICAUTH_DIR . 'templates/login-form.php';
+		// Theme override, then parent theme, then plugin (yourtheme/magicauth/).
+		$shell = Mailer::locate_template( 'login-shell.php' );
+		$form  = Mailer::locate_template( 'login-form.php' );
 
-		if ( is_readable( $shell ) ) {
+		if ( '' !== $shell && is_readable( $shell ) ) {
 			( static function ( string $tpl, array $args, string $form_path ): void {
 				extract( $args, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 				include $tpl;

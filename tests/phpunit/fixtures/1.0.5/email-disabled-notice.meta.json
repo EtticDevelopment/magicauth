@@ -1,0 +1,8 @@
+{
+    "to": "student@example.test",
+    "subject": "About your sign-in request for Test Site",
+    "headers": [
+        "Content-Type: text/html; charset=UTF-8",
+        "From: Test Site <login@example.test>"
+    ]
+}

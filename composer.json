@@ -14,10 +14,7 @@
   "autoload": {
     "psr-4": {
       "MagicAuth\\": "includes/"
-    },
-    "files": [
-      "includes/helpers.php"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {
@@ -28,7 +25,7 @@
     "sort-packages": true
   },
   "scripts": {
-    "phpstan": "phpstan analyse --memory-limit=512M",
+    "phpstan": "phpstan analyse --memory-limit=2G",
     "test": "phpunit"
   }
 }

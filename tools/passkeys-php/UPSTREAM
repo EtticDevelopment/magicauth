@@ -1,0 +1,9 @@
+# Pinned upstream of includes/ThirdParty/Passkeys (SPEC 4.9). Read by vendor.sh, never sourced.
+# To update: change TAG, COMMIT, TREE (git rev-parse <commit>:src) and DATE, rerun vendor.sh,
+# rebase rejected patches (vendor.sh --upto N --out DIR), review the upstream src/ diff in full,
+# run the conformance tests.
+URL=https://github.com/report-uri/passkeys-php.git
+TAG=v2.0.1
+COMMIT=f8cddbfe00f9ecff1eebeb6bcae18b111f6bc468
+TREE=a61b2aae6718db5addc2d51e7f33900a5b9d4e7c
+DATE=2026-10-01

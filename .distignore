@@ -42,6 +42,9 @@ phpstan.neon.dist
 phpstan-baseline.neon
 .semgrepignore
 
+# Dev tooling (release tree comes from tools/build-release.sh)
+tools/
+
 # Tests
 tests/
 phpunit.xml

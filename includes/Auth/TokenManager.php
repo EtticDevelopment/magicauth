@@ -34,9 +34,15 @@ final class TokenManager {
 	 * validated value the form carried; build_verify_url re-validates it.
 	 * Empty for admin-issued links (UserProfile), keeping those URLs clean.
 	 *
+	 * $issued_by is the administrator who will see the link and code (Create
+	 * magic-link), 0 when the token goes only to the user's mailbox. Such a
+	 * row signs in as admin_link (SPEC 5.8). The column is written only when
+	 * set, so a site whose migration has not run yet still issues email links
+	 * (an admin link then fails instead of signing in as an email link).
+	 *
 	 * @return array{link_url:string,code_plaintext:string,selector:string,expires_at:string}|WP_Error
 	 */
-	public static function issue( int $user_id, string $email, string $redirect_to = '' ) {
+	public static function issue( int $user_id, string $email, string $redirect_to = '', int $issued_by = 0 ) {
 		if ( $user_id <= 0 ) {
 			return self::generic_error();
 		}
@@ -69,24 +75,27 @@ final class TokenManager {
 
 		$ip_hmac = magicauth_hash_ip( magicauth_client_ip() );
 
+		$row     = [
+			'selector'           => $selector,
+			'link_verifier_hash' => $link_hash,
+			'code_verifier_hash' => $code_hash,
+			'user_id'            => $user_id,
+			'email_hmac'         => $email_hmac,
+			'ip_hmac'            => $ip_hmac,
+			'created_at'         => $now,
+			'expires_at'         => $expires_at,
+			'consumed_at'        => null,
+			'use_count'          => 0,
+			'code_attempts'      => 0,
+		];
+		$formats = [ '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d' ];
+		if ( $issued_by > 0 ) {
+			$row['issued_by'] = $issued_by;
+			$formats[]        = '%d';
+		}
+
 		global $wpdb;
-		$inserted = $wpdb->insert(
-			self::table(),
-			[
-				'selector'           => $selector,
-				'link_verifier_hash' => $link_hash,
-				'code_verifier_hash' => $code_hash,
-				'user_id'            => $user_id,
-				'email_hmac'         => $email_hmac,
-				'ip_hmac'            => $ip_hmac,
-				'created_at'         => $now,
-				'expires_at'         => $expires_at,
-				'consumed_at'        => null,
-				'use_count'          => 0,
-				'code_attempts'      => 0,
-			],
-			[ '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%d' ]
-		);
+		$inserted = $wpdb->insert( self::table(), $row, $formats );
 
 		if ( false === $inserted ) {
 			magicauth_debug_log( 'TokenManager::issue insert failed' );
@@ -110,9 +119,13 @@ final class TokenManager {
 	 * First N clicks within TTL succeed; (N+1)th returns generic error.
 	 * Once use_count > 0, the code path closes for this row.
 	 *
+	 * @param string $selector  Row selector from the link.
+	 * @param string $verifier  Link verifier from the link.
+	 * @param int    $issued_by Set to the row's issued_by on success, else 0.
 	 * @return WP_User|WP_Error
 	 */
-	public static function validate_link( string $selector, string $verifier ) {
+	public static function validate_link( string $selector, string $verifier, int &$issued_by = 0 ) {
+		$issued_by = 0;
 		if ( ! preg_match( self::SELECTOR_REGEX, $selector ) ) {
 			return self::generic_error();
 		}
@@ -169,12 +182,13 @@ final class TokenManager {
 		}
 
 		$user = get_userdata( (int) $row->user_id );
-		if ( ! $user instanceof WP_User ) {
+		if ( ! $user instanceof WP_User || ! self::sent_to_current_address( $row, $user ) ) {
 			return self::generic_error();
 		}
 
 		do_action( 'magicauth_token_consumed', (int) $row->user_id, (string) $row->selector );
 
+		$issued_by = (int) ( $row->issued_by ?? 0 );
 		return $user;
 	}
 
@@ -184,9 +198,14 @@ final class TokenManager {
 	 * Attempts counter lives in the session transient (v1.6.0). Empty selector
 	 * means no row was issued for this session — refuse without DB work.
 	 *
+	 * @param string $email      Email of the state-B session.
+	 * @param string $code       Code as typed.
+	 * @param string $session_id State-B session id.
+	 * @param int    $issued_by  Set to the row's issued_by on success, else 0.
 	 * @return WP_User|WP_Error
 	 */
-	public static function validate_code( string $email, string $code, string $session_id = '' ) {
+	public static function validate_code( string $email, string $code, string $session_id = '', int &$issued_by = 0 ) {
+		$issued_by = 0;
 		if ( ! Crockford::looks_valid( $code ) ) {
 			return self::generic_error();
 		}
@@ -256,7 +275,7 @@ final class TokenManager {
 		}
 
 		$user = get_userdata( (int) $row->user_id );
-		if ( ! $user instanceof WP_User ) {
+		if ( ! $user instanceof WP_User || ! self::sent_to_current_address( $row, $user ) ) {
 			return self::generic_error();
 		}
 
@@ -265,6 +284,7 @@ final class TokenManager {
 
 		do_action( 'magicauth_token_consumed', (int) $row->user_id, (string) $row->selector );
 
+		$issued_by = (int) ( $row->issued_by ?? 0 );
 		return $user;
 	}
 
@@ -418,6 +438,17 @@ final class TokenManager {
 		];
 	}
 
+	/**
+	 * Whether the row was issued to the account's current address. A token
+	 * proves only the mailbox it went to: after an email change (SPEC 7.6
+	 * rule M, which also invalidates the rows) it signs in to nothing, even
+	 * when the change bypassed profile_update.
+	 */
+	private static function sent_to_current_address( object $row, WP_User $user ): bool {
+		$current = magicauth_hash_email( (string) $user->user_email );
+		return '' !== (string) $row->email_hmac && hash_equals( (string) $row->email_hmac, $current );
+	}
+
 	/** Generic-error WP_Error. Identical for every miss path. */
 	public static function generic_error(): WP_Error {
 		return new WP_Error(
@@ -432,11 +463,17 @@ final class TokenManager {
 	 * When a post-login `$redirect_to` is supplied it is threaded onto the link
 	 * so the link path lands the user on the same destination the code path
 	 * already honors. The value is re-validated here (defense in depth — the
-	 * consume side in Controller::redirect_after_login validates again) against
+	 * consume side in Login::redirect_target validates again) against
 	 * the same-host allowlist, and wp-login.php targets are dropped so a clicked
 	 * link never bounces back into the login form post-auth. redirect_to is not
 	 * part of the HMAC verifier, so a tampered value can only ever resolve to a
 	 * same-host target or the default — it cannot forge authentication.
+	 *
+	 * add_query_arg() does not encode values, so the destination is
+	 * rawurlencode()d here: a deep link holding & or # stays one argument
+	 * instead of splitting into extra args, overwriting s/v, or becoming the
+	 * link's fragment. PHP decodes $_GET once, so the verify side needs no
+	 * change.
 	 */
 	public static function build_verify_url( string $selector, string $link_plaintext, string $redirect_to = '' ): string {
 		$base = function_exists( 'home_url' ) ? home_url( '/' ) : '/';
@@ -449,7 +486,7 @@ final class TokenManager {
 		if ( '' !== $redirect_to && function_exists( 'wp_validate_redirect' ) ) {
 			$safe = wp_validate_redirect( $redirect_to, '' );
 			if ( '' !== $safe && false === stripos( $safe, '/wp-login.php' ) ) {
-				$args['redirect_to'] = $safe;
+				$args['redirect_to'] = rawurlencode( $safe );
 			}
 		}
 

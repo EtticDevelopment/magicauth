@@ -1,0 +1,18 @@
+Subject: H2, Ed25519 signature length on the sodium path
+Reason: On PHP below 8.4 EdDSA is verified with sodium, which throws SodiumException (not WebAuthnException) for a signature that is not 64 bytes (audit 3); such a signature now simply fails to verify.
+
+diff -ruN a/WebAuthn.php b/WebAuthn.php
+--- a/WebAuthn.php
++++ b/WebAuthn.php
+@@ -519,6 +519,11 @@
+                 if ($rawPk && \strlen($rawPk) === 44 && \substr($rawPk,0, \strlen($okpPrefix)) === $okpPrefix) {
+                     $publicKeyXCurve = \substr($rawPk, \strlen($okpPrefix));
+ 
++                    // sodium throws SodiumException for a signature that is not 64 bytes.
++                    if (!\is_string($signature) || \strlen($signature) !== 64) {
++                        return false;
++                    }
++
+                     return \sodium_crypto_sign_verify_detached($signature, $dataToVerify, $publicKeyXCurve);
+                 }
+             }

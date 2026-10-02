@@ -1,0 +1,360 @@
+/*
+ * MagicAuth passkey prompt, management, step-up and dialogs (SPEC 8.10). Self-sufficient: signed-in pages
+ * never load magicauth.css. Every rule reads the --magicauth-* tokens with the magicauth.css default as
+ * fallback and never redeclares them, so a theme's :root values win. Rules are scoped under their root
+ * (0,2,0 beats .entry-content button); themes restyle through tokens or a template override.
+ * Logical properties only (RTL without a separate file).
+ */
+
+/* State rule: hidden means hidden, whatever display a theme gives buttons (the only !important). */
+[data-magicauth-passkey-root][hidden],
+[data-magicauth-passkey-signin][hidden],
+[data-magicauth-pk-add][hidden],
+[data-magicauth-pk-view][hidden] {
+	display: none !important;
+}
+
+.magicauth-pk-manage,
+.magicauth-pk-dialog {
+	font-family: var(--magicauth-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);
+	font-size: var(--magicauth-font-size-body, 16px);
+	line-height: 1.5;
+	color: var(--magicauth-color-text, #101517);
+}
+
+.magicauth-pk-manage {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-inline-size: 48rem;
+}
+
+.magicauth-pk-manage p,
+.magicauth-pk-dialog p {
+	margin: 0;
+}
+
+.magicauth-pk-manage .magicauth-pk-manage__title,
+.magicauth-pk-dialog .magicauth-pk-dialog__title,
+.magicauth-pk-manage .magicauth-pk-reauth__title,
+.magicauth-pk-dialog .magicauth-pk-reauth__title {
+	margin: 0;
+	line-height: 1.25;
+}
+
+.magicauth-pk-manage .magicauth-pk-intro,
+.magicauth-pk-manage .magicauth-pk-note,
+.magicauth-pk-manage .magicauth-pk-empty,
+.magicauth-pk-manage .magicauth-pk-item__label,
+.magicauth-pk-manage .magicauth-pk-item__meta {
+	color: var(--magicauth-color-text-muted, #50575e);
+	font-size: var(--magicauth-font-size-small, 14px);
+}
+
+.magicauth-pk-manage .magicauth-pk-warning,
+.magicauth-pk-manage .magicauth-pk-item__warning {
+	color: var(--magicauth-color-warning, #8a4b00);
+	font-size: var(--magicauth-font-size-small, 14px);
+}
+
+.magicauth-pk-manage .magicauth-pk-notice {
+	padding-block: 8px;
+	padding-inline: 12px;
+	border-inline-start: 4px solid var(--magicauth-color-border-strong, #b4b9c1);
+	background: var(--magicauth-color-surface, #ffffff);
+}
+
+.magicauth-pk-manage .magicauth-pk-notice--error,
+.magicauth-pk-manage .magicauth-pk-alert,
+.magicauth-pk-dialog .magicauth-pk-alert {
+	color: var(--magicauth-color-error, #b32d2e);
+}
+
+.magicauth-pk-manage .magicauth-pk-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.magicauth-pk-manage .magicauth-pk-item {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	justify-content: space-between;
+	margin: 0;
+	padding: 12px 16px;
+	background: var(--magicauth-color-surface, #ffffff);
+	border: 1px solid var(--magicauth-color-border, #d8dde5);
+	border-radius: var(--magicauth-radius, 4px);
+}
+
+.magicauth-pk-manage .magicauth-pk-item__body {
+	display: flex;
+	flex: 1 1 16rem;
+	flex-direction: column;
+	gap: 2px;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
+.magicauth-pk-manage .magicauth-pk-item__name {
+	font-weight: 600;
+}
+
+.magicauth-pk-manage .magicauth-pk-item__meta > * + * {
+	margin-inline-start: 8px;
+}
+
+.magicauth-pk-manage .magicauth-pk-item__actions,
+.magicauth-pk-manage .magicauth-pk-actions,
+.magicauth-pk-dialog .magicauth-pk-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.magicauth-pk-manage .magicauth-pk-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.magicauth-pk-manage .magicauth-pk-badge {
+	padding-block: 0;
+	padding-inline: 8px;
+	font-size: 12px;
+	font-weight: 600;
+	border: 1px solid var(--magicauth-color-border-strong, #b4b9c1);
+	border-radius: 999px;
+}
+
+.magicauth-pk-manage .magicauth-pk-badge--warning {
+	color: var(--magicauth-color-warning, #8a4b00);
+	border-color: currentColor;
+}
+
+.magicauth-pk-manage .magicauth-pk-btn,
+.magicauth-pk-dialog .magicauth-pk-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: 36px;
+	min-inline-size: 24px;
+	margin: 0;
+	padding-block: 6px;
+	padding-inline: 14px;
+	font: inherit;
+	font-size: var(--magicauth-font-size-small, 14px);
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--magicauth-color-text, #101517);
+	background: var(--magicauth-color-surface, #ffffff);
+	border: 1px solid var(--magicauth-color-border-strong, #b4b9c1);
+	border-radius: var(--magicauth-radius, 4px);
+	cursor: pointer;
+	transition: border-color 0.15s ease;
+}
+
+.magicauth-pk-manage .magicauth-pk-btn:hover,
+.magicauth-pk-dialog .magicauth-pk-btn:hover {
+	border-color: var(--magicauth-color-text-muted, #50575e);
+}
+
+.magicauth-pk-manage .magicauth-pk-btn--primary,
+.magicauth-pk-dialog .magicauth-pk-btn--primary {
+	color: var(--magicauth-color-primary-text, #ffffff);
+	background: var(--magicauth-color-primary, #2271b1);
+	border-color: var(--magicauth-color-primary, #2271b1);
+}
+
+.magicauth-pk-manage .magicauth-pk-btn--danger,
+.magicauth-pk-dialog .magicauth-pk-btn--danger {
+	color: var(--magicauth-color-error, #b32d2e);
+	border-color: currentColor;
+}
+
+/* Busy: aria-disabled, never the disabled attribute (focus stays on the control, 8.12). */
+.magicauth-pk-manage .magicauth-pk-btn[aria-disabled="true"],
+.magicauth-pk-dialog .magicauth-pk-btn[aria-disabled="true"] {
+	cursor: progress;
+	opacity: 0.7;
+}
+
+.magicauth-pk-manage .magicauth-pk-link,
+.magicauth-pk-dialog .magicauth-pk-link {
+	min-block-size: 24px;
+	padding: 0;
+	font: inherit;
+	font-size: var(--magicauth-font-size-small, 14px);
+	color: var(--magicauth-color-primary, #2271b1);
+	text-decoration: underline;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.magicauth-pk-manage .magicauth-pk-btn:focus-visible,
+.magicauth-pk-dialog .magicauth-pk-btn:focus-visible,
+.magicauth-pk-manage .magicauth-pk-link:focus-visible,
+.magicauth-pk-dialog .magicauth-pk-link:focus-visible,
+.magicauth-pk-manage .magicauth-pk-input:focus-visible,
+.magicauth-pk-dialog .magicauth-pk-input:focus-visible,
+.magicauth-pk-dialog .magicauth-pk-check input:focus-visible {
+	outline: 2px solid var(--magicauth-color-focus-ring, var(--magicauth-color-primary, #2271b1));
+	outline-offset: 2px;
+}
+
+.magicauth-pk-manage .magicauth-pk-label,
+.magicauth-pk-dialog .magicauth-pk-label {
+	display: block;
+	font-size: var(--magicauth-font-size-small, 14px);
+	font-weight: 600;
+}
+
+.magicauth-pk-manage .magicauth-pk-input,
+.magicauth-pk-dialog .magicauth-pk-input {
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 20rem;
+	min-block-size: 40px;
+	margin: 0;
+	padding-block: 6px;
+	padding-inline: 10px;
+	font: inherit;
+	color: var(--magicauth-color-text, #101517);
+	background: var(--magicauth-color-surface, #ffffff);
+	border: 1px solid var(--magicauth-color-border-strong, #b4b9c1);
+	border-radius: var(--magicauth-radius, 4px);
+}
+
+.magicauth-pk-manage .magicauth-pk-rename {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	inline-size: 100%;
+}
+
+.magicauth-pk-manage .magicauth-pk-reauth,
+.magicauth-pk-manage .magicauth-pk-reauth__code,
+.magicauth-pk-dialog .magicauth-pk-reauth__code,
+.magicauth-pk-dialog [data-magicauth-pk-view] {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.magicauth-pk-manage .magicauth-pk-reauth {
+	padding: 16px;
+	border: 1px solid var(--magicauth-color-border, #d8dde5);
+	border-radius: var(--magicauth-radius, 4px);
+}
+
+.magicauth-pk-dialog {
+	box-sizing: border-box;
+	inline-size: min(100% - 32px, var(--magicauth-pk-dialog-max-width, 28rem));
+	max-inline-size: var(--magicauth-pk-dialog-max-width, 28rem);
+	padding: 24px;
+	background: var(--magicauth-color-surface, #ffffff);
+	border: 1px solid var(--magicauth-color-border, #d8dde5);
+	border-radius: var(--magicauth-radius-card, 6px);
+}
+
+.magicauth-pk-dialog::backdrop {
+	background: var(--magicauth-pk-backdrop, rgb(0 0 0 / 0.5));
+}
+
+.magicauth-pk-dialog .magicauth-pk-dialog__inner {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.magicauth-pk-dialog .magicauth-pk-check {
+	display: inline-flex;
+	gap: 8px;
+	align-items: center;
+	min-block-size: 24px;
+}
+
+/* Prompt (2.1, 8.5): the close control sits at the inline end of the heading row. */
+.magicauth-pk-prompt .magicauth-pk-dialog__inner {
+	position: relative;
+}
+
+.magicauth-pk-prompt .magicauth-pk-dialog__title {
+	padding-inline-end: 40px;
+}
+
+.magicauth-pk-dialog .magicauth-pk-note {
+	color: var(--magicauth-color-text-muted, #50575e);
+	font-size: var(--magicauth-font-size-small, 14px);
+}
+
+.magicauth-pk-dialog .magicauth-pk-close {
+	position: absolute;
+	inset-block-start: -8px;
+	inset-inline-end: -8px;
+	min-inline-size: 32px;
+	min-block-size: 32px;
+	margin: 0;
+	padding: 0;
+	font: inherit;
+	font-size: 1.5rem;
+	line-height: 1;
+	color: var(--magicauth-color-text-muted, #50575e);
+	background: none;
+	border: 0;
+	border-radius: var(--magicauth-radius, 4px);
+	cursor: pointer;
+}
+
+.magicauth-pk-dialog .magicauth-pk-close:hover {
+	color: var(--magicauth-color-text, #101517);
+}
+
+.magicauth-pk-dialog .magicauth-pk-close:focus-visible {
+	outline: 2px solid var(--magicauth-color-focus-ring, var(--magicauth-color-primary, #2271b1));
+	outline-offset: 2px;
+}
+
+.magicauth-pk-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Hidden controls and views stay hidden: last, so it beats the equally specific display rules above. */
+.magicauth-pk-manage [hidden],
+.magicauth-pk-dialog [hidden] {
+	display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.magicauth-pk-manage .magicauth-pk-btn,
+	.magicauth-pk-dialog .magicauth-pk-btn {
+		transition: none;
+	}
+}
+
+@media (forced-colors: active) {
+	.magicauth-pk-dialog {
+		border: 1px solid CanvasText;
+	}
+
+	.magicauth-pk-manage .magicauth-pk-btn:focus-visible,
+	.magicauth-pk-dialog .magicauth-pk-btn:focus-visible,
+	.magicauth-pk-dialog .magicauth-pk-close:focus-visible {
+		outline: 2px solid CanvasText;
+	}
+}

@@ -351,4 +351,309 @@ final class ThrottleTest extends TestCase {
 	public function test_admin_flush_all_returns_zero_when_nothing_to_clear(): void {
 		$this->assertSame( 0, Throttle::admin_flush_all() );
 	}
+
+	/* ------------------------------------------- T-THR: passkey buckets (step 10) */
+
+	/** @return array<string,mixed> */
+	private static function registry_after_flush(): array {
+		Throttle::flush_registry_writes();
+		return (array) get_option( Throttle::REGISTRY_OPTION, [] );
+	}
+
+	/** Passkey buckets open a fixed window on their first call (r1-endpoints-02): allow 1 s of test run time. */
+	private function assert_window_ttl( int $window, string $key, string $message = '' ): void {
+		$ttl = self::transient_ttl( $key );
+		$this->assertGreaterThanOrEqual( $window - 1, $ttl, $message );
+		$this->assertLessThanOrEqual( $window, $ttl, $message );
+	}
+
+	private static function transient_ttl( string $key ): int {
+		global $magicauth_test_state;
+		return (int) $magicauth_test_state['transients'][ $key ]['expires'] - time();
+	}
+
+	public function test_ip_bucket_shares_one_ipv6_64(): void {
+		$a = magicauth_ip_bucket( '2001:db8:1:2:3:4:5:6' );
+		$b = magicauth_ip_bucket( '2001:db8:1:2:ffff:ffff:ffff:ffff' );
+		$c = magicauth_ip_bucket( '2001:DB8:1:2::9' );
+
+		$this->assertSame( '2001:db8:1:2::', $a );
+		$this->assertSame( $a, $b );
+		$this->assertSame( $a, $c, 'notation does not matter' );
+		$this->assertSame( magicauth_hash_ip( $a ), magicauth_hash_ip( $b ) );
+	}
+
+	public function test_ip_bucket_separates_different_64s(): void {
+		$this->assertNotSame( magicauth_ip_bucket( '2001:db8:1:2::1' ), magicauth_ip_bucket( '2001:db8:1:3::1' ) );
+		$this->assertNotSame( magicauth_ip_bucket( '2001:db8:1:2::1' ), magicauth_ip_bucket( '2001:db9:1:2::1' ) );
+	}
+
+	public function test_ip_bucket_ipv4_is_the_address(): void {
+		$this->assertSame( '203.0.113.5', magicauth_ip_bucket( '203.0.113.5' ) );
+		$this->assertNotSame( magicauth_ip_bucket( '203.0.113.5' ), magicauth_ip_bucket( '203.0.113.6' ) );
+	}
+
+	/** A /64 cut of ::ffff:a.b.c.d would put every IPv4-mapped client in one bucket. */
+	public function test_ip_bucket_ipv4_mapped_counts_as_ipv4(): void {
+		$this->assertSame( '203.0.113.5', magicauth_ip_bucket( '::ffff:203.0.113.5' ) );
+		$this->assertNotSame( magicauth_ip_bucket( '::ffff:203.0.113.5' ), magicauth_ip_bucket( '::ffff:203.0.113.6' ) );
+	}
+
+	public function test_ip_bucket_leaves_non_addresses_unchanged(): void {
+		foreach ( [ '', '0.0.0.0', 'unix:', 'fe80::1%eth0', '999.1.1.1' ] as $value ) {
+			$this->assertSame( $value, magicauth_ip_bucket( $value ) );
+		}
+	}
+
+	public function test_options_buckets_never_grow_the_registry(): void {
+		Throttle::allow_link_request_ip( magicauth_hash_ip( '203.0.113.5' ) );
+		$before = self::registry_after_flush();
+
+		for ( $i = 0; $i < 20; $i++ ) {
+			$bucket = magicauth_hash_ip( magicauth_ip_bucket( "2001:db8:{$i}::1" ) );
+			$this->assertTrue( Throttle::allow_passkey_options_ip( $bucket ) );
+			$this->assertTrue( Throttle::allow_passkey_options_global() );
+		}
+
+		$this->assertSame( $before, self::registry_after_flush(), 'one key from the link bucket, none from the passkey options buckets' );
+		$this->assertSame( 20, (int) get_transient( 'magicauth_throttle_passkey_opts_global_all' ) );
+	}
+
+	public function test_global_ceiling_default_5000_per_10_minutes(): void {
+		global $magicauth_test_state;
+		$start = time();
+		for ( $i = 1; $i <= 5000; $i++ ) {
+			if ( ! Throttle::allow_passkey_options_global() ) {
+				$this->fail( "call {$i} refused below the ceiling" );
+			}
+		}
+		$this->assertFalse( Throttle::allow_passkey_options_global(), '5001st refused' );
+		// Fixed window (r1-endpoints-02): it ends 600 s after the first call.
+		$expires = (int) $magicauth_test_state['transients']['magicauth_throttle_passkey_opts_global_all']['expires'];
+		$this->assertGreaterThanOrEqual( $start + 600, $expires );
+		$this->assertLessThanOrEqual( $start + 601, $expires );
+	}
+
+	/** Past the ceiling the counter stops at max + 1, so a flood never re-stamps the window. */
+	public function test_global_ceiling_refusals_write_nothing_further(): void {
+		global $wpdb;
+		add_filter( 'magicauth_passkey_options_global_max', static fn() => 500 );
+		for ( $i = 0; $i < 501; $i++ ) {
+			Throttle::allow_passkey_options_global();
+		}
+		$wpdb->query_log = [];
+
+		$this->assertFalse( Throttle::allow_passkey_options_global() );
+		$this->assertFalse( Throttle::allow_passkey_options_global() );
+
+		$this->assertSame( 501, (int) get_transient( 'magicauth_throttle_passkey_opts_global_all' ) );
+		$this->assertSame( [], $wpdb->query_log, 'no write, no INSERT of any kind' );
+	}
+
+	/** @return array<string,array{0:mixed,1:int}> */
+	public static function global_filter_values(): array {
+		return [
+			'below the floor' => [ 100, 500 ],
+			'inside'          => [ 800, 800 ],
+			'above the cap'   => [ 200000, 100000 ],
+			'not numeric'     => [ 'lots', 5000 ],
+			'numeric string'  => [ '700', 700 ],
+		];
+	}
+
+	/**
+	 * @dataProvider global_filter_values
+	 * @param mixed $filtered
+	 */
+	public function test_global_ceiling_filter_is_clamped( $filtered, int $expected ): void {
+		add_filter( 'magicauth_passkey_options_global_max', static fn() => $filtered );
+		set_transient( 'magicauth_throttle_passkey_opts_global_all', $expected - 1, 600 );
+
+		$this->assertTrue( Throttle::allow_passkey_options_global(), 'the limit itself is allowed' );
+		$this->assertFalse( Throttle::allow_passkey_options_global(), 'one more is refused' );
+	}
+
+	public function test_options_per_network_300_then_refused_other_networks_unaffected(): void {
+		$bucket = magicauth_hash_ip( magicauth_ip_bucket( '2001:db8:1:2::1' ) );
+		for ( $i = 0; $i < 300; $i++ ) {
+			$this->assertTrue( Throttle::allow_passkey_options_ip( $bucket ) );
+		}
+		$this->assertFalse( Throttle::allow_passkey_options_ip( magicauth_hash_ip( magicauth_ip_bucket( '2001:db8:1:2::ffff' ) ) ), 'same /64' );
+		$this->assertTrue( Throttle::allow_passkey_options_ip( magicauth_hash_ip( magicauth_ip_bucket( '2001:db8:1:3::1' ) ) ), 'next /64' );
+		$this->assert_window_ttl( 600, 'magicauth_throttle_passkey_opts_ip_' . $bucket );
+	}
+
+	/** @return array<string,array{0:mixed,1:int}> */
+	public static function ip_filter_values(): array {
+		return [
+			'below the floor' => [ 5, 30 ],
+			'above the cap'   => [ 9000, 5000 ],
+			'not numeric'     => [ null, 300 ],
+		];
+	}
+
+	/**
+	 * @dataProvider ip_filter_values
+	 * @param mixed $filtered
+	 */
+	public function test_options_per_network_filter_is_clamped( $filtered, int $expected ): void {
+		$bucket = magicauth_hash_ip( '203.0.113.5' );
+		add_filter( 'magicauth_passkey_options_ip_max', static fn() => $filtered );
+		set_transient( 'magicauth_throttle_passkey_opts_ip_' . $bucket, $expected - 1, 600 );
+
+		$this->assertTrue( Throttle::allow_passkey_options_ip( $bucket ) );
+		$this->assertFalse( Throttle::allow_passkey_options_ip( $bucket ) );
+	}
+
+	public function test_failed_signins_block_after_the_setting_max_and_peek_never_counts(): void {
+		$bucket = magicauth_hash_ip( magicauth_ip_bucket( '203.0.113.5' ) );
+		for ( $i = 0; $i < 100; $i++ ) {
+			$this->assertFalse( Throttle::passkey_signin_blocked( $bucket ), 'peeking alone never blocks' );
+		}
+		for ( $i = 1; $i <= 30; $i++ ) {
+			$this->assertFalse( Throttle::passkey_signin_blocked( $bucket ), "attempt {$i} allowed" );
+			Throttle::record_passkey_signin_failure( $bucket );
+		}
+		$this->assertTrue( Throttle::passkey_signin_blocked( $bucket ), 'the 31st attempt is refused' );
+		$this->assert_window_ttl( 15 * 60, 'magicauth_throttle_passkey_fail_ip_' . $bucket );
+		$this->assertArrayHasKey( 'magicauth_throttle_passkey_fail_ip_' . $bucket, self::registry_after_flush(), 'registered: the admin flush clears it' );
+	}
+
+	public function test_failed_signin_limits_follow_the_settings_with_clamps(): void {
+		$bucket = magicauth_hash_ip( '203.0.113.7' );
+		update_option(
+			'magicauth_settings',
+			[
+				'throttle' => [
+					'per_ip_passkey_max'        => 3,
+					'per_ip_passkey_window_min' => 5000,
+				],
+			]
+		);
+		for ( $i = 0; $i < 3; $i++ ) {
+			Throttle::record_passkey_signin_failure( $bucket );
+		}
+		$this->assertTrue( Throttle::passkey_signin_blocked( $bucket ) );
+		$this->assert_window_ttl( 1440 * 60, 'magicauth_throttle_passkey_fail_ip_' . $bucket, 'window clamped to 1440 min' );
+
+		update_option( 'magicauth_settings', [ 'throttle' => [ 'per_ip_passkey_max' => 0 ] ] );
+		$this->assertFalse( Throttle::passkey_signin_blocked( magicauth_hash_ip( '203.0.113.8' ) ) );
+		Throttle::record_passkey_signin_failure( magicauth_hash_ip( '203.0.113.8' ) );
+		$this->assertTrue( Throttle::passkey_signin_blocked( magicauth_hash_ip( '203.0.113.8' ) ), 'max clamped to 1' );
+	}
+
+	/** @return array<string,array{0:string,1:int}> */
+	public static function user_buckets(): array {
+		return [
+			'reg'         => [ Throttle::ACTION_PASSKEY_REG_USER, 20 ],
+			'stale'       => [ Throttle::ACTION_PASSKEY_STALE_USER, 60 ],
+			'regfail'     => [ Throttle::ACTION_PASSKEY_REGFAIL_USER, 10 ],
+			'manage'      => [ Throttle::ACTION_PASSKEY_MANAGE_USER, 60 ],
+			'reauth mail' => [ Throttle::ACTION_PASSKEY_REAUTH_MAIL_USER, 5 ],
+			'reauth try'  => [ Throttle::ACTION_PASSKEY_REAUTH_TRY_USER, 20 ],
+			'reauth opts' => [ Throttle::ACTION_PASSKEY_REAUTH_OPTS_USER, 30 ],
+		];
+	}
+
+	/** @dataProvider user_buckets */
+	public function test_user_bucket_limits_per_hour( string $bucket, int $max ): void {
+		[ $limit, $window ] = Throttle::PASSKEY_USER_LIMITS[ $bucket ];
+		$this->assertSame( $max, $limit );
+		$this->assertSame( 3600, $window );
+
+		for ( $i = 0; $i < $max; $i++ ) {
+			$this->assertTrue( Throttle::allow_passkey_user( $bucket, 7, $limit, $window ) );
+		}
+		$this->assertFalse( Throttle::allow_passkey_user( $bucket, 7, $limit, $window ) );
+		$this->assertTrue( Throttle::allow_passkey_user( $bucket, 8, $limit, $window ), 'per user' );
+		$key = 'magicauth_throttle_' . $bucket . '_u7';
+		$this->assert_window_ttl( 3600, $key );
+		$this->assertArrayHasKey( $key, self::registry_after_flush() );
+	}
+
+	public function test_user_bucket_names_match_the_spec(): void {
+		$this->assertSame(
+			[
+				'passkey_reg_user',
+				'passkey_stale_user',
+				'passkey_regfail_user',
+				'passkey_manage_user',
+				'passkey_reauth_mail_user',
+				'passkey_reauth_try_user',
+				'passkey_reauth_opts_user',
+			],
+			array_keys( Throttle::PASSKEY_USER_LIMITS )
+		);
+		$this->assertSame( 'passkey_opts_global', Throttle::ACTION_PASSKEY_OPTS_GLOBAL );
+		$this->assertSame( 'passkey_opts_ip', Throttle::ACTION_PASSKEY_OPTS_IP );
+		$this->assertSame( 'passkey_fail_ip', Throttle::ACTION_PASSKEY_FAIL_IP );
+		$this->assertSame( 'passkey_reauth_cd', Throttle::ACTION_PASSKEY_REAUTH_CD );
+	}
+
+	/** Fetching step-up options never eats into the step-up attempts. */
+	public function test_reauth_options_and_attempts_are_separate_buckets(): void {
+		[ $max, $window ] = Throttle::PASSKEY_USER_LIMITS[ Throttle::ACTION_PASSKEY_REAUTH_OPTS_USER ];
+		for ( $i = 0; $i < 31; $i++ ) {
+			Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_REAUTH_OPTS_USER, 7, $max, $window );
+		}
+		$this->assertFalse( Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_REAUTH_OPTS_USER, 7, $max, $window ) );
+		[ $try_max, $try_window ] = Throttle::PASSKEY_USER_LIMITS[ Throttle::ACTION_PASSKEY_REAUTH_TRY_USER ];
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_reauth_try_user_u7' ) );
+		$this->assertTrue( Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_REAUTH_TRY_USER, 7, $try_max, $try_window ) );
+	}
+
+	public function test_user_bucket_refuses_unknown_buckets_and_users(): void {
+		$this->assertFalse( Throttle::allow_passkey_user( 'link_ip', 7, 10, 3600 ), 'not a passkey user bucket' );
+		$this->assertFalse( Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_OPTS_IP, 7, 10, 3600 ) );
+		$this->assertFalse( Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_REG_USER, 0, 10, 3600 ) );
+		$this->assertFalse( Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_REG_USER, -1, 10, 3600 ) );
+		$this->assertSame( [], self::registry_after_flush() );
+	}
+
+	public function test_reauth_email_cooldown_60_seconds_with_remaining(): void {
+		\MagicAuth\Passkeys\Clock::set_for_tests( 1790000000 );
+		$this->assertSame( 0, Throttle::passkey_reauth_cooldown_remaining( 7 ) );
+		$this->assertTrue( Throttle::allow_passkey_reauth_cooldown( 7 ) );
+		$this->assertFalse( Throttle::allow_passkey_reauth_cooldown( 7 ) );
+		$this->assertSame( 60, Throttle::passkey_reauth_cooldown_remaining( 7 ) );
+
+		\MagicAuth\Passkeys\Clock::set_for_tests( 1790000000 + 45 );
+		$this->assertSame( 15, Throttle::passkey_reauth_cooldown_remaining( 7 ) );
+		$this->assertTrue( Throttle::allow_passkey_reauth_cooldown( 8 ), 'per user' );
+		$this->assertFalse( Throttle::allow_passkey_reauth_cooldown( 0 ) );
+		$this->assertSame( 60, self::transient_ttl( 'magicauth_throttle_passkey_reauth_cd_u7' ) );
+		$this->assertArrayHasKey( 'magicauth_throttle_passkey_reauth_cd_u7', self::registry_after_flush() );
+	}
+
+	public function test_reset_for_ip_clears_the_passkey_network_buckets(): void {
+		$v6     = '2001:db8:1:2::1';
+		$bucket = magicauth_hash_ip( magicauth_ip_bucket( $v6 ) );
+		Throttle::allow_passkey_options_ip( $bucket );
+		Throttle::record_passkey_signin_failure( $bucket );
+
+		Throttle::reset_for_ip( magicauth_hash_ip( $v6 ), $v6 );
+
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_opts_ip_' . $bucket ) );
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_fail_ip_' . $bucket ) );
+
+		$v4 = magicauth_hash_ip( '203.0.113.5' );
+		Throttle::record_passkey_signin_failure( $v4 );
+		Throttle::reset_for_ip( $v4 );
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_fail_ip_' . $v4 ), 'IPv4: the bucket is the address' );
+	}
+
+	public function test_admin_flush_all_clears_registered_passkey_buckets(): void {
+		$bucket = magicauth_hash_ip( '203.0.113.5' );
+		Throttle::record_passkey_signin_failure( $bucket );
+		Throttle::allow_passkey_user( Throttle::ACTION_PASSKEY_MANAGE_USER, 7, 60, 3600 );
+		Throttle::allow_passkey_reauth_cooldown( 7 );
+		Throttle::flush_registry_writes();
+
+		Throttle::admin_flush_all();
+
+		$this->assertFalse( Throttle::passkey_signin_blocked( $bucket ) );
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_fail_ip_' . $bucket ) );
+		$this->assertFalse( get_transient( 'magicauth_throttle_passkey_manage_user_u7' ) );
+		$this->assertTrue( Throttle::allow_passkey_reauth_cooldown( 7 ) );
+	}
 }

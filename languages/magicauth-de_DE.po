@@ -1,26 +1,23 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: MagicAuth 1.0.3\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/magicauth\n"
+"Project-Id-Version: MagicAuth 1.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/MagicAuth\n"
+"POT-Creation-Date: 2026-10-02T09:14:17+00:00\n"
+"PO-Revision-Date: 2026-10-02\n"
 "Last-Translator: Ettic <support@ettic.nl>\n"
 "Language-Team: German\n"
+"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-22T19:10:14+00:00\n"
-"PO-Revision-Date: 2026-05-22\n"
-"Language: de_DE\n"
 "X-Generator: MagicAuth i18n generator\n"
 "X-Domain: magicauth\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #. Plugin Name of the plugin
-#: magicauth.php
-#: includes/Admin/Settings.php:99
-#: includes/Admin/Settings.php:100
-#: includes/Admin/Settings.php:140
-#: includes/Admin/Settings.php:158
-#: includes/Admin/UserProfile.php:46
+#: magicauth.php includes/Admin/Settings.php:102
+#: includes/Admin/Settings.php:103 includes/Admin/Settings.php:143
+#: includes/Admin/Settings.php:161 includes/Admin/UserProfile.php:46
 msgid "MagicAuth"
 msgstr ""
 
@@ -80,330 +77,430 @@ msgstr "Gefällt Ihnen MagicAuth? Hinterlassen Sie eine Bewertung und helfen Sie
 msgid "Leave a review"
 msgstr "Bewertung abgeben"
 
-#: includes/Admin/Settings.php:77
+#: includes/Admin/Settings.php:80
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: includes/Admin/Settings.php:151
+#: includes/Admin/Settings.php:154
 msgid "Discard"
 msgstr "Verwerfen"
 
-#: includes/Admin/Settings.php:152
+#: includes/Admin/Settings.php:155
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
-#: includes/Admin/Settings.php:159
+#: includes/Admin/Settings.php:162
 msgid "Passwordless sign-in via magic link or 6-character code. Configure how it looks, how it behaves, and how it recovers from edge cases. All on one page."
 msgstr "Passwortlose Anmeldung per Magic-Link oder 6-stelligem Code. Legen Sie fest, wie sie aussieht, wie sie sich verhält und wie sie sich von Sonderfällen erholt. Alles auf einer Seite."
 
-#: includes/Admin/Settings.php:179
+#: includes/Admin/Settings.php:183
 msgid "General"
 msgstr "Allgemein"
 
-#: includes/Admin/Settings.php:180
+#: includes/Admin/Settings.php:184
 msgid "How long links live and where users land afterwards."
 msgstr "Wie lange Links gültig sind und wo Nutzer danach landen."
 
-#: includes/Admin/Settings.php:195
+#: includes/Admin/Settings.php:199
 msgid "Branding"
 msgstr "Branding"
 
-#: includes/Admin/Settings.php:196
+#: includes/Admin/Settings.php:200
 msgid "How the sign-in card looks. Settings render on the branded login screen and in transactional emails."
 msgstr "Wie die Anmeldekarte aussieht. Diese Einstellungen erscheinen auf dem gebrandeten Anmeldebildschirm und in Transaktions-E-Mails."
 
-#: includes/Admin/Settings.php:214
+#: includes/Admin/Settings.php:218
 msgid "Agency credit"
 msgstr "Agentur-Credit"
 
-#: includes/Admin/Settings.php:215
+#: includes/Admin/Settings.php:219
 msgid "Optional \"Built by [Brand]\" line below the sign-in card. Renders only when name, URL, and favicon are all filled."
 msgstr "Optionale Zeile \"Erstellt von [Marke]\" unter der Anmeldekarte. Wird nur angezeigt, wenn Name, URL und Favicon ausgefüllt sind."
 
-#: includes/Admin/Settings.php:231
+#: includes/Admin/Settings.php:235
 msgid "Security &amp; throttling"
 msgstr "Sicherheit &amp; Drosselung"
 
-#: includes/Admin/Settings.php:232
+#: includes/Admin/Settings.php:236
 msgid "Recovery layers and rate-limit caps. The \"Sign in with password\" link is the unconditional safety net. Disable it only after site-wide password auth is already off."
 msgstr "Wiederherstellungsebenen und Ratenbegrenzungen. Der Link \"Mit Passwort anmelden\" ist das bedingungslose Sicherheitsnetz. Deaktivieren Sie ihn erst, nachdem die Passwort-Anmeldung site-weit bereits deaktiviert ist."
 
-#: includes/Admin/Settings.php:250
+#: includes/Admin/Settings.php:251 includes/Passkeys/ManageShortcode.php:138
+#: includes/Passkeys/ManageShortcode.php:201 includes/Passkeys/Privacy.php:267
+msgid "Passkeys"
+msgstr ""
+
+#: includes/Admin/Settings.php:252
+msgid "Let people sign in with a passkey after they have signed in once with email. Email sign-in always stays available."
+msgstr ""
+
+#: includes/Admin/Settings.php:269
+msgid "Enable passkeys"
+msgstr ""
+
+#: includes/Admin/Settings.php:270
+msgid "Adds a passkey button and passkey autofill to the sign-in form, and lets signed-in users create passkeys."
+msgstr ""
+
+#: includes/Admin/Settings.php:278
+msgid "Offer a passkey after email sign-in"
+msgstr ""
+
+#: includes/Admin/Settings.php:279
+msgid "After someone signs in with an email link or code, show a one-time offer to create a passkey. Not shown on devices marked as shared."
+msgstr ""
+
+#: includes/Admin/Settings.php:288
+msgid "Passkey management page"
+msgstr ""
+
+#: includes/Admin/Settings.php:289
+msgid "The page that contains the [magicauth_passkeys] shortcode. MagicAuth links to it after a passkey is created."
+msgstr ""
+
+#: includes/Admin/Settings.php:298
+msgid "Choose a page"
+msgstr ""
+
+#: includes/Admin/Settings.php:310
+msgid "No published pages yet."
+msgstr ""
+
+#: includes/Admin/Settings.php:323
+msgid "Require an email sign-in every (days)"
+msgstr ""
+
+#: includes/Admin/Settings.php:324
+msgid "0 turns this off. When set, a passkey stops working until the person signs in with email again. Use it when access should end when a mailbox is closed."
+msgstr ""
+
+#: includes/Admin/Settings.php:344
+msgid "Relying party ID"
+msgstr ""
+
+#: includes/Admin/Settings.php:345
+msgid "Allowed origin"
+msgstr ""
+
+#: includes/Admin/Settings.php:346
+msgid "Ed25519 support"
+msgstr ""
+
+#: includes/Admin/Settings.php:346 includes/Passkeys/Privacy.php:365
+msgid "Yes"
+msgstr ""
+
+#: includes/Admin/Settings.php:346 includes/Passkeys/Privacy.php:365
+msgid "No"
+msgstr ""
+
+#: includes/Admin/Settings.php:347
+msgid "Passkeys stored"
+msgstr ""
+
+#: includes/Admin/Settings.php:348
+msgid "Database version"
+msgstr ""
+
+#: includes/Admin/Settings.php:357
+msgid "Differs from the site host: set by MAGICAUTH_PASSKEY_RP_ID."
+msgstr ""
+
+#. translators: %s: why passkeys cannot be turned on, a lower-case sentence ending in a period.
+#: includes/Admin/Settings.php:382
+#, php-format
+msgid "Passkeys cannot be turned on: %s"
+msgstr ""
+
+#: includes/Admin/Settings.php:387
+msgid "Users without wp-admin access cannot manage their passkeys until you choose a management page."
+msgstr ""
+
+#: includes/Admin/Settings.php:434
 msgid "Diagnostics &amp; recovery"
 msgstr "Diagnose &amp; Wiederherstellung"
 
-#: includes/Admin/Settings.php:251
+#: includes/Admin/Settings.php:435
 msgid "One-shot tools for debugging and unsticking the plugin. Destructive actions ask for confirmation."
 msgstr "Einmal-Werkzeuge zum Debuggen und Entsperren des Plugins. Destruktive Aktionen erfordern eine Bestätigung."
 
-#: includes/Admin/Settings.php:259
+#: includes/Admin/Settings.php:443
 msgid "Send test email"
 msgstr "Test-E-Mail senden"
 
-#: includes/Admin/Settings.php:260
+#: includes/Admin/Settings.php:444
 msgid "One-shot diagnostic. No tokens are issued. Forces the default brand color to verify rendering."
 msgstr "Einmalige Diagnose. Es werden keine Token ausgegeben. Erzwingt die Standard-Markenfarbe, um die Darstellung zu prüfen."
 
-#: includes/Admin/Settings.php:263
+#: includes/Admin/Settings.php:447
 msgid "Send to my account"
 msgstr "An mein Konto senden"
 
-#: includes/Admin/Settings.php:269
+#: includes/Admin/Settings.php:453
 msgid "Revoke all magic-links and codes"
 msgstr "Alle Magic-Links und Codes widerrufen"
 
-#: includes/Admin/Settings.php:270
+#: includes/Admin/Settings.php:454
 msgid "Marks every unconsumed token consumed site-wide. Already-active sessions are not signed out."
 msgstr "Markiert jedes nicht eingelöste Token site-weit als eingelöst. Bereits aktive Sitzungen werden nicht abgemeldet."
 
-#: includes/Admin/Settings.php:273
+#: includes/Admin/Settings.php:457
 msgid "Revoke now"
 msgstr "Jetzt widerrufen"
 
-#: includes/Admin/Settings.php:279
+#: includes/Admin/Settings.php:463
 msgid "Reset throttle counters"
 msgstr "Drosselungszähler zurücksetzen"
 
-#: includes/Admin/Settings.php:280
+#: includes/Admin/Settings.php:464
 msgid "Deletes every magicauth_throttle_* transient. Object-cache safe."
 msgstr "Löscht jeden magicauth_throttle_*-Transient. Objekt-Cache-sicher."
 
-#: includes/Admin/Settings.php:283
+#: includes/Admin/Settings.php:467
 msgid "Reset now"
 msgstr "Jetzt zurücksetzen"
 
-#: includes/Admin/Settings.php:342
+#: includes/Admin/Settings.php:536
 msgid "Branded login is enabled, but your WordPress salts are still weak. Magic links each carry their own random secret so they stay safe; your session cookies and the 6-character codes are better protected once you fix the salts. See the weak-salt notice for how."
 msgstr "Die gebrandete Anmeldung ist aktiviert, aber Ihre WordPress-Salts sind noch schwach. Jeder Magic-Link trägt sein eigenes Zufallsgeheimnis und bleibt daher sicher; Ihre Sitzungs-Cookies und die 6-stelligen Codes sind besser geschützt, sobald Sie die Salts korrigieren. Wie das geht, steht im Hinweis zu schwachen Salts."
 
-#: includes/Admin/Settings.php:355
+#: includes/Admin/Settings.php:549
 msgid "Sender address: that value had no usable characters, so it was reset to \"login\"."
 msgstr "Absenderadresse: Dieser Wert enthielt keine verwendbaren Zeichen und wurde auf \"login\" zurückgesetzt."
 
-#: includes/Admin/Settings.php:430
+#: includes/Admin/Settings.php:616
+msgid "Passkey management page: choose a published page."
+msgstr ""
+
+#: includes/Admin/Settings.php:668
 msgid "Logo: selected attachment is not an image."
 msgstr "Logo: Der ausgewählte Anhang ist kein Bild."
 
-#: includes/Admin/Settings.php:446
+#: includes/Admin/Settings.php:684
 msgid "Logo: SVG contains active content (script / event handlers / javascript:). Re-export without scripting."
 msgstr "Logo: Das SVG enthält aktiven Inhalt (Script / Event-Handler / javascript:). Exportieren Sie es erneut ohne Skripte."
 
-#: includes/Admin/Settings.php:454
+#: includes/Admin/Settings.php:692
 msgid "Logo: only PNG, JPG, WebP, or SVG are allowed."
 msgstr "Logo: Nur PNG, JPG, WebP oder SVG sind erlaubt."
 
-#: includes/Admin/Settings.php:464
+#: includes/Admin/Settings.php:702
 msgid "Logo: file content does not match a supported image format."
 msgstr "Logo: Der Dateiinhalt entspricht keinem unterstützten Bildformat."
 
-#: includes/Admin/Settings.php:479
+#: includes/Admin/Settings.php:717
 msgid "Link &amp; code lifetime"
 msgstr "Lebensdauer von Link &amp; Code"
 
-#: includes/Admin/Settings.php:480
+#: includes/Admin/Settings.php:718
 msgid "Both the magic link and the typeable code share one expiry. Range 1–30 minutes."
 msgstr "Der Magic-Link und der eingebbare Code teilen sich eine Ablaufzeit. Bereich 1–30 Minuten."
 
-#: includes/Admin/Settings.php:484
+#: includes/Admin/Settings.php:722
 msgid "minutes"
 msgstr "Minuten"
 
-#: includes/Admin/Settings.php:496
-#: includes/Admin/Settings.php:500
+#: includes/Admin/Settings.php:734 includes/Admin/Settings.php:738
 msgid "Max link uses"
 msgstr "Max. Link-Nutzungen"
 
-#: includes/Admin/Settings.php:497
+#: includes/Admin/Settings.php:735
 msgid "2 absorbs URL-scanner prefetch plus the user's click. Set to 1 for strict single-use."
 msgstr "2 fängt das Prefetch von URL-Scannern plus den Klick des Nutzers ab. Auf 1 setzen für strikte Einmalnutzung."
 
-#: includes/Admin/Settings.php:517
+#: includes/Admin/Settings.php:755
 msgid "Auto (admin or home, by capability)"
 msgstr "Automatisch (Admin oder Startseite, je nach Berechtigung)"
 
-#: includes/Admin/Settings.php:518
+#: includes/Admin/Settings.php:756
 msgid "Site home"
 msgstr "Website-Startseite"
 
-#: includes/Admin/Settings.php:519
+#: includes/Admin/Settings.php:757
 msgid "Admin dashboard"
 msgstr "Admin-Dashboard"
 
-#: includes/Admin/Settings.php:524
+#: includes/Admin/Settings.php:762
 msgid "Default redirect after sign-in"
 msgstr "Standard-Weiterleitung nach der Anmeldung"
 
-#: includes/Admin/Settings.php:525
+#: includes/Admin/Settings.php:763
 msgid "Where users land when no specific destination was requested."
 msgstr "Wo Nutzer landen, wenn kein bestimmtes Ziel angefordert wurde."
 
-#: includes/Admin/Settings.php:549
+#: includes/Admin/Settings.php:787
 msgid "Replace WordPress login screen"
 msgstr "WordPress-Anmeldebildschirm ersetzen"
 
-#: includes/Admin/Settings.php:551
+#: includes/Admin/Settings.php:789
 msgid "Why is this flagged?"
 msgstr "Warum ist das markiert?"
 
-#: includes/Admin/Settings.php:551
+#: includes/Admin/Settings.php:789
 msgid "Heads up: weak salts"
 msgstr "Achtung: schwache Salts"
 
-#: includes/Admin/Settings.php:551
+#: includes/Admin/Settings.php:789
 msgid "You can turn this on now, but the salts in"
 msgstr "Sie können dies jetzt aktivieren, aber die Salts in"
 
-#: includes/Admin/Settings.php:551
+#: includes/Admin/Settings.php:789
 msgid "are weak — fixing them first is recommended."
 msgstr "sind schwach — es wird empfohlen, sie zuerst zu korrigieren."
 
-#: includes/Admin/Settings.php:551
+#: includes/Admin/Settings.php:789
 msgid "How to fix →"
 msgstr "So beheben Sie das →"
 
-#: includes/Admin/Settings.php:554
+#: includes/Admin/Settings.php:792
 msgid "Intercepts wp-login.php and serves the branded MagicAuth screen. The native form stays available at ?magicauth=off as a recovery path."
 msgstr "Fängt wp-login.php ab und zeigt den gebrandeten MagicAuth-Bildschirm. Das native Formular bleibt unter ?magicauth=off als Wiederherstellungspfad verfügbar."
 
 #. translators: "language switcher" is WordPress's own locale selector on the login screen.
-#: includes/Admin/Settings.php:576
+#: includes/Admin/Settings.php:814
 msgid "Hide language switcher"
 msgstr "Sprachumschalter ausblenden"
 
-#: includes/Admin/Settings.php:579
+#: includes/Admin/Settings.php:817
 msgid "WordPress adds a language selector to the login screen when extra languages are installed. MagicAuth places it under the card. Turn this on to hide it on the branded screen; the recovery login at ?magicauth=off keeps it."
 msgstr "WordPress fügt dem Anmeldebildschirm einen Sprachwähler hinzu, wenn zusätzliche Sprachen installiert sind. MagicAuth platziert ihn unter der Karte. Aktivieren Sie dies, um ihn auf dem gebrandeten Bildschirm auszublenden; die Wiederherstellungs-Anmeldung unter ?magicauth=off behält ihn."
 
-#: includes/Admin/Settings.php:598
+#: includes/Admin/Settings.php:836
 msgid "Company name"
 msgstr "Firmenname"
 
-#: includes/Admin/Settings.php:599
+#: includes/Admin/Settings.php:837
 msgid "Your short business name. No taglines, slogans, or separators."
 msgstr "Ihr kurzer Firmenname. Keine Slogans, Claims oder Trennzeichen."
 
-#: includes/Admin/Settings.php:616
+#: includes/Admin/Settings.php:854
 msgid "Sender email address"
 msgstr "Absender-E-Mail-Adresse"
 
-#: includes/Admin/Settings.php:617
+#: includes/Admin/Settings.php:855
 msgid "The address sign-in emails are sent from. Only the part before the @ is editable — it stays on your own domain so messages pass spam checks (SPF/DKIM/DMARC) instead of being flagged as forged. Letters, digits, and . _ - + only."
 msgstr "Die Adresse, von der Anmelde-E-Mails gesendet werden. Nur der Teil vor dem @ ist bearbeitbar — er bleibt auf Ihrer eigenen Domain, damit Nachrichten die Spam-Prüfungen (SPF/DKIM/DMARC) bestehen, statt als gefälscht markiert zu werden. Nur Buchstaben, Ziffern und . _ - +."
 
-#: includes/Admin/Settings.php:631
+#: includes/Admin/Settings.php:869
 msgid "Logo"
 msgstr ""
 
-#: includes/Admin/Settings.php:632
+#: includes/Admin/Settings.php:870
 msgid "PNG, JPG, or WebP. Existing SVG attachments may also be selected. Capped at 48px height on the sign-in card."
 msgstr "PNG, JPG oder WebP. Vorhandene SVG-Anhänge können ebenfalls ausgewählt werden. Auf 48px Höhe auf der Anmeldekarte begrenzt."
 
-#: includes/Admin/Settings.php:643
+#: includes/Admin/Settings.php:881
 msgid "Brand color"
 msgstr "Markenfarbe"
 
-#: includes/Admin/Settings.php:645
+#: includes/Admin/Settings.php:883
 msgid "Auto-derives readable button text via YIQ luminance. Current contrast:"
 msgstr "Leitet lesbaren Buttontext automatisch über YIQ-Luminanz ab. Aktueller Kontrast:"
 
-#: includes/Admin/Settings.php:651
+#: includes/Admin/Settings.php:889
 msgid "Color picker"
 msgstr "Farbwähler"
 
-#: includes/Admin/Settings.php:665
+#: includes/Admin/Settings.php:903
 msgid "Brand name"
 msgstr "Markenname"
 
-#: includes/Admin/Settings.php:666
+#: includes/Admin/Settings.php:904
 msgid "Shown bold in the credit line."
 msgstr "Wird fett in der Credit-Zeile angezeigt."
 
-#: includes/Admin/Settings.php:669
+#: includes/Admin/Settings.php:907
 msgid "Acme Studio"
 msgstr ""
 
-#: includes/Admin/Settings.php:681
+#: includes/Admin/Settings.php:919
 msgid "Brand URL"
 msgstr "Marken-URL"
 
-#: includes/Admin/Settings.php:682
+#: includes/Admin/Settings.php:920
 msgid "Opens in a new tab. Must start with http:// or https://."
 msgstr "Öffnet in einem neuen Tab. Muss mit http:// oder https:// beginnen."
 
-#: includes/Admin/Settings.php:695
+#: includes/Admin/Settings.php:933
 msgid "Brand favicon"
 msgstr "Marken-Favicon"
 
-#: includes/Admin/Settings.php:696
+#: includes/Admin/Settings.php:934
 msgid "Square 32×32 or larger. PNG, JPG, WebP, or SVG."
 msgstr "Quadratisch 32×32 oder größer. PNG, JPG, WebP oder SVG."
 
-#: includes/Admin/Settings.php:706
+#: includes/Admin/Settings.php:944
 msgid "Credit label"
 msgstr "Credit-Bezeichnung"
 
-#: includes/Admin/Settings.php:707
+#: includes/Admin/Settings.php:945
 msgid "Text shown before the brand name. Leave blank for the default (\"Built by\")."
 msgstr "Text, der vor dem Markennamen angezeigt wird. Leer lassen für den Standard (\"Erstellt von\")."
 
-#: includes/Admin/Settings.php:710
+#: includes/Admin/Settings.php:948
 msgid "Built by"
 msgstr "Erstellt von"
 
-#: includes/Admin/Settings.php:722
+#: includes/Admin/Settings.php:960
 msgid "\"Sign in with password\" link"
 msgstr "Link \"Mit Passwort anmelden\""
 
-#: includes/Admin/Settings.php:723
+#: includes/Admin/Settings.php:961
 msgid "Always-visible recovery link on every form. Only disable this if you have already disabled WordPress password authentication site-wide."
 msgstr "Immer sichtbarer Wiederherstellungslink auf jedem Formular. Deaktivieren Sie dies nur, wenn Sie die WordPress-Passwort-Authentifizierung bereits site-weit deaktiviert haben."
 
-#: includes/Admin/Settings.php:740
+#: includes/Admin/Settings.php:978
 msgid "Per-IP window (hours)"
 msgstr "Zeitfenster pro IP (Stunden)"
 
-#: includes/Admin/Settings.php:741
+#: includes/Admin/Settings.php:979
 msgid "Per-IP max requests"
 msgstr "Max. Anfragen pro IP"
 
-#: includes/Admin/Settings.php:742
+#: includes/Admin/Settings.php:980
 msgid "Per-IP code window (hours)"
 msgstr "Code-Zeitfenster pro IP (Stunden)"
 
-#: includes/Admin/Settings.php:743
+#: includes/Admin/Settings.php:981
 msgid "Per-IP max code attempts"
 msgstr "Max. Code-Versuche pro IP"
 
-#: includes/Admin/Settings.php:748
+#: includes/Admin/Settings.php:985
+msgid "Per-IP passkey window (minutes)"
+msgstr ""
+
+#: includes/Admin/Settings.php:986
+msgid "Per-IP failed passkey sign-ins"
+msgstr ""
+
+#: includes/Admin/Settings.php:991
 msgid "Per-email cooldown"
 msgstr "Abklingzeit pro E-Mail"
 
-#: includes/Admin/Settings.php:749
+#: includes/Admin/Settings.php:992
 msgid "Seconds between consecutive link requests for the same email. 0 disables. Default 60. Replaced the per-email hard cap in v1.3.7. That cap was a DoS primitive any IP could weaponize against any victim email."
 msgstr "Sekunden zwischen aufeinanderfolgenden Link-Anfragen für dieselbe E-Mail. 0 deaktiviert. Standard 60. Ersetzte das harte Limit pro E-Mail in v1.3.7. Dieses Limit war ein DoS-Primitiv, das jede IP gegen jede Opfer-E-Mail einsetzen konnte."
 
-#: includes/Admin/Settings.php:753
+#: includes/Admin/Settings.php:996
 msgid "seconds"
 msgstr "Sekunden"
 
-#: includes/Admin/Settings.php:790
+#: includes/Admin/Settings.php:1045
 msgid "Replace"
 msgstr "Ersetzen"
 
-#: includes/Admin/Settings.php:791
+#: includes/Admin/Settings.php:1046 includes/Passkeys/ManageShortcode.php:156
 msgid "Remove"
 msgstr "Entfernen"
 
-#: includes/Admin/Settings.php:806
-#: includes/Admin/Settings.php:829
-#: includes/Admin/Settings.php:852
-#: includes/Admin/UserProfile.php:180
-#: includes/Installer.php:304
+#: includes/Admin/Settings.php:1061 includes/Admin/Settings.php:1084
+#: includes/Admin/Settings.php:1107 includes/Admin/UserProfile.php:181
+#: includes/Installer.php:658 includes/Passkeys/AdminEndpoints.php:141
 msgid "You are not allowed to do this."
 msgstr "Sie dürfen dies nicht tun."
 
 #. translators: %d: number of tokens revoked
-#: includes/Admin/Settings.php:841
+#: includes/Admin/Settings.php:1096
 #, php-format
 msgid "%d outstanding token revoked."
 msgid_plural "%d outstanding tokens revoked."
@@ -411,7 +508,7 @@ msgstr[0] "%d ausstehendes Token widerrufen."
 msgstr[1] "%d ausstehende Token widerrufen."
 
 #. translators: %d: number of throttle counters cleared
-#: includes/Admin/Settings.php:864
+#: includes/Admin/Settings.php:1119
 #, php-format
 msgid "%d throttle counter cleared."
 msgid_plural "%d throttle counters cleared."
@@ -423,12 +520,12 @@ msgid "Per-user controls"
 msgstr "Steuerung pro Benutzer"
 
 #: includes/Admin/UserProfile.php:56
-msgid "Disable magic-link sign-in for this user"
-msgstr "Magic-Link-Anmeldung für diesen Benutzer deaktivieren"
+msgid "Disable MagicAuth sign-in for this user (email link, code and passkeys)"
+msgstr ""
 
 #: includes/Admin/UserProfile.php:59
-msgid "Saving with this checked invalidates all outstanding sign-in links for this user immediately."
-msgstr "Wenn Sie mit dieser Option speichern, werden alle ausstehenden Anmeldelinks für diesen Benutzer sofort ungültig."
+msgid "Saving with this checked cancels all outstanding sign-in links for this user and blocks passkey sign-in. Passkeys are kept and work again when you clear this option."
+msgstr ""
 
 #: includes/Admin/UserProfile.php:64
 msgid "Magic-link actions"
@@ -450,113 +547,168 @@ msgstr "Alle Magic-Links zurücksetzen"
 msgid "Cleared on next page load. Copy now."
 msgstr "Wird beim nächsten Laden der Seite gelöscht. Jetzt kopieren."
 
-#: includes/Admin/UserProfile.php:126
-#: includes/Admin/UserProfile.php:143
+#: includes/Admin/UserProfile.php:127 includes/Admin/UserProfile.php:144
 msgid "Could not issue link."
 msgstr "Link konnte nicht ausgestellt werden."
 
-#: includes/Admin/UserProfile.php:131
+#: includes/Admin/UserProfile.php:132
 msgid "Link created. Copy the URL now. It disappears on reload."
 msgstr "Link erstellt. Kopieren Sie die URL jetzt. Sie verschwindet beim Neuladen."
 
-#: includes/Admin/UserProfile.php:147
+#: includes/Admin/UserProfile.php:148
 msgid "wp_mail returned false. Check the server's mail configuration."
 msgstr "wp_mail hat false zurückgegeben. Prüfen Sie die Mail-Konfiguration des Servers."
 
-#: includes/Admin/UserProfile.php:149
+#: includes/Admin/UserProfile.php:150
 msgid "Link sent."
 msgstr "Link gesendet."
 
 #. translators: %d: number of tokens reset
-#: includes/Admin/UserProfile.php:159
+#: includes/Admin/UserProfile.php:160
 #, php-format
 msgid "%d outstanding link reset."
 msgid_plural "%d outstanding links reset."
 msgstr[0] "%d ausstehender Link zurückgesetzt."
 msgstr[1] "%d ausstehende Links zurückgesetzt."
 
-#: includes/Admin/UserProfile.php:176
+#: includes/Admin/UserProfile.php:177
 msgid "Missing user."
 msgstr "Benutzer fehlt."
 
-#: includes/Admin/UserProfile.php:185
+#: includes/Admin/UserProfile.php:186
 msgid "User not found."
 msgstr "Benutzer nicht gefunden."
 
-#: includes/Auth/Controller.php:468
+#: includes/Auth/Controller.php:532
 msgid "This sign-in link is for a different account."
 msgstr "Dieser Anmeldelink gehört zu einem anderen Konto."
 
-#: includes/Auth/Controller.php:469
+#: includes/Auth/Controller.php:533
 msgid "Sign out first if you need to switch accounts."
 msgstr "Melden Sie sich zuerst ab, wenn Sie das Konto wechseln möchten."
 
-#: includes/Auth/Controller.php:735
+#: includes/Auth/Controller.php:733
 msgid "Back to site"
 msgstr "Zurück zur Website"
 
-#: includes/Auth/TokenManager.php:46
-#: includes/Auth/TokenManager.php:420
+#: includes/Auth/TokenManager.php:57 includes/Auth/TokenManager.php:456
 msgid "If an account exists for that email, we sent a sign-in link."
 msgstr "Falls für diese E-Mail ein Konto existiert, haben wir einen Anmeldelink gesendet."
 
-#: includes/Auth/TokenManager.php:352
+#: includes/Auth/TokenManager.php:377
 msgid "MagicAuth sign-in tokens"
 msgstr "MagicAuth-Anmeldetoken"
 
-#: includes/Auth/TokenManager.php:356
+#: includes/Auth/TokenManager.php:381
 msgid "Selector"
 msgstr "Selektor"
 
-#: includes/Auth/TokenManager.php:360
+#: includes/Auth/TokenManager.php:385
 msgid "Issued"
 msgstr "Ausgestellt"
 
-#: includes/Auth/TokenManager.php:364
+#: includes/Auth/TokenManager.php:389
 msgid "Expires"
 msgstr "Läuft ab"
 
-#: includes/Auth/TokenManager.php:368
+#: includes/Auth/TokenManager.php:393
 msgid "Consumed"
 msgstr "Eingelöst"
 
-#: includes/Auth/TokenManager.php:369
+#: includes/Auth/TokenManager.php:394
 msgid "not yet"
 msgstr "noch nicht"
 
+#. translators: %s: company name
+#: includes/Email/Mailer.php:120
+#, php-format
+msgid "A passkey was added to your %s account"
+msgstr ""
+
+#. translators: %s: company name
+#: includes/Email/Mailer.php:159 templates/email-confirm-code-plain.php:20
+#: templates/email-confirm-code.php:25
+#, php-format
+msgid "Your confirmation code for %s"
+msgstr ""
+
+#. translators: 1: number of passkeys, 2: company name
+#: includes/Email/Mailer.php:202
+#, php-format
+msgid "%1$d passkey was removed from your %2$s account"
+msgid_plural "%1$d passkeys were removed from your %2$s account"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: last 4 characters of the passkey's identifier, for example 9F3A.
+#: includes/Email/Mailer.php:241 includes/Email/Mailer.php:593
+#: includes/Passkeys/Presenter.php:61 includes/Passkeys/Privacy.php:231
+#, php-format
+msgid "Passkey ending in %s"
+msgstr ""
+
+#. translators: %s: company name
+#: includes/Email/Mailer.php:257
+#, php-format
+msgid "A passkey on your %s account was blocked"
+msgstr ""
+
 #. translators: 1: formatted sign-in code (XXX-XXX), 2: company name
-#: includes/Email/Mailer.php:100
+#: includes/Email/Mailer.php:282
 #, php-format
 msgid "%1$s is your %2$s-code"
 msgstr "%1$s ist Ihr %2$s-Code"
 
 #. translators: %s: company name
-#: includes/Email/Mailer.php:166
-#: templates/email-disabled-notice-plain.php:19
+#: includes/Email/Mailer.php:348 templates/email-disabled-notice-plain.php:19
 #: templates/email-disabled-notice.php:22
 #: templates/email-disabled-notice.php:41
 #, php-format
 msgid "About your sign-in request for %s"
 msgstr "Zu Ihrer Anmeldeanfrage für %s"
 
+#: includes/Email/Mailer.php:580 includes/Passkeys/ManageShortcode.php:143
+#: includes/Passkeys/Privacy.php:223
+msgid "Synced across your devices"
+msgstr ""
+
+#: includes/Email/Mailer.php:582 includes/Passkeys/ManageShortcode.php:144
+#: includes/Passkeys/Privacy.php:225
+msgid "Can be synced, not synced yet"
+msgstr ""
+
+#: includes/Email/Mailer.php:584 includes/Passkeys/ManageShortcode.php:145
+#: includes/Passkeys/Privacy.php:227
+msgid "This device only"
+msgstr ""
+
+#. translators: %s: passkey provider name, as the device reports it.
+#: includes/Email/Mailer.php:595 includes/Email/Mailer.php:597
+#: includes/Passkeys/ManageShortcode.php:169
+msgid "Unknown provider"
+msgstr ""
+
+#. translators: %s: passkey provider name, as the device reports it.
+#: includes/Email/Mailer.php:597 includes/Passkeys/ManageShortcode.php:171
+#, php-format
+msgid "%s (reported by the device)"
+msgstr ""
+
 #. translators: %s: company name
-#: includes/Frontend/LoginScreen.php:266
-#: templates/email-magic-link.php:88
-#: templates/email-magic-link.php:93
-#: templates/login-form.php:63
-#: templates/login-form.php:75
-#: templates/login-form.php:201
-#: templates/login-form.php:257
+#: includes/Frontend/LoginScreen.php:272 templates/email-magic-link.php:88
+#: templates/email-magic-link.php:93 templates/login-form.php:70
+#: templates/login-form.php:82 templates/login-form.php:208
+#: templates/login-form.php:264
 msgid "Sign in"
 msgstr "Anmelden"
 
 #. translators: %s display name
-#: includes/Frontend/Shortcode.php:178
+#: includes/Frontend/Shortcode.php:192
 #, php-format
 msgid "You're already signed in as %s."
 msgstr "Sie sind bereits als %s angemeldet."
 
-#: includes/Frontend/Shortcode.php:186
+#: includes/Frontend/Shortcode.php:200
 msgid "Sign out"
 msgstr "Abmelden"
 
@@ -618,41 +770,607 @@ msgstr "Zu viele Anfragen zum Zurücksetzen des Passworts. Bitte warten Sie eine
 msgid "Too many incorrect codes for this link. Please request a new sign-in link."
 msgstr "Zu viele falsche Codes für diesen Link. Bitte fordern Sie einen neuen Anmeldelink an."
 
-#: includes/Frontend/Toast.php:126
-#: assets/js/magicauth-admin.js:412
+#: includes/Frontend/Toast.php:126 assets/js/magicauth-admin.js:412
 msgid "Dismiss"
 msgstr "Schließen"
 
-#: includes/Installer.php:232
+#: includes/Installer.php:586
 msgid "MagicAuth: response-flush helper unavailable."
 msgstr "MagicAuth: Response-Flush-Helfer nicht verfügbar."
 
-#: includes/Installer.php:233
+#: includes/Installer.php:587
 msgid "Your PHP runtime does not provide fastcgi_finish_request(). MagicAuth cannot defer email sending until after the response, so SMTP latency may leak whether an account exists. Switch to PHP-FPM (or LiteSpeed) for full timing parity."
 msgstr "Ihre PHP-Laufzeit bietet kein fastcgi_finish_request(). MagicAuth kann den E-Mail-Versand nicht bis nach der Antwort verzögern, sodass die SMTP-Latenz verraten könnte, ob ein Konto existiert. Wechseln Sie zu PHP-FPM (oder LiteSpeed) für vollständige Timing-Parität."
 
-#: includes/Installer.php:266
+#: includes/Installer.php:620
 msgid "MagicAuth: weak WordPress salts detected."
 msgstr "MagicAuth: schwache WordPress-Salts erkannt."
 
-#: includes/Installer.php:267
+#: includes/Installer.php:621
 msgid "Your security keys still hold placeholder or empty values, so token and session secrets are not unique to this site. Your magic links stay safe (each carries its own random secret), but fixing this is recommended — especially before turning on the branded login replacement."
 msgstr "Ihre Sicherheitsschlüssel enthalten noch Platzhalter- oder leere Werte, daher sind Token- und Sitzungsgeheimnisse nicht eindeutig für diese Website. Ihre Magic-Links bleiben sicher (jeder trägt sein eigenes Zufallsgeheimnis), aber eine Korrektur wird empfohlen — besonders bevor Sie den gebrandeten Anmelde-Ersatz aktivieren."
 
-#: includes/Installer.php:270
+#: includes/Installer.php:624
 msgid "Learn how to fix this"
 msgstr "Erfahren Sie, wie Sie das beheben"
 
-#: includes/Plugin.php:94
-#: includes/Plugin.php:108
+#. translators: %d: seconds to wait
+#: includes/Passkeys/AccountEndpoints.php:170
+#, php-format
+msgid "Please wait %d second before you send another code."
+msgid_plural "Please wait %d seconds before you send another code."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Passkeys/AccountEndpoints.php:575
+#: includes/Passkeys/AccountEndpoints.php:698
+#: includes/Passkeys/AdminEndpoints.php:151
+#: includes/Passkeys/ManageShortcode.php:178
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:673
+#: includes/Passkeys/ManageShortcode.php:181
+msgid "For your security, confirm it is you before you add a passkey."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:675
+#: includes/Passkeys/ManageShortcode.php:193
+msgid "Sign out and sign in again with your email to add a passkey."
+msgstr ""
+
+#. translators: %d: maximum number of passkeys per account
+#: includes/Passkeys/AccountEndpoints.php:679
+#, php-format
+msgid "You have %d passkey, which is the maximum. Remove one before you add another."
+msgid_plural "You have %d passkeys, which is the maximum. Remove one before you add another."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Passkeys/AccountEndpoints.php:681
+#: includes/Passkeys/ManageShortcode.php:200 includes/Passkeys/Prompt.php:315
+msgid "The passkey could not be saved. Please try again."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:683
+#: includes/Passkeys/ManageShortcode.php:174
+msgid "You already have a passkey with this name. Choose another name."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:685
+#: includes/Passkeys/ManageShortcode.php:188
+msgid "That code is not correct or has expired. Check the code, or send a new one."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:688
+#: includes/Passkeys/ManageShortcode.php:190
+msgid "That did not work. Try again, or confirm with a code from your email."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:690
+#: includes/Passkeys/ManageShortcode.php:191
+msgid "Too many attempts. Please try again later."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:692
+#: includes/Passkeys/ManageShortcode.php:199 includes/Passkeys/Prompt.php:314
+msgid "Something went wrong while creating the passkey. Please try again."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:694
+#: includes/Passkeys/ManageShortcode.php:166
+msgid "Enter a name of up to 64 characters."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:696
+#: includes/Passkeys/AdminEndpoints.php:140
+msgid "This passkey no longer exists. Reload this page."
+msgstr ""
+
+#: includes/Passkeys/AccountEndpoints.php:700
+#: includes/Passkeys/ManageShortcode.php:197 includes/Passkeys/Prompt.php:312
+msgid "Passkeys are not available on this site right now."
+msgstr ""
+
+#. translators: %d: number of passkeys removed
+#: includes/Passkeys/AdminEndpoints.php:87
+#, php-format
+msgid "%d passkey removed."
+msgid_plural "%d passkeys removed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Passkeys/Http.php:222 includes/Passkeys/SignInEndpoints.php:219
+msgid "Passkeys are not available on this site right now. Sign in with your email."
+msgstr ""
+
+#: includes/Passkeys/Http.php:224 includes/Passkeys/ManageShortcode.php:179
+msgid "Your session has ended. Sign in again."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:139
+msgid "A passkey lets you sign in with your fingerprint, face or screen lock instead of an email code. You can always sign in with your email as well."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:140
+msgid "You have no passkeys yet."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:141
+msgid "Add a passkey"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:142
+msgid "Do not add a passkey on a device that other people also use."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:146
+msgid "Not used yet"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:147
+msgid "Cannot be used on this site address"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:148
+msgid "This passkey was blocked because it may have been copied. Remove it and add a new one."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:149
+msgid "New"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:150
+msgid "Rename"
+msgstr ""
+
+#. translators: Hidden end of the Rename button's accessible name, after "Rename"; %s: passkey name.
+#: includes/Passkeys/ManageShortcode.php:152
+#, php-format
+msgid "passkey %s"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:153
+msgid "Passkey name"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:154
+msgid "Save"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:155 assets/js/magicauth-admin.js:514
+#: assets/js/magicauth-admin.js:660
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#. translators: Hidden end of the Remove button's accessible name, after "Remove"; %s: passkey name.
+#: includes/Passkeys/ManageShortcode.php:158
+#, php-format
+msgctxt "after Remove"
+msgid "passkey %s"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:159
+msgid "Remove this passkey?"
+msgstr ""
+
+#. translators: %s: passkey name
+#: includes/Passkeys/ManageShortcode.php:161
+#, php-format
+msgid "You can no longer sign in with \"%s\" after this. You can still sign in with your email."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:162
+msgid "Remove passkey"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:163
+msgid "Passkey removed."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:164
+msgid "Passkey renamed."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:165
+msgid "Passkey added."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:167
+msgid "You need JavaScript to manage passkeys. Turn on JavaScript in your browser and reload this page."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:168
+msgid "This browser cannot create passkeys. You can still remove passkeys here."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:172
+msgid "Sign out on all other devices"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:173
+msgid "Also sign out on all other devices"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:175
+msgid "Blocked"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:176
+msgid "You are signed out on all other devices."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:177
+msgid "Your passkeys could not be loaded. Reload this page to try again."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:180
+msgid "Confirm it is you"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:182
+msgid "Send a code to my email"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:183
+msgid "Use an existing passkey"
+msgstr ""
+
+#. translators: %s: masked email address, for example l***@example.com
+#: includes/Passkeys/ManageShortcode.php:185
+#, php-format
+msgid "We sent a 6-character code to %s. The code is valid for 10 minutes."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:186
+msgid "Confirmation code"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:187 assets/js/magicauth-admin.js:513
+msgid "Confirm"
+msgstr "Bestätigen"
+
+#: includes/Passkeys/ManageShortcode.php:189
+msgid "Confirmed. You can now create your passkey."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:192
+msgid "Send a new code"
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:194 includes/Passkeys/Prompt.php:305
+msgid "Follow the steps in your browser."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:195 includes/Passkeys/Prompt.php:309
+msgid "No passkey was created. You can try again, or keep signing in with your email."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:196 includes/Passkeys/Prompt.php:311
+msgid "This device already has a passkey for your account."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:198 includes/Passkeys/Prompt.php:313
+msgid "This device or security key cannot create a passkey with a screen lock. Try your phone or another device."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:202
+msgid "Remove all passkeys"
+msgstr ""
+
+#. translators: %s: the user's display name
+#: includes/Passkeys/ManageShortcode.php:204
+#, php-format
+msgid "Remove all passkeys for %s? They can still sign in with their email."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:205
+msgid "This user has no passkeys."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:206
+msgid "Passkeys are turned off for this site. You can still remove stored passkeys."
+msgstr ""
+
+#: includes/Passkeys/ManageShortcode.php:207
+msgid "Also sign this user out everywhere"
+msgstr ""
+
+#: includes/Passkeys/Module.php:107
+msgid "the PHP OpenSSL extension is missing."
+msgstr ""
+
+#: includes/Passkeys/Module.php:116
+msgid "the site address is an IP address."
+msgstr ""
+
+#: includes/Passkeys/Module.php:119
+msgid "the site is not served over HTTPS."
+msgstr ""
+
+#: includes/Passkeys/Module.php:123
+msgid "the home and site addresses differ (scheme, host or port)."
+msgstr ""
+
+#: includes/Passkeys/Module.php:130
+msgid "another WordPress site shares this address (subfolder install or subdirectory multisite)."
+msgstr ""
+
+#: includes/Passkeys/Module.php:134
+msgid "the database tables are missing. Reload this page to retry the upgrade."
+msgstr ""
+
+#: includes/Passkeys/Module.php:191
+msgid "your profile in the dashboard"
+msgstr ""
+
+#. translators: %s: date the passkey was added.
+#: includes/Passkeys/Presenter.php:68
+#, php-format
+msgid "Added on %s"
+msgstr ""
+
+#. translators: %s: date the passkey was last used to sign in.
+#: includes/Passkeys/Presenter.php:71
+#, php-format
+msgid "Last used on %s"
+msgstr ""
+
+#. translators: %s: platform name, not translated (Windows, Mac, iPhone, iPad, Android, ChromeOS, Linux).
+#: includes/Passkeys/Presenter.php:134
+#, php-format
+msgid "Passkey on %s"
+msgstr ""
+
+#. translators: %s: platform name, not translated (Windows, Mac, iPhone, iPad, Android, ChromeOS, Linux).
+#: includes/Passkeys/Presenter.php:134 includes/Passkeys/Privacy.php:354
+msgid "Passkey"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:97
+msgid "Passkey user handle"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:107
+msgid "Prompt declines"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:108
+msgid "Next prompt (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:109
+msgid "Email last verified (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:110
+msgid "Email changed (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:111
+msgid "Account details changed (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:120
+msgid "Step-up time (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:121
+msgid "Step-up method"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:194
+msgid "The sign-in method and time stay in your active sessions until they end."
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:197
+msgid "The time of your last email address change is kept, so passkeys created before it stay blocked on the other sites of this network."
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:200
+msgid "Passkeys saved in your browser or password manager are not removed by this site. Delete them there."
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:234
+msgid "Name"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:235
+msgid "Label"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:236
+msgid "Provider"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:237
+msgid "Sync state"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:238
+msgid "Backup eligible"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:239
+msgid "Backup state"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:240
+msgid "Signature counter"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:241
+msgid "Transports"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:242
+msgid "Added (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:243
+msgid "Last used (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:244
+msgid "Possible copy detected (UTC)"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:245
+msgid "Site address"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:246
+msgid "Credential ID"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:351
+msgid "Code from your email"
+msgstr ""
+
+#: includes/Passkeys/Privacy.php:390
+msgid "The passkey data could not be read or removed. Please try again."
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:298
+msgid "Sign in faster next time"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:299
+msgid "Add a passkey for this device"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:300
+msgid "Create a passkey on this device. Next time you can sign in with your fingerprint, face or screen lock instead of an email code."
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:301
+msgid "Your passkey is stored on your device or in your password manager. You can always sign in with your email instead."
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:302
+msgid "Create a passkey"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:303
+msgid "Not now"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:304
+msgid "This is a shared device. Do not ask again on this device."
+msgstr ""
+
+#. translators: %s: the label of the sign-in button, "Sign in with a passkey".
+#: includes/Passkeys/Prompt.php:307
+#, php-format
+msgid "Passkey created. Next time, choose \"%s\"."
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:308
+msgid "Done"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:310 includes/Passkeys/SignInEndpoints.php:215
+msgid "If you opened this page from an email app, open it in your browser and try again."
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:316
+msgid "Close"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:317
+msgid "Try again"
+msgstr ""
+
+#: includes/Passkeys/Prompt.php:318
+msgid "Manage passkeys"
+msgstr ""
+
+#: includes/Passkeys/RelyingParty.php:52
+msgid "MAGICAUTH_PASSKEY_RP_ID is not a valid suffix of the site host."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:212
+msgid "Sign in with a passkey"
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:213
+msgid "Waiting for your passkey."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:214
+msgid "Signing in with a passkey did not work. Try again, or sign in with your email."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:216
+msgid "Too many attempts from your network. Wait a few minutes, or sign in with your email."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:217
+msgid "You are signed in to a different account. Sign out first, then try again."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:218
+msgid "Signing in did not finish. Please try again."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:220
+msgid "For your security, sign in with your email this time. After that you can use your passkey again."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:221
+msgctxt "divider between the email form and the passkey button"
+msgid "or"
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:222
+msgid "Signed in. Opening your page."
+msgstr ""
+
+#: includes/Passkeys/SignInEndpoints.php:223
+msgid "That took too long. Choose your passkey again."
+msgstr ""
+
+#: includes/Plugin.php:105 includes/Plugin.php:124
 msgid "MagicAuth login activity"
 msgstr "MagicAuth-Anmeldeaktivität"
+
+#: includes/Plugin.php:109 includes/Plugin.php:128
+msgid "MagicAuth passkeys"
+msgstr ""
 
 #. translators: %s agency brand name (rendered bold)
 #: templates/agency-credit.php:21
 #, php-format
 msgid "Built by %s"
 msgstr "Erstellt von %s"
+
+#. translators: %s: confirmation code, for example ABC-DEF
+#: templates/email-confirm-code-plain.php:23
+#: templates/email-confirm-code.php:57
+#, php-format
+msgid "Use this code to confirm it is you: %s"
+msgstr ""
+
+#. translators: %d: minutes the code stays valid
+#: templates/email-confirm-code-plain.php:27
+#: templates/email-confirm-code.php:69
+#, php-format
+msgid "The code is valid for %d minute. You asked for it to add a passkey to your account."
+msgid_plural "The code is valid for %d minutes. You asked for it to add a passkey to your account."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: company name
+#: templates/email-confirm-code-plain.php:37
+#: templates/email-confirm-code.php:85
+#, php-format
+msgid "Never share this code. Nobody from %s will ask you for it."
+msgstr ""
+
+#: templates/email-confirm-code-plain.php:39
+#: templates/email-confirm-code.php:91
+msgid "If you did not ask for this code, someone may be signed in to your account. Contact your administrator."
+msgstr ""
 
 #. translators: %s: company name
 #: templates/email-disabled-notice-plain.php:23
@@ -682,11 +1400,9 @@ msgid "If you did not request a sign-in code, you can ignore this message. No fu
 msgstr "Wenn Sie keinen Anmeldecode angefordert haben, können Sie diese Nachricht ignorieren. Es ist keine weitere Aktion erforderlich."
 
 #. translators: %s: company name
-#: templates/email-magic-link-plain.php:24
-#: templates/email-magic-link.php:38
-#: templates/email-magic-link.php:55
-#: templates/login-form.php:62
-#: templates/login-form.php:74
+#: templates/email-magic-link-plain.php:24 templates/email-magic-link.php:38
+#: templates/email-magic-link.php:55 templates/login-form.php:69
+#: templates/login-form.php:81
 #, php-format
 msgid "Sign in to %s"
 msgstr "Bei %s anmelden"
@@ -705,8 +1421,7 @@ msgstr "Anmeldecode:"
 msgid "Sign-in link:"
 msgstr "Anmeldelink:"
 
-#: templates/email-magic-link-plain.php:37
-#: templates/email-magic-link.php:100
+#: templates/email-magic-link-plain.php:37 templates/email-magic-link.php:100
 msgid "If you didn't request this, you can safely ignore this email."
 msgstr "Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail bedenkenlos ignorieren."
 
@@ -724,106 +1439,322 @@ msgstr "Verwenden Sie den Code unten oder klicken Sie auf die Schaltfläche, um 
 msgid "Test send"
 msgstr "Testversand"
 
-#: templates/login-form.php:58
+#: templates/email-passkey-added-plain.php:24
+#: templates/email-passkey-added.php:39 templates/email-passkey-added.php:53
+msgid "A passkey was added"
+msgstr ""
+
+#: templates/email-passkey-added-plain.php:27
+#: templates/email-passkey-added.php:58
+#: templates/email-passkey-blocked-plain.php:23
+#: templates/email-passkey-blocked.php:61
+#: templates/email-passkeys-removed-plain.php:25
+#: templates/email-passkeys-removed.php:74
+msgid "Hello,"
+msgstr ""
+
+#. translators: 1: company name, 2: date and time, 3: time zone
+#: templates/email-passkey-added-plain.php:31
+#: templates/email-passkey-added.php:67
+#, php-format
+msgid "A passkey was added to your account at %1$s on %2$s (%3$s)."
+msgstr ""
+
+#. translators: %s: "Passkey ending in 7F3A"
+#: templates/email-passkey-added-plain.php:38
+#: templates/email-passkey-added.php:80
+#, php-format
+msgid "Passkey: %s"
+msgstr ""
+
+#. translators: 1: passkey provider, 2: sync status, for example "This device only"
+#: templates/email-passkey-added-plain.php:42
+#: templates/email-passkey-added.php:90
+#, php-format
+msgid "Stored in: %1$s. %2$s"
+msgstr ""
+
+#: templates/email-passkey-added-plain.php:47
+#: templates/email-passkey-added.php:100
+msgid "If you added this passkey, you do not need to do anything."
+msgstr ""
+
+#. translators: 1: where the person manages passkeys, for example "Account (/account/)", 2: last 4 characters of the passkey's identifier
+#: templates/email-passkey-added-plain.php:52
+#: templates/email-passkey-added.php:110
+#, php-format
+msgid "If you did not add this passkey yourself, someone else may have access to your account. Sign in with your email, go to %1$s, remove the passkey ending in %2$s and choose \"Sign out on all other devices\". Then contact your administrator."
+msgstr ""
+
+#. translators: %s: last 4 characters of the passkey's identifier
+#: templates/email-passkey-added-plain.php:59
+#: templates/email-passkey-added.php:119
+#, php-format
+msgid "If you did not add this passkey yourself, someone else may have access to your account. Sign in with your email, open your passkey settings, remove the passkey ending in %s and choose \"Sign out on all other devices\". Then contact your administrator."
+msgstr ""
+
+#: templates/email-passkey-blocked-plain.php:21
+#: templates/email-passkey-blocked.php:42
+#: templates/email-passkey-blocked.php:56
+msgid "A passkey was blocked"
+msgstr ""
+
+#. translators: 1: "Passkey ending in 7F3A", 2: date, time and time zone
+#: templates/email-passkey-blocked-plain.php:27
+#: templates/email-passkey-blocked.php:70
+#, php-format
+msgid "A passkey on your account (%1$s) was blocked at %2$s because it may have been copied."
+msgstr ""
+
+#: templates/email-passkey-blocked-plain.php:32
+#: templates/email-passkey-blocked.php:80
+msgid "It cannot be used to sign in any more. You can still sign in with your email."
+msgstr ""
+
+#. translators: %s: where the person manages passkeys, for example "Account (/account/)"
+#: templates/email-passkey-blocked-plain.php:36
+#: templates/email-passkey-blocked.php:30
+#, php-format
+msgid "Sign in with your email, go to %s, remove the blocked passkey and choose \"Sign out on all other devices\"."
+msgstr ""
+
+#: templates/email-passkey-blocked-plain.php:38
+#: templates/email-passkey-blocked.php:32
+msgid "Sign in with your email, open your passkey settings, remove the blocked passkey and choose \"Sign out on all other devices\"."
+msgstr ""
+
+#: templates/email-passkeys-removed-plain.php:23
+#: templates/email-passkeys-removed.php:29
+msgid "A passkey was removed"
+msgid_plural "Passkeys were removed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/email-passkeys-removed-plain.php:28
+#: templates/email-passkeys-removed.php:32
+msgid "Your passkeys were removed because the email address of your account changed."
+msgstr ""
+
+#. translators: 1: number of passkeys, 2: company name, 3: date and time, 4: time zone
+#: templates/email-passkeys-removed-plain.php:31
+#: templates/email-passkeys-removed.php:35
+#, php-format
+msgid "An administrator removed %1$d passkey from your account at %2$s on %3$s (%4$s)."
+msgid_plural "An administrator removed %1$d passkeys from your account at %2$s on %3$s (%4$s)."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: number of passkeys, 2: company name, 3: date and time, 4: time zone
+#: templates/email-passkeys-removed-plain.php:34
+#: templates/email-passkeys-removed.php:38
+#, php-format
+msgid "You removed %1$d passkey from your account at %2$s on %3$s (%4$s)."
+msgid_plural "You removed %1$d passkeys from your account at %2$s on %3$s (%4$s)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/email-passkeys-removed-plain.php:37
+#: templates/email-passkeys-removed.php:84
+msgid "You can still sign in with your email."
+msgstr ""
+
+#. translators: %s: where the person manages passkeys, for example "Account (/account/)"
+#: templates/email-passkeys-removed-plain.php:41
+#: templates/email-passkeys-removed.php:43
+#, php-format
+msgid "If you did not expect this, someone else may have access to your account. Sign in with your email, go to %s and choose \"Sign out on all other devices\". Then contact your administrator."
+msgstr ""
+
+#: templates/email-passkeys-removed-plain.php:43
+#: templates/email-passkeys-removed.php:45
+msgid "If you did not expect this, someone else may have access to your account. Sign in with your email, open your passkey settings and choose \"Sign out on all other devices\". Then contact your administrator."
+msgstr ""
+
+#: templates/login-form.php:65
 msgid "Check your email"
 msgstr "Prüfen Sie Ihre E-Mail"
 
-#: templates/login-form.php:66
+#: templates/login-form.php:73
 msgid "Reset your password"
 msgstr "Setzen Sie Ihr Passwort zurück"
 
-#: templates/login-form.php:69
+#: templates/login-form.php:76
 msgid "Set a new password"
 msgstr "Legen Sie ein neues Passwort fest"
 
 #. translators: %s email address
-#: templates/login-form.php:122
+#: templates/login-form.php:129
 #, php-format
 msgid "Enter the verification code we sent to %s."
 msgstr "Geben Sie den Bestätigungscode ein, den wir an %s gesendet haben."
 
-#: templates/login-form.php:129
+#: templates/login-form.php:136
 msgid "Enter the 6-character code we just emailed you."
 msgstr "Geben Sie den 6-stelligen Code ein, den wir Ihnen gerade per E-Mail gesendet haben."
 
-#: templates/login-form.php:134
+#: templates/login-form.php:141
 msgid "Enter your username or email and we will send a link to set a new password."
 msgstr "Geben Sie Ihren Benutzernamen oder Ihre E-Mail ein, und wir senden einen Link, um ein neues Passwort festzulegen."
 
-#: templates/login-form.php:138
+#: templates/login-form.php:145
 msgid "Choose a strong password. You will be signed in once it is saved."
 msgstr "Wählen Sie ein starkes Passwort. Sie werden angemeldet, sobald es gespeichert ist."
 
-#: templates/login-form.php:177
+#: templates/login-form.php:184
 msgid "6-character verification code"
 msgstr "6-stelliger Bestätigungscode"
 
-#: templates/login-form.php:210
+#: templates/login-form.php:217
 msgid "Use a different email"
 msgstr "Andere E-Mail verwenden"
 
-#: templates/login-form.php:218
-#: templates/login-form.php:225
-#: templates/login-form.php:282
-#: templates/login-form.php:289
+#: templates/login-form.php:225 templates/login-form.php:232
+#: templates/login-form.php:289 templates/login-form.php:296
 msgid "Username or email"
 msgstr "Benutzername oder E-Mail"
 
-#: templates/login-form.php:234
-#: templates/login-form.php:241
+#: templates/login-form.php:241 templates/login-form.php:248
 msgid "Password"
 msgstr "Passwort"
 
-#: templates/login-form.php:250
+#: templates/login-form.php:257
 msgid "Remember me"
 msgstr "Angemeldet bleiben"
 
-#: templates/login-form.php:267
+#: templates/login-form.php:274
 msgid "Forgot password?"
 msgstr "Passwort vergessen?"
 
-#: templates/login-form.php:274
+#: templates/login-form.php:281
 msgid "Use a magic link instead"
 msgstr "Stattdessen einen Magic-Link verwenden"
 
-#: templates/login-form.php:299
+#: templates/login-form.php:306
 msgid "Send Reset Link"
 msgstr "Zurücksetzungslink senden"
 
-#: templates/login-form.php:308
+#: templates/login-form.php:315
 msgid "Back to sign in"
 msgstr "Zurück zur Anmeldung"
 
-#: templates/login-form.php:316
-#: templates/login-form.php:323
+#: templates/login-form.php:323 templates/login-form.php:330
 msgid "New password"
 msgstr "Neues Passwort"
 
-#: templates/login-form.php:332
-#: templates/login-form.php:339
+#: templates/login-form.php:339 templates/login-form.php:346
 msgid "Confirm new password"
 msgstr "Neues Passwort bestätigen"
 
-#: templates/login-form.php:350
+#: templates/login-form.php:357
 msgid "Save and sign in"
 msgstr "Speichern und anmelden"
 
-#: templates/login-form.php:361
+#: templates/login-form.php:368
 msgid "Email address"
 msgstr "E-Mail-Adresse"
 
-#: templates/login-form.php:369
+#: templates/login-form.php:376
 msgid "you@example.com"
 msgstr ""
 
-#: templates/login-form.php:380
+#: templates/login-form.php:388
 msgid "Send Link"
 msgstr "Link senden"
 
-#: templates/login-form.php:401
+#: templates/login-form.php:418
 msgid "Sign in with password"
 msgstr "Mit Passwort anmelden"
 
-#: templates/login-form.php:411
+#: templates/login-form.php:428
 msgid "Change language. Current:"
 msgstr "Sprache ändern. Aktuell:"
+
+#: assets/js/magicauth-admin.js:54
+msgid "Choose image"
+msgstr "Bild auswählen"
+
+#: assets/js/magicauth-admin.js:55
+msgid "Use this image"
+msgstr "Dieses Bild verwenden"
+
+#: assets/js/magicauth-admin.js:264
+msgid " unsaved change"
+msgid_plural " unsaved changes"
+msgstr[0] " ungespeicherte Änderung"
+msgstr[1] " ungespeicherte Änderungen"
+
+#: assets/js/magicauth-admin.js:316
+msgid "Use a 6-character hex like"
+msgstr "Verwenden Sie einen 6-stelligen Hex-Wert wie"
+
+#: assets/js/magicauth-admin.js:341 assets/js/magicauth-admin.js:342
+msgid "Saving…"
+msgstr "Wird gespeichert…"
+
+#: assets/js/magicauth-admin.js:434
+msgid "Settings saved."
+msgstr "Einstellungen gespeichert."
+
+#: assets/js/magicauth-admin.js:443
+msgid "Test email sent. Check your inbox (and spam folder)."
+msgstr "Test-E-Mail gesendet. Prüfen Sie Ihren Posteingang (und den Spam-Ordner)."
+
+#: assets/js/magicauth-admin.js:451
+msgid "wp_mail returned false. Check your server's mail configuration."
+msgstr "wp_mail hat false zurückgegeben. Prüfen Sie die Mail-Konfiguration Ihres Servers."
+
+#: assets/js/magicauth-admin.js:475
+msgid "Changes discarded."
+msgstr "Änderungen verworfen."
+
+#: assets/js/magicauth-admin.js:575
+msgid "Working…"
+msgstr "Wird ausgeführt…"
+
+#: assets/js/magicauth-admin.js:652
+msgid "Revoke all magic-links and codes?"
+msgstr "Alle Magic-Links und Codes widerrufen?"
+
+#: assets/js/magicauth-admin.js:652
+msgid "Reset throttle counters?"
+msgstr "Drosselungszähler zurücksetzen?"
+
+#: assets/js/magicauth-admin.js:654
+msgid "This invalidates every outstanding sign-in link and code site-wide."
+msgstr "Dies macht jeden ausstehenden Anmeldelink und Code site-weit ungültig."
+
+#: assets/js/magicauth-admin.js:655
+msgid "This clears every per-IP, per-email, and per-row rate-limit counter."
+msgstr "Dies löscht jeden Ratenbegrenzungszähler pro IP, pro E-Mail und pro Zeile."
+
+#: assets/js/magicauth-admin.js:657
+msgid "<p>Anyone with an unconsumed link in their inbox will need to request a new one.</p><p>Active sessions are <strong>not</strong> signed out. This cannot be undone.</p>"
+msgstr "<p>Jeder mit einem nicht eingelösten Link im Posteingang muss einen neuen anfordern.</p><p>Aktive Sitzungen werden <strong>nicht</strong> abgemeldet. Dies kann nicht rückgängig gemacht werden.</p>"
+
+#: assets/js/magicauth-admin.js:658
+msgid "<p>Use this when a probe has pinned the throttle and locked out legitimate users.</p>"
+msgstr "<p>Verwenden Sie dies, wenn ein Probe-Angriff die Drosselung blockiert und legitime Nutzer ausgesperrt hat.</p>"
+
+#: assets/js/magicauth-admin.js:659
+msgid "Revoke all"
+msgstr "Alle widerrufen"
+
+#: assets/js/magicauth-admin.js:659
+msgid "Reset counters"
+msgstr "Zähler zurücksetzen"
+
+#: assets/js/magicauth-admin.js:677 assets/js/magicauth-admin.js:729
+msgid "Request failed."
+msgstr "Anfrage fehlgeschlagen."
+
+#: assets/js/magicauth-admin.js:683
+msgid "Done."
+msgstr "Fertig."
+
+#: assets/js/magicauth-admin.js:687
+msgid "Network error. Please try again."
+msgstr "Netzwerkfehler. Bitte versuchen Sie es erneut."
+
+#: assets/js/magicauth-admin.js:745
+msgid "Network error."
+msgstr "Netzwerkfehler."

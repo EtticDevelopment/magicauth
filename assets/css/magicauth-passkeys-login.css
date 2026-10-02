@@ -1,0 +1,99 @@
+/*
+ * MagicAuth passkey sign-in block on the login form (SPEC 8.5, 8.10). Loaded only while the passkeys
+ * module is enabled and the form renders state A; magicauth.css is unchanged. Reads the existing
+ * --magicauth-* tokens with the magicauth.css defaults as fallbacks and never redeclares them.
+ * Logical properties only (RTL without a separate file).
+ */
+
+/* State rule: hidden means hidden, whatever display a theme gives buttons (the only !important). */
+[data-magicauth-passkey-root][hidden],
+[data-magicauth-passkey-signin][hidden],
+[data-magicauth-pk-add][hidden],
+[data-magicauth-pk-view][hidden] {
+	display: none !important;
+}
+
+.magicauth-passkey {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.magicauth-passkey .magicauth-divider {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 0;
+	font-family: var(--magicauth-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);
+	font-size: var(--magicauth-font-size-small, 14px);
+	color: var(--magicauth-color-text-muted, #50575e);
+}
+
+.magicauth-passkey .magicauth-divider::before,
+.magicauth-passkey .magicauth-divider::after {
+	content: "";
+	flex: 1;
+	border-block-start: 1px solid var(--magicauth-color-divider, #e9ecef);
+}
+
+.magicauth-passkey .magicauth-button--secondary {
+	color: var(--magicauth-color-text, #101517);
+	background: var(--magicauth-color-surface, #ffffff);
+	border: 1px solid var(--magicauth-color-border-strong, #b4b9c1);
+}
+
+.magicauth-passkey .magicauth-button--secondary:hover {
+	filter: none;
+	border-color: var(--magicauth-color-text-muted, #50575e);
+}
+
+.magicauth-passkey .magicauth-button--secondary:focus-visible {
+	outline: 2px solid var(--magicauth-color-focus-ring, var(--magicauth-color-primary, #2271b1));
+	outline-offset: 2px;
+}
+
+/* Busy or throttled: aria-disabled, never the disabled attribute (focus stays on the button). */
+.magicauth-passkey .magicauth-button--secondary[aria-disabled="true"] {
+	cursor: not-allowed;
+}
+
+.magicauth-passkey .magicauth-button--secondary.is-loading {
+	cursor: progress;
+}
+
+.magicauth-passkey .magicauth-passkey__error {
+	margin: 0;
+	font-family: var(--magicauth-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);
+	font-size: var(--magicauth-font-size-small, 14px);
+	line-height: 1.5;
+	color: var(--magicauth-color-error, #b32d2e);
+}
+
+.magicauth-pk-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.magicauth-passkey .magicauth-button--secondary {
+		transition: none;
+	}
+}
+
+@media (forced-colors: active) {
+	.magicauth-passkey .magicauth-button--secondary {
+		border: 1px solid ButtonText;
+	}
+
+	.magicauth-passkey .magicauth-button--secondary:focus-visible {
+		outline: 2px solid CanvasText;
+	}
+}

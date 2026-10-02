@@ -69,6 +69,38 @@ jobs:
           wp-env run cli wp plugin activate magicauth
           wp-env run cli wp plugin activate plugin-check
 
+      # Activation ran the real dbDelta() on the real database (SPEC 14.1):
+      # all four tables of DB version 2 must exist, the requests table with
+      # issued_by, and the stored version must be 2. `wp db query` needs the
+      # MySQL client in the cli container; when the client fails (not the
+      # table), the same SHOW CREATE TABLE runs through $wpdb instead.
+      - name: Verify the MagicAuth schema
+        run: |
+          set -euo pipefail
+          show_create() {
+            local out
+            out=$(wp-env run cli wp db query "SHOW CREATE TABLE $1" 2>/dev/null || true)
+            if ! grep -q 'CREATE TABLE' <<< "${out}"; then
+              out=$(wp-env run cli wp eval "global \$wpdb; \$r = \$wpdb->get_row( 'SHOW CREATE TABLE $1', ARRAY_N ); echo is_array( \$r ) ? \$r[1] : 'MISSING';" 2>/dev/null || true)
+            fi
+            printf '%s\n' "${out}"
+          }
+          for t in wp_magicauth_requests wp_magicauth_passkeys wp_magicauth_passkey_challenges wp_magicauth_passkey_sessions; do
+            out=$(show_create "${t}")
+            echo "${out}"
+            if ! grep -q "CREATE TABLE \`${t}\`" <<< "${out}"; then
+              echo "::error::Table ${t} is missing after activation."
+              exit 1
+            fi
+            if [ "${t}" = wp_magicauth_requests ] && ! grep -q '`issued_by`' <<< "${out}"; then
+              echo "::error::wp_magicauth_requests has no issued_by column."
+              exit 1
+            fi
+          done
+          version=$(wp-env run cli wp option get magicauth_db_version 2>/dev/null | tr -d '[:space:]')
+          echo "magicauth_db_version: ${version}"
+          [ "${version}" = "2" ] || { echo "::error::magicauth_db_version is '${version}', expected 2."; exit 1; }
+
       - name: Run Plugin Check
         run: |
           # wp-cli's ℹ/✔ wrapper lines go to stderr; only the check payload lands
@@ -78,7 +110,7 @@ jobs:
           wp-env run cli wp plugin check magicauth \
             --format=json \
             --ignore-warnings \
-            --exclude-directories=build,tests,_dev \
+            --exclude-directories=build,tests,_dev,tools \
             --exclude-files=phpstan.neon.dist,phpunit.xml.dist,composer.json,composer.lock,.wp-env.json \
             > results.txt 2>/dev/null || true
           echo "--- Plugin Check raw results ---"
@@ -129,8 +161,14 @@ jobs:
       - name: Install Composer dev dependencies
         run: composer update --no-progress --no-interaction --prefer-dist
 
+      # A process that exits 0 without output used to pass this gate (the
+      # composer `files` autoload hit helpers.php's ABSPATH guard and killed
+      # the run before analysis). Require PHPStan's own success line.
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+        run: |
+          set -o pipefail
+          vendor/bin/phpstan analyse --no-progress --memory-limit=2G | tee phpstan.txt
+          grep -q '\[OK\] No errors' phpstan.txt
 
   phpunit:
     name: PHPUnit (PHP ${{ matrix.php }})
@@ -138,7 +176,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.0', '8.1', '8.2', '8.3']
+        # 8.0 to 8.3 verify Ed25519 through sodium, 8.4 through OpenSSL.
+        php: ['8.0', '8.1', '8.2', '8.3', '8.4']
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -147,7 +186,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: pdo, pdo_sqlite, sqlite3
+          extensions: pdo, pdo_sqlite, sqlite3, intl
           coverage: none
           tools: composer
 
@@ -161,8 +200,179 @@ jobs:
       - name: Install Composer dev dependencies
         run: composer update --no-progress --no-interaction --prefer-dist
 
+      # Same guard as PHPStan: a silent exit 0 must not read as a pass.
       - name: Run PHPUnit
-        run: vendor/bin/phpunit --colors=never
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --colors=never | tee phpunit.txt
+          grep -qE '^OK \([0-9]+ tests' phpunit.txt
+
+  # Store and installer suites (group realdb: T-CS, T-CRED, T-SS, T-INST)
+  # against real MySQL 8.0 and MariaDB 10.11 (SPEC 14.1). The wpdb shim
+  # connects through PDO without CLIENT_FOUND_ROWS, so UPDATE reports changed
+  # rows as WordPress's mysqli connection does; tables come from the
+  # production DDL. RealDatabaseTest fails unless the named server answered.
+  real-database:
+    name: Real database (${{ matrix.db.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - { label: 'MySQL 8.0', image: 'mysql:8.0', expect: '8.0.' }
+          - { label: 'MariaDB 10.11', image: 'mariadb:10.11', expect: 'MariaDB' }
+    services:
+      db:
+        image: ${{ matrix.db.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: magicauth_test
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: magicauth_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot || mariadb-admin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_mysql, pdo_sqlite, sqlite3, intl
+          coverage: none
+          tools: composer
+
+      - name: Cache Composer packages
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-8.3-${{ hashFiles('composer.json') }}
+          restore-keys: composer-8.3-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run the realdb group
+        env:
+          MAGICAUTH_TEST_DB: mysql
+          MAGICAUTH_TEST_DB_HOST: 127.0.0.1
+          MAGICAUTH_TEST_DB_PORT: '3306'
+          MAGICAUTH_TEST_DB_NAME: magicauth_test
+          MAGICAUTH_TEST_DB_USER: root
+          MAGICAUTH_TEST_DB_PASS: root
+          MAGICAUTH_TEST_DB_EXPECT: ${{ matrix.db.expect }}
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --colors=never --group realdb | tee phpunit-realdb.txt
+          grep -qE '^OK \([0-9]+ tests' phpunit-realdb.txt
+
+  # The vendored passkeys library (SPEC 4.9): rebuilt from the pinned upstream
+  # commit plus patches and compared byte for byte, so a hand edit fails; then
+  # PHPStan level 0 with the PHP 8.0 floor over includes/ThirdParty.
+  vendored-library:
+    name: Vendored library (passkeys-php)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+
+      - name: Rebuild and compare includes/ThirdParty/Passkeys
+        run: |
+          command -v patch > /dev/null || { sudo apt-get update -q && sudo apt-get install -yq patch; }
+          tools/passkeys-php/vendor.sh --check
+
+      - name: Cache Composer packages
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.json') }}
+          restore-keys: composer-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: PHPStan (level 0, PHP 8.0) on includes/ThirdParty
+        run: |
+          set -o pipefail
+          vendor/bin/phpstan analyse -c tools/passkeys-php/phpstan.neon --no-progress --memory-limit=1G | tee phpstan-thirdparty.txt
+          grep -q '\[OK\] No errors' phpstan-thirdparty.txt
+
+  # Passkeys end to end (SPEC 14.2, build step 16): WordPress Playground serves the
+  # release tree of tools/build-release.sh at http://localhost:9400 (never 127.0.0.1,
+  # not a valid RP ID); Chrome drives it with a CDP virtual authenticator. The whole
+  # suite (E0 to E29) runs on PHP 8.3 and WordPress 7.1, the smoke subset (E0, E2,
+  # E6) on PHP 8.0. Runs on every push, so later steps and releases keep the gate.
+  e2e:
+    name: E2E (PHP ${{ matrix.php }}${{ matrix.smoke && ', smoke' || '' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.3', smoke: false }
+          - { php: '8.0', smoke: true }
+    steps:
+      # Full history: E26 builds the 1.0.5 baseline from commit d8c8d7d in a worktree.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Host PHP runs only tests/e2e/tools/normalise.php (E26); WordPress runs in Playground.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install E2E dependencies
+        working-directory: tests/e2e
+        run: npm ci --no-audit --no-fund
+
+      # node:test's own summary is the gate: an exit code alone could hide a run that
+      # never reached the specs, so require "fail 0" and at least one pass.
+      - name: Run E2E
+        working-directory: tests/e2e
+        env:
+          MAGICAUTH_E2E_CHROME: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          set -o pipefail
+          node run.mjs --php=${{ matrix.php }} --wp=7.1 ${{ matrix.smoke && '--smoke' || '' }} | tee e2e.txt
+          grep -qE '^ℹ fail 0$' e2e.txt
+          grep -qE '^ℹ pass [1-9][0-9]*$' e2e.txt
+
+      - name: Upload Playground logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-php${{ matrix.php }}
+          path: build/e2e/logs
+          if-no-files-found: ignore
 
   version-consistency:
     name: Version consistency

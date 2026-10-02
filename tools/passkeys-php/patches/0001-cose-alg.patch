@@ -1,0 +1,129 @@
+Subject: R1, COSE key validation and the key algorithm
+Reason: W3C L3 7.1 step 20 (alg among the offered ones) was not implemented: an unknown alg fell through the switch and registered an unusable key with PHP warnings; every COSE value is now type-checked before use (no strlen()/ord() on null, bools or text), and processCreate() returns credentialAlg (AuthenticatorData::getCredentialPublicKeyAlg()) so the caller checks it against the offered list (audit 2, 3, 9).
+
+diff -ruN a/Attestation/AuthenticatorData.php b/Attestation/AuthenticatorData.php
+--- a/Attestation/AuthenticatorData.php
++++ b/Attestation/AuthenticatorData.php
+@@ -119,6 +119,18 @@
+     }
+ 
+     /**
++     * returns the COSE algorithm of the credential public key (-7, -257 or -8)
++     * @return int
++     * @throws WebAuthnException
++     */
++    public function getCredentialPublicKeyAlg(): int {
++        if (!($this->_attestedCredentialData instanceof \stdClass) || !isset($this->_attestedCredentialData->credentialPublicKey)) {
++            throw  new WebAuthnException('credential data not included in authenticator data', WebAuthnException::INVALID_DATA);
++        }
++        return $this->_attestedCredentialData->credentialPublicKey->alg;
++    }
++
++    /**
+      * returns the public key in PEM format
+      * @return string
+      */
+@@ -341,15 +353,26 @@
+     private function _readCredentialPublicKey($binary, $offset, &$endOffset) {
+         $enc = CborDecoder::decodeInPlace($binary, $offset, $endOffset);
+ 
++        // The COSE key must be a map with integer kty and alg.
++        if (!\is_array($enc)) {
++            throw new WebAuthnException('invalid public key', WebAuthnException::INVALID_PUBLIC_KEY);
++        }
++
+         // COSE key-encoded elliptic curve public key in EC2 format
+         $credPKey = new \stdClass();
+-        $credPKey->kty = $enc[self::$_COSE_KTY];
+-        $credPKey->alg = $enc[self::$_COSE_ALG];
++        $credPKey->kty = $enc[self::$_COSE_KTY] ?? null;
++        $credPKey->alg = $enc[self::$_COSE_ALG] ?? null;
+ 
++        if (!\is_int($credPKey->kty) || !\is_int($credPKey->alg)) {
++            throw new WebAuthnException('invalid public key', WebAuthnException::INVALID_PUBLIC_KEY);
++        }
++
++        // W3C L3 7.1 step 20: only the algorithms a caller can offer.
+         switch ($credPKey->alg) {
+             case self::$_EC2_ES256: $this->_readCredentialPublicKeyES256($credPKey, $enc); break;
+             case self::$_RSA_RS256: $this->_readCredentialPublicKeyRS256($credPKey, $enc); break;
+             case self::$_OKP_EDDSA: $this->_readCredentialPublicKeyEDDSA($credPKey, $enc); break;
++            default: throw new WebAuthnException('unsupported public key algorithm', WebAuthnException::INVALID_PUBLIC_KEY);
+         }
+ 
+         return $credPKey;
+@@ -362,14 +385,20 @@
+      * @throws WebAuthnException
+      */
+     private function _readCredentialPublicKeyEDDSA(&$credPKey, $enc) {
+-        $credPKey->crv = $enc[self::$_COSE_CRV];
++        $credPKey->crv = $enc[self::$_COSE_CRV] ?? null;
+ 
+         if (!isset($enc[self::$_COSE_X])) {
+             throw new WebAuthnException('public key missing', WebAuthnException::MISSING_PUBLIC_KEY);
+         }
+-        $credPKey->x   = $enc[self::$_COSE_X] instanceof ByteBuffer ? $enc[self::$_COSE_X]->getBinaryString() : null;
++        $x = $enc[self::$_COSE_X];
+         unset ($enc);
+ 
++        // Typed values before any string function runs on them.
++        if (!\is_int($credPKey->crv) || !($x instanceof ByteBuffer) || $x->getLength() !== 32) {
++            throw new WebAuthnException('invalid public key', WebAuthnException::INVALID_PUBLIC_KEY);
++        }
++        $credPKey->x   = $x->getBinaryString();
++
+         // Validation
+         if ($credPKey->kty !== self::$_OKP_TYPE) {
+             throw new WebAuthnException('public key not in OKP format', WebAuthnException::INVALID_PUBLIC_KEY);
+@@ -395,11 +424,18 @@
+      * @throws WebAuthnException
+      */
+     private function _readCredentialPublicKeyES256(&$credPKey, $enc) {
+-        $credPKey->crv = $enc[self::$_COSE_CRV];
+-        $credPKey->x   = $enc[self::$_COSE_X] instanceof ByteBuffer ? $enc[self::$_COSE_X]->getBinaryString() : null;
+-        $credPKey->y   = $enc[self::$_COSE_Y] instanceof ByteBuffer ? $enc[self::$_COSE_Y]->getBinaryString() : null;
++        $credPKey->crv = $enc[self::$_COSE_CRV] ?? null;
++        $x = $enc[self::$_COSE_X] ?? null;
++        $y = $enc[self::$_COSE_Y] ?? null;
+         unset ($enc);
+ 
++        // Typed values before any string function runs on them.
++        if (!\is_int($credPKey->crv) || !($x instanceof ByteBuffer) || $x->getLength() !== 32 || !($y instanceof ByteBuffer) || $y->getLength() !== 32) {
++            throw new WebAuthnException('invalid public key', WebAuthnException::INVALID_PUBLIC_KEY);
++        }
++        $credPKey->x   = $x->getBinaryString();
++        $credPKey->y   = $y->getBinaryString();
++
+         // Validation
+         if ($credPKey->kty !== self::$_EC2_TYPE) {
+             throw new WebAuthnException('public key not in EC2 format', WebAuthnException::INVALID_PUBLIC_KEY);
+@@ -429,9 +465,16 @@
+      * @throws WebAuthnException
+      */
+     private function _readCredentialPublicKeyRS256(&$credPKey, $enc) {
+-        $credPKey->n = $enc[self::$_COSE_N] instanceof ByteBuffer ? $enc[self::$_COSE_N]->getBinaryString() : null;
+-        $credPKey->e = $enc[self::$_COSE_E] instanceof ByteBuffer ? $enc[self::$_COSE_E]->getBinaryString() : null;
++        $n = $enc[self::$_COSE_N] ?? null;
++        $e = $enc[self::$_COSE_E] ?? null;
+         unset ($enc);
++
++        // Typed values before any string function runs on them.
++        if (!($n instanceof ByteBuffer) || $n->getLength() < 256 || $n->getLength() > 512 || !($e instanceof ByteBuffer) || $e->getLength() < 1 || $e->getLength() > 8) {
++            throw new WebAuthnException('invalid public key', WebAuthnException::INVALID_PUBLIC_KEY);
++        }
++        $credPKey->n = $n->getBinaryString();
++        $credPKey->e = $e->getBinaryString();
+ 
+         // Validation
+         if ($credPKey->kty !== self::$_RSA_TYPE) {
+diff -ruN a/WebAuthn.php b/WebAuthn.php
+--- a/WebAuthn.php
++++ b/WebAuthn.php
+@@ -321,6 +321,7 @@
+         $data->rpId = $this->_rpId;
+         $data->credentialId = $attestationObject->getAuthenticatorData()->getCredentialId();
+         $data->credentialPublicKey = $attestationObject->getAuthenticatorData()->getPublicKeyPem();
++        $data->credentialAlg = $attestationObject->getAuthenticatorData()->getCredentialPublicKeyAlg();
+         $data->signatureCounter = $this->_signatureCounter;
+         $data->AAGUID = $attestationObject->getAuthenticatorData()->getAAGUID();
+         $data->userPresent = $userPresent;

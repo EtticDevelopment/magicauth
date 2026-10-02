@@ -3,12 +3,22 @@ includes:
 
 parameters:
     level: 6
+    # Plugin floor is PHP 8.0: flag any 8.1+ syntax or API.
+    phpVersion: 80000
+    # WordPress filters can return anything, whatever the stubs say, so
+    # defensive type checks are intentional.
+    treatPhpDocTypesAsCertain: false
     paths:
         - includes
     bootstrapFiles:
         - magicauth.php
+    # The vendored library is scanned for symbols, not analysed at level 6:
+    # tools/passkeys-php/phpstan.neon checks it at level 0 (SPEC 4.9).
     excludePaths:
-        - includes/.gitkeep
+        analyseAndScan:
+            - includes/.gitkeep
+        analyse:
+            - includes/ThirdParty
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         - identifier: missingType.iterableValue

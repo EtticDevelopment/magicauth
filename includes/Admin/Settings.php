@@ -17,6 +17,9 @@ use MagicAuth\Auth\Throttle;
 use MagicAuth\Auth\TokenManager;
 use MagicAuth\Email\Mailer;
 use MagicAuth\Installer;
+use MagicAuth\Passkeys\CredentialStore;
+use MagicAuth\Passkeys\Module;
+use MagicAuth\Passkeys\RelyingParty;
 
 final class Settings {
 
@@ -164,6 +167,7 @@ final class Settings {
 					<?php self::render_section_branding( $weak_salts ); ?>
 					<?php self::render_section_agency_credit(); ?>
 					<?php self::render_section_security(); ?>
+					<?php self::render_section_passkeys(); ?>
 					<?php self::render_section_diagnostics(); ?>
 				</div>
 			</form>
@@ -236,6 +240,186 @@ final class Settings {
 				<?php self::field_throttle(); ?>
 			</div>
 		</section>
+		<?php
+	}
+
+	/** Passkeys (SPEC 4.7, 9.5 S1 to S9): settings rows, then read-only diagnostics. */
+	private static function render_section_passkeys(): void {
+		?>
+		<section class="magicauth-block" id="magicauth-passkeys-settings">
+			<header class="magicauth-block__head">
+				<h2><?php esc_html_e( 'Passkeys', 'magicauth' ); ?></h2>
+				<p><?php esc_html_e( 'Let people sign in with a passkey after they have signed in once with email. Email sign-in always stays available.', 'magicauth' ); ?></p>
+			</header>
+			<div class="magicauth-card">
+				<?php self::field_passkeys_enabled(); ?>
+				<?php self::field_passkeys_prompt(); ?>
+				<?php self::field_passkeys_manage_page(); ?>
+				<?php self::field_passkeys_email_reverify_days(); ?>
+				<?php self::render_passkeys_diagnostics(); ?>
+			</div>
+		</section>
+		<?php
+	}
+
+	public static function field_passkeys_enabled(): void {
+		self::render_toggle_row(
+			'passkeys_enabled',
+			(bool) magicauth_get_setting( 'passkeys_enabled', false ),
+			__( 'Enable passkeys', 'magicauth' ),
+			__( 'Adds a passkey button and passkey autofill to the sign-in form, and lets signed-in users create passkeys.', 'magicauth' )
+		);
+	}
+
+	public static function field_passkeys_prompt(): void {
+		self::render_toggle_row(
+			'passkeys_prompt',
+			(bool) magicauth_get_setting( 'passkeys_prompt', true ),
+			__( 'Offer a passkey after email sign-in', 'magicauth' ),
+			__( 'After someone signs in with an email link or code, show a one-time offer to create a passkey. Not shown on devices marked as shared.', 'magicauth' )
+		);
+	}
+
+	public static function field_passkeys_manage_page(): void {
+		$value = absint( magicauth_get_setting( 'passkeys_manage_page_id', 0 ) );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Passkey management page', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( 'The page that contains the [magicauth_passkeys] shortcode. MagicAuth links to it after a passkey is created.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<?php
+				// Core prints show_option_none unescaped and returns '' when no page is published.
+				$select = wp_dropdown_pages(
+					[
+						'name'              => esc_attr( self::OPTION_NAME . '[passkeys_manage_page_id]' ),
+						'selected'          => (int) $value,
+						'show_option_none'  => esc_html__( 'Choose a page', 'magicauth' ),
+						'option_none_value' => '0',
+						'echo'              => 0,
+					]
+				);
+				?>
+				<?php if ( '' !== $select ) : ?>
+					<div class="magicauth-select">
+						<?php echo $select; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- core markup, attributes escaped by wp_dropdown_pages(). ?>
+					</div>
+				<?php else : ?>
+					<input type="hidden" name="<?php echo esc_attr( self::OPTION_NAME . '[passkeys_manage_page_id]' ); ?>" value="0">
+					<span class="magicauth-row__help"><?php esc_html_e( 'No published pages yet.', 'magicauth' ); ?></span>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	public static function field_passkeys_email_reverify_days(): void {
+		$value = max( 0, min( 730, absint( magicauth_get_setting( 'passkeys_email_reverify_days', 0 ) ) ) );
+		$name  = sprintf( '%s[passkeys_email_reverify_days]', self::OPTION_NAME );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php esc_html_e( 'Require an email sign-in every (days)', 'magicauth' ); ?></span>
+				<p class="magicauth-row__help"><?php esc_html_e( '0 turns this off. When set, a passkey stops working until the person signs in with email again. Use it when access should end when a mailbox is closed.', 'magicauth' ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" min="0" max="730">
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * S6 diagnostics, read-only: RP ID (S6b when the constant moves it off the
+	 * host), allowed origin, Ed25519 support, passkeys stored, database
+	 * version, then S9 and the available() reason when they apply.
+	 */
+	public static function render_passkeys_diagnostics(): void {
+		$rp_id     = RelyingParty::id();
+		$origin    = RelyingParty::origin();
+		$stored    = CredentialStore::site_count();
+		$available = Module::available();
+		$rows      = [
+			[ __( 'Relying party ID', 'magicauth' ), '' !== $rp_id ? $rp_id : '-' ],
+			[ __( 'Allowed origin', 'magicauth' ), '' !== $origin ? $origin : '-' ],
+			[ __( 'Ed25519 support', 'magicauth' ), in_array( -8, Module::supported_algs(), true ) ? __( 'Yes', 'magicauth' ) : __( 'No', 'magicauth' ) ],
+			[ __( 'Passkeys stored', 'magicauth' ), null !== $stored ? (string) $stored : '-' ],
+			[ __( 'Database version', 'magicauth' ), (string) (int) get_option( 'magicauth_db_version', 0 ) ],
+		];
+		?>
+		<div class="magicauth-row magicauth-row--stacked" data-magicauth-passkeys-diagnostics>
+			<?php foreach ( $rows as $index => $row ) : ?>
+				<div class="magicauth-row__main">
+					<span class="magicauth-row__label"><?php echo esc_html( $row[0] ); ?></span>
+					<p class="magicauth-row__help"><code><?php echo esc_html( $row[1] ); ?></code></p>
+					<?php if ( 0 === $index && '' !== $rp_id && RelyingParty::host() !== $rp_id ) : ?>
+						<p class="magicauth-row__help"><?php esc_html_e( 'Differs from the site host: set by MAGICAUTH_PASSKEY_RP_ID.', 'magicauth' ); ?></p>
+					<?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+			<?php if ( self::passkeys_page_missing( magicauth_get_settings() ) ) : ?>
+				<div class="magicauth-notice magicauth-notice--warn" role="status">
+					<div class="magicauth-notice__body">
+						<p class="magicauth-notice__msg"><?php echo esc_html( self::s9_message() ); ?></p>
+					</div>
+				</div>
+			<?php endif; ?>
+			<?php if ( is_wp_error( $available ) ) : ?>
+				<div class="magicauth-notice magicauth-notice--error" role="status">
+					<div class="magicauth-notice__body">
+						<p class="magicauth-notice__msg"><?php echo esc_html( self::s8_message( $available->get_error_message() ) ); ?></p>
+					</div>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/** S8 with the first available() reason (S8a to S8g). */
+	private static function s8_message( string $reason ): string {
+		/* translators: %s: why passkeys cannot be turned on, a lower-case sentence ending in a period. */
+		return sprintf( __( 'Passkeys cannot be turned on: %s', 'magicauth' ), $reason );
+	}
+
+	/** S9. */
+	private static function s9_message(): string {
+		return __( 'Users without wp-admin access cannot manage their passkeys until you choose a management page.', 'magicauth' );
+	}
+
+	/**
+	 * Enabled without a management page (S9).
+	 *
+	 * @param array<string,mixed> $settings Stored or sanitised settings.
+	 */
+	private static function passkeys_page_missing( array $settings ): bool {
+		return ! empty( $settings['passkeys_enabled'] ) && 0 === absint( $settings['passkeys_manage_page_id'] ?? 0 );
+	}
+
+	/**
+	 * Toggle row (hidden 0 + checkbox), as field_replace_default().
+	 *
+	 * @param string $key         Setting key.
+	 * @param bool   $value       Current value.
+	 * @param string $label       Row label.
+	 * @param string $description Help text.
+	 */
+	private static function render_toggle_row( string $key, bool $value, string $label, string $description ): void {
+		$name = sprintf( '%s[%s]', self::OPTION_NAME, $key );
+		?>
+		<div class="magicauth-row">
+			<div class="magicauth-row__main">
+				<span class="magicauth-row__label"><?php echo esc_html( $label ); ?></span>
+				<p class="magicauth-row__help"><?php echo esc_html( $description ); ?></p>
+			</div>
+			<div class="magicauth-row__control">
+				<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0">
+				<label class="magicauth-toggle">
+					<input class="magicauth-toggle__input" type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( $value ); ?>>
+					<span class="magicauth-toggle__thumb"></span>
+				</label>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -325,6 +509,16 @@ final class Settings {
 					$throttle[ $key ] = max( 1, absint( $input['throttle'][ $key ] ) );
 				}
 			}
+			// Passkey failure throttle (SPEC 4.7): window 1-1440 min, max 1-1000.
+			$passkey_caps = [
+				'per_ip_passkey_window_min' => 1440,
+				'per_ip_passkey_max'        => 1000,
+			];
+			foreach ( $passkey_caps as $key => $cap ) {
+				if ( isset( $input['throttle'][ $key ] ) ) {
+					$throttle[ $key ] = max( 1, min( $cap, absint( $input['throttle'][ $key ] ) ) );
+				}
+			}
 			$out['throttle'] = $throttle;
 		}
 
@@ -391,8 +585,52 @@ final class Settings {
 
 		$out['hide_language_switcher'] = ! empty( $input['hide_language_switcher'] );
 
+		return self::sanitize_passkeys( $input, $out );
+	}
+
+	/**
+	 * Passkey settings (SPEC 4.7). Turning the module on is refused (stored
+	 * false, settings error S8 with the first available() reason) while the
+	 * site cannot run it.
+	 *
+	 * @param array<mixed>        $input Submitted values.
+	 * @param array<string,mixed> $out   Sanitised so far.
+	 * @return array<string,mixed>
+	 */
+	private static function sanitize_passkeys( array $input, array $out ): array {
+		$wants = ! empty( $input['passkeys_enabled'] );
+		if ( $wants ) {
+			$available = Module::available();
+			if ( is_wp_error( $available ) ) {
+				$wants = false;
+				add_settings_error( self::OPTION_NAME, 'magicauth_passkeys_unavailable', self::s8_message( $available->get_error_message() ), 'error' );
+			}
+		}
+		$out['passkeys_enabled'] = $wants;
+		$out['passkeys_prompt']  = ! empty( $input['passkeys_prompt'] );
+
+		if ( isset( $input['passkeys_manage_page_id'] ) ) {
+			$page_id = is_scalar( $input['passkeys_manage_page_id'] ) ? absint( $input['passkeys_manage_page_id'] ) : 0;
+			if ( $page_id > 0 && ( 'publish' !== get_post_status( $page_id ) || 'page' !== get_post_type( $page_id ) ) ) {
+				$page_id = 0;
+				add_settings_error( self::OPTION_NAME, 'magicauth_passkeys_page', __( 'Passkey management page: choose a published page.', 'magicauth' ), 'warning' );
+			}
+			$out['passkeys_manage_page_id'] = $page_id;
+		}
+
+		if ( isset( $input['passkeys_email_reverify_days'] ) ) {
+			$days                                = is_scalar( $input['passkeys_email_reverify_days'] ) ? absint( $input['passkeys_email_reverify_days'] ) : 0;
+			$out['passkeys_email_reverify_days'] = max( 0, min( 730, $days ) );
+		}
+
+		// S9: values kept, warned; the diagnostics repeat it on every view.
+		if ( self::passkeys_page_missing( $out ) ) {
+			add_settings_error( self::OPTION_NAME, 'magicauth_passkeys_no_page', self::s9_message(), 'warning' );
+		}
+
 		return $out;
 	}
+
 
 	// Cap 60 chars. Subjects clip past ~70 and our format eats ~10 for "XXX-XXX is your -code".
 	private static function sanitize_company_name( string $value ): string {
@@ -742,6 +980,11 @@ final class Settings {
 			'per_ip_code_window_hours' => __( 'Per-IP code window (hours)', 'magicauth' ),
 			'per_ip_code_max'          => __( 'Per-IP max code attempts', 'magicauth' ),
 		];
+		// Passkey failure throttle (S7): label and upper bound.
+		$passkey_rows = [
+			'per_ip_passkey_window_min' => [ __( 'Per-IP passkey window (minutes)', 'magicauth' ), 1440 ],
+			'per_ip_passkey_max'        => [ __( 'Per-IP failed passkey sign-ins', 'magicauth' ), 1000 ],
+		];
 		?>
 		<div class="magicauth-row">
 			<div class="magicauth-row__main">
@@ -762,6 +1005,18 @@ final class Settings {
 				</div>
 				<div class="magicauth-row__control">
 					<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[throttle][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( (string) $value ); ?>" min="1">
+				</div>
+			</div>
+		<?php endforeach;
+		foreach ( $passkey_rows as $key => $row ) :
+			$value = (int) ( $throttle[ $key ] ?? 0 );
+			?>
+			<div class="magicauth-row">
+				<div class="magicauth-row__main">
+					<span class="magicauth-row__label"><?php echo esc_html( $row[0] ); ?></span>
+				</div>
+				<div class="magicauth-row__control">
+					<input type="number" class="magicauth-input magicauth-input--num" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[throttle][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( (string) $value ); ?>" min="1" max="<?php echo esc_attr( (string) $row[1] ); ?>">
 				</div>
 			</div>
 		<?php endforeach;

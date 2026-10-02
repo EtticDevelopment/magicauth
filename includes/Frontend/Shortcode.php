@@ -9,6 +9,8 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Frontend;
 
+use MagicAuth\Email\Mailer;
+
 defined( 'ABSPATH' ) || exit;
 
 final class Shortcode {
@@ -30,10 +32,7 @@ final class Shortcode {
 		if ( is_admin() ) {
 			return;
 		}
-		global $post;
-		$force = (bool) apply_filters( 'magicauth_force_frontend_assets', false );
-		$has   = $post instanceof \WP_Post && has_shortcode( $post->post_content, self::SHORTCODE );
-		if ( ! $force && ! $has ) {
+		if ( ! self::wants_assets() ) {
 			return;
 		}
 
@@ -49,21 +48,20 @@ final class Shortcode {
 
 	/** Only loads on pages containing the shortcode (or via magicauth_force_frontend_assets filter). */
 	public static function enqueue(): void {
-		global $post;
-
-		$force = (bool) apply_filters( 'magicauth_force_frontend_assets', false );
-		$has   = $post instanceof \WP_Post && has_shortcode( $post->post_content, self::SHORTCODE );
-		if ( ! $force && ! $has ) {
+		if ( ! self::wants_assets() ) {
 			return;
 		}
 
-		wp_enqueue_style(
-			'magicauth',
-			MAGICAUTH_URL . 'assets/css/magicauth.css',
-			[],
-			MAGICAUTH_VERSION
-		);
-		wp_style_add_data( 'magicauth', 'rtl', 'replace' );
+		// Theme contract (SPEC 8.9): a theme that styles its own login wall can skip magicauth.css.
+		if ( (bool) apply_filters( 'magicauth_enqueue_frontend_style', true ) ) {
+			wp_enqueue_style(
+				'magicauth',
+				MAGICAUTH_URL . 'assets/css/magicauth.css',
+				[],
+				MAGICAUTH_VERSION
+			);
+			wp_style_add_data( 'magicauth', 'rtl', 'replace' );
+		}
 
 		wp_enqueue_script(
 			'magicauth',
@@ -75,6 +73,20 @@ final class Shortcode {
 				'strategy'  => 'defer',
 			]
 		);
+	}
+
+	/**
+	 * The current post holds the shortcode, or a theme forces the assets
+	 * (magicauth_force_frontend_assets, e.g. a theme-owned login wall).
+	 *
+	 * @internal Public so the passkey assets decide with the same rule as enqueue().
+	 */
+	public static function wants_assets(): bool {
+		global $post;
+		if ( (bool) apply_filters( 'magicauth_force_frontend_assets', false ) ) {
+			return true;
+		}
+		return $post instanceof \WP_Post && has_shortcode( $post->post_content, self::SHORTCODE );
 	}
 
 	/**
@@ -92,8 +104,8 @@ final class Shortcode {
 		$session_id = isset( $_GET['magicauth_sid'] ) ? sanitize_key( wp_unslash( (string) $_GET['magicauth_sid'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		ob_start();
-		$template = MAGICAUTH_DIR . 'templates/login-form.php';
-		if ( is_readable( $template ) ) {
+		$template = Mailer::locate_template( 'login-form.php' );
+		if ( '' !== $template && is_readable( $template ) ) {
 			$current_url = self::current_url();
 			$context     = [
 				'state'            => $state,
@@ -129,8 +141,10 @@ final class Shortcode {
 	/**
 	 * 'a' (email), 'b' (code), 'c' (password). States D/E (lost/reset password) are
 	 * wp-login.php-only — shortcode's "Forgot password?" routes to wp_lostpassword_url().
+	 *
+	 * @internal Public so asset loading decides the state with the same function as render().
 	 */
-	private static function current_state(): string {
+	public static function current_state(): string {
 		$step = isset( $_GET['magicauth_step'] ) ? sanitize_key( wp_unslash( (string) $_GET['magicauth_step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		switch ( $step ) {
 			case 'code':
@@ -159,8 +173,8 @@ final class Shortcode {
 
 	/** Used as the form's hidden redirect_to so Controller returns to the same page. */
 	private static function current_url(): string {
-		$host = isset( $_SERVER['HTTP_HOST'] ) ? (string) $_SERVER['HTTP_HOST'] : '';
-		$req  = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '/';
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? (string) $_SERVER['HTTP_HOST'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- every use is esc_url()'d; Controller re-validates redirect_to.
+		$req  = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- as above.
 		$scheme = is_ssl() ? 'https://' : 'http://';
 		return $host ? $scheme . $host . $req : home_url( '/' );
 	}

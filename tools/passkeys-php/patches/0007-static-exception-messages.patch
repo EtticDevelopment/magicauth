@@ -1,0 +1,48 @@
+Subject: R4, static exception messages
+Reason: Four messages embedded input that can come from a request (the attestation fmt, json_last_error_msg(), the sprintf'd CBOR simple value and major type); every message is now a static string with its code kept, so nothing from a request can reach a log or response through a message (Plugin Check still flags the class-constant code argument, see 0008).
+
+diff -ruN a/Attestation/AttestationObject.php b/Attestation/AttestationObject.php
+--- a/Attestation/AttestationObject.php
++++ b/Attestation/AttestationObject.php
+@@ -45,7 +45,7 @@
+         }
+ 
+         if ($enc['fmt'] !== 'none') {
+-            throw new WebAuthnException('invalid attestation format: ' . $enc['fmt'], WebAuthnException::INVALID_DATA);
++            throw new WebAuthnException('invalid attestation format', WebAuthnException::INVALID_DATA);
+         }
+ 
+         if (\count($enc['attStmt']) !== 0) {
+diff -ruN a/Binary/ByteBuffer.php b/Binary/ByteBuffer.php
+--- a/Binary/ByteBuffer.php
++++ b/Binary/ByteBuffer.php
+@@ -101,7 +101,7 @@
+     public function getJson($jsonFlags=0) {
+         $data = \json_decode($this->getBinaryString(), null, 512, $jsonFlags);
+         if (\json_last_error() !== JSON_ERROR_NONE) {
+-            throw new WebAuthnException(\json_last_error_msg(), WebAuthnException::BYTEBUFFER);
++            throw new WebAuthnException('ByteBuffer: invalid JSON', WebAuthnException::BYTEBUFFER);
+         }
+         return $data;
+     }
+diff -ruN a/CBOR/CborDecoder.php b/CBOR/CborDecoder.php
+--- a/CBOR/CborDecoder.php
++++ b/CBOR/CborDecoder.php
+@@ -133,7 +133,7 @@
+         if ($val === 22) {
+             return null;
+         }
+-        throw new WebAuthnException(sprintf('Unsupported simple value %d.', $val), WebAuthnException::CBOR);
++        throw new WebAuthnException('Unsupported simple value.', WebAuthnException::CBOR);
+     }
+ 
+     protected static function _parseExtraLength($val, ByteBuffer $buf, &$offset) {
+@@ -199,7 +199,7 @@
+         }
+ 
+         // This should never be reached
+-        throw new WebAuthnException(sprintf('Unknown major type %d.', $type), WebAuthnException::CBOR);
++        throw new WebAuthnException('Unknown major type.', WebAuthnException::CBOR);
+     }
+ 
+     protected static function _parseMap(ByteBuffer $buf, &$offset, $count, $depth = 1) {

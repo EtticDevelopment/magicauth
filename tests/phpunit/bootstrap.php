@@ -23,10 +23,13 @@ if ( ! defined( 'MAGICAUTH_VERSION' ) ) {
 	define( 'MAGICAUTH_VERSION', '1.0.0-test' );
 }
 if ( ! defined( 'MAGICAUTH_DB_VERSION' ) ) {
-	define( 'MAGICAUTH_DB_VERSION', 1 );
+	define( 'MAGICAUTH_DB_VERSION', 2 );
 }
 if ( ! defined( 'MAGICAUTH_DIR' ) ) {
 	define( 'MAGICAUTH_DIR', dirname( __DIR__, 2 ) . '/' );
+}
+if ( ! defined( 'MAGICAUTH_URL' ) ) {
+	define( 'MAGICAUTH_URL', 'https://example.test/wp-content/plugins/magicauth/' );
 }
 if ( ! defined( 'MINUTE_IN_SECONDS' ) ) {
 	define( 'MINUTE_IN_SECONDS', 60 );
@@ -41,10 +44,14 @@ if ( ! defined( 'WEEK_IN_SECONDS' ) ) {
 	define( 'WEEK_IN_SECONDS', 604800 );
 }
 
+require_once __DIR__ . '/stubs/test-exceptions.php';
 require_once __DIR__ . '/stubs/wp-functions.php';
 require_once __DIR__ . '/stubs/wp-error.php';
 require_once __DIR__ . '/stubs/wp-user.php';
+require_once __DIR__ . '/stubs/wp-session-tokens.php';
 require_once __DIR__ . '/stubs/wpdb-sqlite.php';
+// Installer's require_once ABSPATH . 'wp-admin/includes/upgrade.php' resolves
+// to the dbDelta fake (ABSPATH is this directory).
 
 // PSR-4 autoloader for plugin classes (mirrors the production autoloader in
 // magicauth.php so we don't rely on composer's autoloader-dump in tests).
@@ -66,7 +73,9 @@ spl_autoload_register(
 
 require_once MAGICAUTH_DIR . 'includes/helpers.php';
 
-// Boot the SQLite-backed $wpdb shim and create the magicauth_requests table.
+// Boot the $wpdb shim (SQLite in memory, or the real server named by
+// MAGICAUTH_TEST_DB=mysql) and create the four MagicAuth tables.
 global $wpdb;
-$wpdb = new MagicAuth\Tests\Stubs\WPDBSqlite( 'wp_' );
+$wpdb = MagicAuth\Tests\Stubs\WPDBSqlite::from_environment( 'wp_' );
 $wpdb->install_magicauth_schema();
+$wpdb->install_magicauth_passkeys_schema();

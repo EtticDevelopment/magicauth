@@ -538,7 +538,7 @@ final class TokenManagerTest extends TestCase {
 		$this->assertIsArray( $result );
 
 		$this->assertStringContainsString( 'redirect_to', $result['link_url'] );
-		// add_query_arg url-encodes the value; decode the query before asserting.
+		// build_verify_url encodes the value (add_query_arg does not); decode the query before asserting.
 		$query = (string) parse_url( $result['link_url'], PHP_URL_QUERY );
 		parse_str( $query, $args );
 		$this->assertSame( $dest, (string) ( $args['redirect_to'] ?? '' ), 'emailed link carries the validated destination' );

@@ -1,0 +1,21 @@
+{
+    "source_commit": "d8c8d7de18a6659f351455d77b69c51240fad6ac",
+    "captured_at": "2026-10-01T17:51:36Z",
+    "php": "8.5.3",
+    "command": "php tests/phpunit/fixtures/capture-golden.php <worktree of source_commit> tests/phpunit/fixtures/1.0.5 d8c8d7de18a6659f351455d77b69c51240fad6ac",
+    "files": {
+        "login-form-a.html": "f6b300bdc34bdf99f84af4525466041dc7b0bec9c7c1fbace4397d945af1d222",
+        "login-form-b.html": "ba08daba716ba1e1e35d580ec0c3856eedf7b6796da334553335678d2dace7ef",
+        "login-form-c.html": "fdde3c9e6cd0c6036d4e7133b48b4dcf8d636438719178b329bd2eef742aa278",
+        "login-form-d.html": "5b006beb540158c5953bc5f83fd7631c7d7090ea766e845aeae6327cb78c8a98",
+        "login-form-e.html": "4b11f1fa1a6bb0123aad1f5d48ea5126f8ea6ea6a1845d06990f9e6750c5a34d",
+        "shortcode-logged-out.html": "07f2e62c764c4dd80c34c896682eae9a4e5ed824d1f91f73bcbf9c66a9549e97",
+        "shortcode-logged-in.html": "7478a83db104d6520a2ad9986484fa527d35912519e8b2c34300a6c73701b7a3",
+        "email-magic-link.html": "1db3294f2c15ed153630802c8488db1cfe1d4e248c9f41ffe7d1c30535d70df8",
+        "email-magic-link.txt": "fab2d742a9e050f289a103ddb0e63d432aee4a4ace1bd13b9fb93744d848c634",
+        "email-magic-link.meta.json": "25f074b543c058d02d03907cce670a7c0b5f675aa9431053287632082b93bf8f",
+        "email-disabled-notice.html": "5c5591eae3bf27f6440e41b79c6fba9f086a322f33582a5c5b598d380b931e49",
+        "email-disabled-notice.txt": "d109e079c36c100e7349163937a5264257ce4adb172d78c8b640350c59bd5de5",
+        "email-disabled-notice.meta.json": "170cacfd2a64376ad72e8e9372d0aaeacfa63399af9fc9e9fa0764fb735be565"
+    }
+}

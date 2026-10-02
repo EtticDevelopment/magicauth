@@ -1,0 +1,109 @@
+Subject: R2, CBOR nesting limit, duplicate and numeric text map keys
+Reason: Attacker-controlled authData is CBOR-decoded before the signature check, and about 100 KB of nested arrays segfaulted PHP 8.5 (audit 3); arrays, maps and tags now nest at most 16 deep, and a map key that repeats or that PHP would coerce to an integer (text "3") is rejected, as CTAP2 canonical CBOR (L3 6.5.1) has neither.
+
+diff -ruN a/CBOR/CborDecoder.php b/CBOR/CborDecoder.php
+--- a/CBOR/CborDecoder.php
++++ b/CBOR/CborDecoder.php
+@@ -22,6 +22,9 @@
+     const CBOR_MAJOR_MAP = 5;
+     const CBOR_MAJOR_BYTE_STRING = 2;
+ 
++    // Deepest nesting of arrays, maps and tags; WebAuthn structures nest 3 deep.
++    const MAX_DEPTH = 16;
++
+     /**
+      * @param ByteBuffer|string $bufOrBin
+      * @return mixed
+@@ -60,9 +63,14 @@
+     /**
+      * @param ByteBuffer $buf
+      * @param int $offset
++     * @param int $depth nesting level of this item, 0 at the top
+      * @return mixed
+      */
+-    protected static function _parseItem(ByteBuffer $buf, &$offset) {
++    protected static function _parseItem(ByteBuffer $buf, &$offset, $depth = 0) {
++        if ($depth > self::MAX_DEPTH) {
++            throw new WebAuthnException('Maximum nesting depth exceeded.', WebAuthnException::CBOR);
++        }
++
+         $first = $buf->getByteVal($offset++);
+         $type = $first >> 5;
+         $val = $first & 0b11111;
+@@ -73,7 +81,7 @@
+ 
+         $val = self::_parseExtraLength($val, $buf, $offset);
+ 
+-        return self::_parseItemData($type, $val, $buf, $offset);
++        return self::_parseItemData($type, $val, $buf, $offset, $depth);
+     }
+ 
+     protected static function _parseFloatSimple($val, ByteBuffer $buf, &$offset) {
+@@ -162,7 +170,7 @@
+         return $val;
+     }
+ 
+-    protected static function _parseItemData($type, $val, ByteBuffer $buf, &$offset) {
++    protected static function _parseItemData($type, $val, ByteBuffer $buf, &$offset, $depth = 0) {
+         switch ($type) {
+             case self::CBOR_MAJOR_UNSIGNED_INT: // uint
+                 return $val;
+@@ -181,39 +189,49 @@
+                 return $data; // UTF-8
+ 
+             case self::CBOR_MAJOR_ARRAY:
+-                return self::_parseArray($buf, $offset, $val);
++                return self::_parseArray($buf, $offset, $val, $depth + 1);
+ 
+             case self::CBOR_MAJOR_MAP:
+-                return self::_parseMap($buf, $offset, $val);
++                return self::_parseMap($buf, $offset, $val, $depth + 1);
+ 
+             case self::CBOR_MAJOR_TAG:
+-                return self::_parseItem($buf, $offset); // 1 embedded data item
++                return self::_parseItem($buf, $offset, $depth + 1); // 1 embedded data item
+         }
+ 
+         // This should never be reached
+         throw new WebAuthnException(sprintf('Unknown major type %d.', $type), WebAuthnException::CBOR);
+     }
+ 
+-    protected static function _parseMap(ByteBuffer $buf, &$offset, $count) {
++    protected static function _parseMap(ByteBuffer $buf, &$offset, $count, $depth = 1) {
+         $map = array();
+ 
+         for ($i = 0; $i < $count; $i++) {
+-            $mapKey = self::_parseItem($buf, $offset);
+-            $mapVal = self::_parseItem($buf, $offset);
++            $mapKey = self::_parseItem($buf, $offset, $depth);
++            $mapVal = self::_parseItem($buf, $offset, $depth);
+ 
+             if (!\is_int($mapKey) && !\is_string($mapKey)) {
+                 throw new WebAuthnException('Can only use strings or integers as map keys', WebAuthnException::CBOR);
+             }
+ 
+-            $map[$mapKey] = $mapVal; // todo dup
++            // PHP turns a text key such as "3" into the integer key 3.
++            if (\is_string($mapKey) && \is_int(\array_key_first([$mapKey => true]))) {
++                throw new WebAuthnException('Numeric text map key.', WebAuthnException::CBOR);
++            }
++
++            // CTAP2 canonical CBOR has no duplicate keys.
++            if (\array_key_exists($mapKey, $map)) {
++                throw new WebAuthnException('Duplicate map key.', WebAuthnException::CBOR);
++            }
++
++            $map[$mapKey] = $mapVal;
+         }
+         return $map;
+     }
+ 
+-    protected static function _parseArray(ByteBuffer $buf, &$offset, $count) {
++    protected static function _parseArray(ByteBuffer $buf, &$offset, $count, $depth = 1) {
+         $arr = array();
+         for ($i = 0; $i < $count; $i++) {
+-            $arr[] = self::_parseItem($buf, $offset);
++            $arr[] = self::_parseItem($buf, $offset, $depth);
+         }
+ 
+         return $arr;

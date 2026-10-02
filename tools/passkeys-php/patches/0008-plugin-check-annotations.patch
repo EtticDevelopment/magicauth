@@ -1,0 +1,73 @@
+Subject: Plugin Check annotations
+Reason: Plugin Check 2.1.0 (WPCS 3.4.1) reports ExceptionNotEscaped as an ERROR for every throw whose code argument is a class constant (WebAuthnException::INVALID_DATA), static message or not, and parse_url() as an ERROR; both are false positives here (no exception message or code is ever output, LibraryConformanceTest pins the messages static), so the five files that throw disable that one sniff and the two parse_url() lines carry an ignore. No code changes.
+
+diff -ruN a/Attestation/AttestationObject.php b/Attestation/AttestationObject.php
+--- a/Attestation/AttestationObject.php
++++ b/Attestation/AttestationObject.php
+@@ -2,6 +2,7 @@
+ 
+ namespace MagicAuth\ThirdParty\Passkeys\Attestation;
+ defined( 'ABSPATH' ) || exit;
++// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- static messages (R4), int class-constant codes; nothing is output.
+ use MagicAuth\ThirdParty\Passkeys\WebAuthnException;
+ use MagicAuth\ThirdParty\Passkeys\CBOR\CborDecoder;
+ use MagicAuth\ThirdParty\Passkeys\Binary\ByteBuffer;
+diff -ruN a/Attestation/AuthenticatorData.php b/Attestation/AuthenticatorData.php
+--- a/Attestation/AuthenticatorData.php
++++ b/Attestation/AuthenticatorData.php
+@@ -2,6 +2,7 @@
+ 
+ namespace MagicAuth\ThirdParty\Passkeys\Attestation;
+ defined( 'ABSPATH' ) || exit;
++// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- static messages (R4), int class-constant codes; nothing is output.
+ use MagicAuth\ThirdParty\Passkeys\WebAuthnException;
+ use MagicAuth\ThirdParty\Passkeys\CBOR\CborDecoder;
+ use MagicAuth\ThirdParty\Passkeys\Binary\ByteBuffer;
+diff -ruN a/Binary/ByteBuffer.php b/Binary/ByteBuffer.php
+--- a/Binary/ByteBuffer.php
++++ b/Binary/ByteBuffer.php
+@@ -3,6 +3,7 @@
+ 
+ namespace MagicAuth\ThirdParty\Passkeys\Binary;
+ defined( 'ABSPATH' ) || exit;
++// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- static messages (R4), int class-constant codes; nothing is output.
+ use MagicAuth\ThirdParty\Passkeys\WebAuthnException;
+ 
+ /**
+diff -ruN a/CBOR/CborDecoder.php b/CBOR/CborDecoder.php
+--- a/CBOR/CborDecoder.php
++++ b/CBOR/CborDecoder.php
+@@ -3,6 +3,7 @@
+ 
+ namespace MagicAuth\ThirdParty\Passkeys\CBOR;
+ defined( 'ABSPATH' ) || exit;
++// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- static messages (R4), int class-constant codes; nothing is output.
+ use MagicAuth\ThirdParty\Passkeys\WebAuthnException;
+ use MagicAuth\ThirdParty\Passkeys\Binary\ByteBuffer;
+ 
+diff -ruN a/WebAuthn.php b/WebAuthn.php
+--- a/WebAuthn.php
++++ b/WebAuthn.php
+@@ -2,6 +2,7 @@
+ 
+ namespace MagicAuth\ThirdParty\Passkeys;
+ defined( 'ABSPATH' ) || exit;
++// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- static messages (R4), int class-constant codes; nothing is output.
+ use MagicAuth\ThirdParty\Passkeys\Binary\ByteBuffer;
+ 
+ /**
+@@ -459,12 +460,12 @@
+         // https://www.w3.org/TR/webauthn/#rp-id
+ 
+         // The origin's scheme must be https
+-        if ($this->_rpId !== 'localhost' && \parse_url($origin, PHP_URL_SCHEME) !== 'https') {
++        if ($this->_rpId !== 'localhost' && \parse_url($origin, PHP_URL_SCHEME) !== 'https') { // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- no WordPress dependency in the library.
+             return false;
+         }
+ 
+         // extract host from origin
+-        $host = \parse_url($origin, PHP_URL_HOST);
++        $host = \parse_url($origin, PHP_URL_HOST); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- as above.
+         $host = \trim($host, '.');
+ 
+         // The RP ID must be equal to the origin's effective domain, or the

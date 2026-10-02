@@ -1,0 +1,95 @@
+<div aria-labelledby="magicauth-heading" class="magicauth-card" role="region">
+  <div class="magicauth-logo">
+    <img alt="Test Site" src="https://example.test/wp-content/uploads/logo.png" />
+  </div>
+  <h1 class="magicauth-heading" id="magicauth-heading">
+    " Sign in to Test Site "
+  </h1>
+  <form action="https://example.test/wp-admin/admin-post.php" class="magicauth-form" method="post" novalidate="">
+    <input name="action" type="hidden" value="magicauth_password" />
+    <input name="redirect_to" type="hidden" value="https://example.test/wp-login.php?action=magicauth" />
+    <input id="magicauth_nonce" name="magicauth_nonce" type="hidden" value="{{nonce}}" />
+    <input name="_wp_http_referer" type="hidden" value="/wp-login.php?action=magicauth&amp;magicauth_step=password" />
+    <input aria-hidden="true" autocomplete="off" name="magicauth_website" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" type="text" value="" />
+    <input name="magicauth_ts" type="hidden" value="{{ts}}" />
+    <div class="magicauth-field">
+      <label class="magicauth-sr-only" for="magicauth-log">
+        " Username or email "
+      </label>
+      <input aria-required="true" autocomplete="username" id="magicauth-log" name="log" placeholder="Username or email" required="" type="text" />
+    </div>
+    <div class="magicauth-field">
+      <label class="magicauth-sr-only" for="magicauth-pwd">
+        " Password "
+      </label>
+      <input aria-required="true" autocomplete="current-password" id="magicauth-pwd" name="pwd" placeholder="Password" required="" type="password" />
+    </div>
+    <label class="magicauth-field magicauth-field--inline">
+      <input checked="checked" name="rememberme" type="checkbox" value="1" />
+      <span>
+        "Remember me"
+      </span>
+    </label>
+    <button class="magicauth-button" type="submit">
+      <span class="magicauth-button__label">
+        " Sign in "
+      </span>
+      <span aria-hidden="true" class="magicauth-button__spinner">
+      </span>
+    </button>
+    <p class="magicauth-helper magicauth-helper--small">
+      <a class="magicauth-link" href="https://example.test/wp-login.php?action=lostpassword">
+        " Forgot password? "
+      </a>
+    </p>
+    <p class="magicauth-helper magicauth-helper--small">
+      <a class="magicauth-link" href="https://example.test/wp-login.php?action=magicauth">
+        " Use a magic link instead "
+      </a>
+    </p>
+    <div class="magicauth-cardfoot magicauth-cardfoot--divided">
+      <details class="magicauth-lang">
+        <summary class="magicauth-lang__summary">
+          <svg aria-hidden="true" class="magicauth-lang__icon" focusable="false" height="16" viewbox="0 0 24 24" width="16">
+            <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" fill="currentColor">
+            </path>
+          </svg>
+          <span class="magicauth-sr-only">
+            "Change language. Current:"
+          </span>
+          <span class="magicauth-lang__code">
+            "EN"
+          </span>
+          <svg aria-hidden="true" class="magicauth-lang__caret" focusable="false" height="12" viewbox="0 0 24 24" width="12">
+            <path d="M7 10l5 5 5-5z" fill="currentColor">
+            </path>
+          </svg>
+        </summary>
+        <ul class="magicauth-lang__menu" role="list">
+          <li>
+            <a aria-current="true" class="magicauth-lang__opt is-active" href="/wp-login.php?action=magicauth&amp;magicauth_step=password&amp;wp_lang=en_US">
+              <span class="magicauth-lang__opt-code">
+                "EN"
+              </span>
+              <span class="magicauth-lang__opt-name">
+                "English (United States)"
+              </span>
+            </a>
+          </li>
+          <li>
+            <a class="magicauth-lang__opt" href="/wp-login.php?action=magicauth&amp;magicauth_step=password&amp;wp_lang=nl_NL">
+              <span class="magicauth-lang__opt-code">
+                "NL"
+              </span>
+              <span class="magicauth-lang__opt-name">
+                "Dutch (Netherlands)"
+              </span>
+            </a>
+          </li>
+        </ul>
+      </details>
+    </div>
+  </form>
+</div>
+<div aria-live="polite" class="magicauth-sr-only" id="magicauth-status">
+</div>

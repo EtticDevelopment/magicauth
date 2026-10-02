@@ -2,7 +2,9 @@
 /**
  * Sign-in form: A (email), B (code), C (password), D (lostpassword), E (set new password).
  *
- * Override via yourtheme/magicauth/login-form.php.
+ * Override via yourtheme/magicauth/login-form.php. With the passkeys module enabled, state A
+ * adds the webauthn autocomplete token and the sign-in block; an override keeps passkey
+ * sign-in by following the theme contract (data-magicauth-passkey-* attributes, see readme).
  *
  * @var string $state            'a' | 'b' | 'c' | 'd' | 'e'.
  * @var string $action_url       admin-post.php URL.
@@ -37,6 +39,11 @@ $lostpassword_url = isset( $lostpassword_url ) ? (string) $lostpassword_url : ''
 $magic_link_url   = isset( $magic_link_url ) ? (string) $magic_link_url : '';
 $reset_key        = isset( $reset_key ) ? (string) $reset_key : '';
 $reset_login      = isset( $reset_login ) ? (string) $reset_login : '';
+
+// Passkey sign-in (SPEC 8.5): state A only, only while the module is enabled.
+// With the module off every byte stays as 1.0.5 rendered it.
+$passkeys_on = ! $is_state_b && ! $is_state_c && ! $is_state_d && ! $is_state_e
+	&& function_exists( 'magicauth_passkeys_enabled' ) && magicauth_passkeys_enabled();
 
 // Only the branded wp-login screen sets this (LoginScreen::build_context);
 // the shortcode never does, so the switcher stays off front-end pages.
@@ -365,7 +372,7 @@ switch ( $state ) {
 					id="magicauth-email"
 					name="magicauth_email"
 					inputmode="email"
-					autocomplete="email"
+					autocomplete="<?php echo esc_attr( $passkeys_on ? 'username webauthn' : 'email' ); ?>"
 					placeholder="<?php esc_attr_e( 'you@example.com', 'magicauth' ); ?>"
 					required
 					aria-required="true"
@@ -373,7 +380,8 @@ switch ( $state ) {
 				/>
 			</div>
 
-			<button type="submit" class="magicauth-button" disabled aria-disabled="true">
+			<?php // Rendered enabled so the form submits without JS; magicauth.js disables it until the value looks like an email. ?>
+			<button type="submit" class="magicauth-button">
 				<span class="magicauth-button__label">
 					<?php
 					echo esc_html(
@@ -383,6 +391,13 @@ switch ( $state ) {
 				</span>
 				<span class="magicauth-button__spinner" aria-hidden="true"></span>
 			</button>
+
+			<?php
+			if ( $passkeys_on ) {
+				// Sign-in only (decision 2). type="button" never submits the email form; a theme may replace the block.
+				echo (string) apply_filters( 'magicauth_passkey_signin_markup', \MagicAuth\Passkeys\Assets::signin_markup(), $state ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- default block escaped in signin_markup(); a replacement is the theme's own markup.
+			}
+			?>
 
 		<?php endif; ?>
 

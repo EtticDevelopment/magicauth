@@ -1,0 +1,13 @@
+Sign in to Test Site
+
+Use the code below or open the sign-in link. Both expire in 10 minutes.
+
+Sign-in code: ABC-DEF
+
+Sign-in link:
+https://example.test/?magicauth=verify&s=0123456789abcdef&v=abababababababababababababababababababababababababababababababab
+
+If you didn't request this, you can safely ignore this email.
+
+--
+Test Site

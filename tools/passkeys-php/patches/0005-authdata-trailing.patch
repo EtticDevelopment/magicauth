@@ -1,0 +1,16 @@
+Subject: H3, no trailing authenticatorData bytes
+Reason: With the ED flag clear, bytes after the COSE key (or after the 37-byte header of an assertion) were ignored, so malformed authData registered (audit 3); parsing must now consume the whole buffer.
+
+diff -ruN a/Attestation/AuthenticatorData.php b/Attestation/AuthenticatorData.php
+--- a/Attestation/AuthenticatorData.php
++++ b/Attestation/AuthenticatorData.php
+@@ -79,6 +79,9 @@
+ 
+         if ($this->_flags->extensionDataIncluded) {
+             $this->_readExtensionData(\substr($binary, $offset));
++        } else if ($offset !== \strlen($binary)) {
++            // Without extension data nothing may follow the parsed fields.
++            throw new WebAuthnException('invalid authenticatorData: trailing bytes', WebAuthnException::INVALID_DATA);
+         }
+     }
+ 

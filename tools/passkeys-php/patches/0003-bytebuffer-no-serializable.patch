@@ -1,0 +1,66 @@
+Subject: H1, no serialization in ByteBuffer
+Reason: serialize()/unserialize() and the Serializable methods called unserialize() without allowed_classes, an object-injection sink nobody needs (MagicAuth stores base64url strings, never a ByteBuffer); removed, JSON encoding unchanged.
+
+diff -ruN a/Binary/ByteBuffer.php b/Binary/ByteBuffer.php
+--- a/Binary/ByteBuffer.php
++++ b/Binary/ByteBuffer.php
+@@ -11,7 +11,7 @@
+  * Modified by Lukas Buchs
+  * Thanks Thomas for your work!
+  */
+-class ByteBuffer implements \JsonSerializable, \Serializable {
++class ByteBuffer implements \JsonSerializable {
+     /**
+      * @var bool
+      */
+@@ -231,50 +231,11 @@
+     }
+ 
+     /**
+-     * Serializable-Interface
+-     * @return string
+-     */
+-    public function serialize(): string {
+-        return \serialize($this->_data);
+-    }
+-
+-    /**
+-     * Serializable-Interface
+-     * @param string $serialized
+-     */
+-    public function unserialize($serialized) {
+-        $this->_data = \unserialize($serialized);
+-        $this->_length = \strlen($this->_data);
+-    }
+-
+-    /**
+-     * (PHP 8 deprecates Serializable-Interface)
+-     * @return array
+-     */
+-    public function __serialize(): array {
+-        return [
+-            'data' => \serialize($this->_data)
+-        ];
+-    }
+-
+-    /**
+      * object to string
+      * @return string
+      */
+     public function __toString(): string {
+         return $this->getHex();
+-    }
+-
+-    /**
+-     * (PHP 8 deprecates Serializable-Interface)
+-     * @param array $data
+-     * @return void
+-     */
+-    public function __unserialize($data) {
+-        if ($data && isset($data['data'])) {
+-            $this->_data = \unserialize($data['data']);
+-            $this->_length = \strlen($this->_data);
+-        }
+     }
+ 
+     // -----------------------

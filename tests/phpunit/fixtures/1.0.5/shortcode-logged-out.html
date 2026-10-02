@@ -1,0 +1,35 @@
+<div class="magicauth-shell">
+  <div aria-labelledby="magicauth-heading" class="magicauth-card" role="region">
+    <h1 class="magicauth-heading" id="magicauth-heading">
+      " Sign in to Test Site "
+    </h1>
+    <form action="https://example.test/wp-admin/admin-post.php" class="magicauth-form" method="post" novalidate="">
+      <input name="action" type="hidden" value="magicauth_request" />
+      <input name="redirect_to" type="hidden" value="https://example.test/login/" />
+      <input id="magicauth_nonce" name="magicauth_nonce" type="hidden" value="{{nonce}}" />
+      <input name="_wp_http_referer" type="hidden" value="/login/" />
+      <input aria-hidden="true" autocomplete="off" name="magicauth_website" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" type="text" value="" />
+      <input name="magicauth_ts" type="hidden" value="{{ts}}" />
+      <div class="magicauth-field">
+        <label class="magicauth-sr-only" for="magicauth-email">
+          " Email address "
+        </label>
+        <input aria-required="true" autocomplete="email" id="magicauth-email" inputmode="email" name="magicauth_email" placeholder="you@example.com" required="" type="email" />
+      </div>
+      <button aria-disabled="true" class="magicauth-button" disabled="disabled" type="submit">
+        <span class="magicauth-button__label">
+          " Send Link "
+        </span>
+        <span aria-hidden="true" class="magicauth-button__spinner">
+        </span>
+      </button>
+      <div class="magicauth-cardfoot magicauth-cardfoot--divided">
+        <a class="magicauth-link magicauth-cardfoot__link" href="https://example.test/login/?magicauth_step=password">
+          " Sign in with password "
+        </a>
+      </div>
+    </form>
+  </div>
+  <div aria-live="polite" class="magicauth-sr-only" id="magicauth-status">
+  </div>
+</div>

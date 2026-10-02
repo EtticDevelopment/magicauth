@@ -9,10 +9,20 @@
          displayDetailsOnTestsThatTriggerErrors="true"
          displayDetailsOnTestsThatTriggerWarnings="true"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="true"
+         failOnDeprecation="true"
+         failOnNotice="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerNotices="true">
     <testsuites>
         <testsuite name="model">
             <directory>tests/phpunit/Model</directory>
+        </testsuite>
+        <testsuite name="passkeys">
+            <directory>tests/phpunit/Passkeys</directory>
+        </testsuite>
+        <testsuite name="review">
+            <directory>tests/phpunit/Review</directory>
         </testsuite>
     </testsuites>
     <source>

@@ -10,36 +10,9 @@ declare( strict_types=1 );
 defined( 'ABSPATH' ) || exit;
 
 if ( ! function_exists( 'magicauth_get_settings' ) ) {
-	/** Settings merged onto defaults. */
+	/** Settings merged onto Installer::default_settings(), the one defaults array. */
 	function magicauth_get_settings(): array {
-		$defaults = [
-			'ttl_minutes'            => 10,
-			'max_link_uses'          => 2,
-			'throttle'               => [
-				'per_email_cooldown_sec'           => 60,
-				'per_ip_window_hours'              => 1,
-				'per_ip_max'                       => 10,
-				'per_ip_code_window_hours'         => 1,
-				'per_ip_code_max'                  => 20,
-				'per_ip_password_window_min'       => 15,
-				'per_ip_password_max'              => 5,
-				'per_ip_password_reset_window_min' => 60,
-				'per_ip_password_reset_max'        => 5,
-			],
-			'replace_default'        => false,
-			'company_name'           => '',
-			'logo_attachment_id'     => 0,
-			'brand_color'            => '#2271b1',
-			'agency_credit_name'     => '',
-			'agency_credit_url'      => '',
-			'agency_credit_icon_id'  => 0,
-			'agency_credit_label'    => '',
-			'redirect_to_default'    => 'auto',
-			'allow_password_login'   => true,
-			'hide_language_switcher' => false,
-			'from_email_local'       => 'login',
-			'db_version'             => MAGICAUTH_DB_VERSION,
-		];
+		$defaults = \MagicAuth\Installer::default_settings();
 
 		$saved = function_exists( 'get_option' ) ? get_option( 'magicauth_settings', [] ) : [];
 		if ( ! is_array( $saved ) ) {
@@ -157,6 +130,12 @@ if ( ! function_exists( 'magicauth_get_agency_credit' ) ) {
 if ( ! function_exists( 'magicauth_jitter' ) ) {
 	/** Sleep 50–150ms to flatten timing oracles. Called once per response path. */
 	function magicauth_jitter(): void {
+		if ( defined( 'MAGICAUTH_TESTING' ) && MAGICAUTH_TESTING ) {
+			global $magicauth_test_state;
+			if ( isset( $magicauth_test_state ) && is_array( $magicauth_test_state ) ) {
+				$magicauth_test_state['jitter_calls'] = ( $magicauth_test_state['jitter_calls'] ?? 0 ) + 1;
+			}
+		}
 		usleep( random_int( 50000, 150000 ) );
 	}
 }
@@ -164,6 +143,7 @@ if ( ! function_exists( 'magicauth_jitter' ) ) {
 if ( ! function_exists( 'magicauth_client_ip' ) ) {
 	/** REMOTE_ADDR only — never X-Forwarded-For. Override via magicauth_client_ip filter if behind validated proxy. */
 	function magicauth_client_ip(): string {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- set by the web server, not the client; only HMAC'd, never output.
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
 
 		if ( function_exists( 'apply_filters' ) ) {
@@ -185,6 +165,34 @@ if ( ! function_exists( 'magicauth_hash_ip' ) ) {
 	function magicauth_hash_ip( string $ip ): string {
 		$salt = function_exists( 'wp_salt' ) ? wp_salt( 'auth' ) : '';
 		return substr( hash_hmac( 'sha256', $ip, $salt ), 0, 16 );
+	}
+}
+
+if ( ! function_exists( 'magicauth_ip_bucket' ) ) {
+	/**
+	 * Network bucket of an address for the passkey IP throttles (SPEC 6.9),
+	 * HMAC'd with magicauth_hash_ip() like any IP key: IPv4 as is (/32), IPv6
+	 * cut to its /64, so a client that owns a /64 gets one bucket, not 2^64.
+	 * IPv4-mapped IPv6 counts as its IPv4 address (a /64 cut would put every
+	 * such client in one bucket). Anything else comes back unchanged.
+	 */
+	function magicauth_ip_bucket( string $ip ): string {
+		if ( false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+			return $ip;
+		}
+		if ( false === filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+			return $ip;
+		}
+		$packed = inet_pton( $ip );
+		if ( ! is_string( $packed ) || 16 !== strlen( $packed ) ) {
+			return $ip;
+		}
+		if ( str_repeat( "\0", 10 ) . "\xff\xff" === substr( $packed, 0, 12 ) ) {
+			$v4 = inet_ntop( substr( $packed, 12 ) );
+			return is_string( $v4 ) ? $v4 : $ip;
+		}
+		$bucket = inet_ntop( substr( $packed, 0, 8 ) . str_repeat( "\0", 8 ) );
+		return is_string( $bucket ) ? $bucket : $ip;
 	}
 }
 
@@ -223,7 +231,7 @@ if ( ! function_exists( 'magicauth_locale_short_code' ) ) {
 			return '';
 		}
 		$lang = strtok( $locale, '_-' );
-		if ( ! is_string( $lang ) || '' === $lang ) {
+		if ( ! is_string( $lang ) ) {
 			$lang = $locale;
 		}
 		return strtoupper( $lang );
@@ -290,6 +298,58 @@ if ( ! function_exists( 'magicauth_actor_outranks_target' ) ) {
 		}
 
 		return empty( array_diff_key( $target_caps, $actor_caps ) );
+	}
+}
+
+if ( ! function_exists( 'magicauth_current_user_can_revoke_passkeys' ) ) {
+	/**
+	 * Gate for removing another user's passkeys (SPEC 6.12, D-22): the admin
+	 * capability (filter magicauth_passkey_admin_capability, default
+	 * manage_options), edit_user on the target, administrators and super
+	 * admins only by peers. Not magicauth_current_user_can_control_user():
+	 * group leaders hold edit_users (B13), and removal is gated on the admin
+	 * capability, not on rank. Removal only; nothing creates.
+	 * Filter magicauth_current_user_can_revoke_passkeys( $can, $target ).
+	 *
+	 * @param int $target User whose passkeys would be removed.
+	 */
+	function magicauth_current_user_can_revoke_passkeys( int $target ): bool {
+		$can = false;
+		if ( $target > 0 ) {
+			$cap = apply_filters( 'magicauth_passkey_admin_capability', 'manage_options' );
+			$can = is_string( $cap ) && '' !== $cap
+				&& current_user_can( $cap )
+				&& current_user_can( 'edit_user', $target )
+				&& ( ! user_can( $target, 'manage_options' ) || current_user_can( 'manage_options' ) )
+				&& ( ! is_super_admin( $target ) || is_super_admin() );
+		}
+		return (bool) apply_filters( 'magicauth_current_user_can_revoke_passkeys', $can, $target );
+	}
+}
+
+if ( ! function_exists( 'magicauth_passkeys_enabled' ) ) {
+	/**
+	 * Theme contract (SPEC 8.9): whether passkey sign-in runs on this request
+	 * (setting on and the site able to run it). Decided once at init.
+	 */
+	function magicauth_passkeys_enabled(): bool {
+		return \MagicAuth\Passkeys\Module::enabled();
+	}
+}
+
+if ( ! function_exists( 'magicauth_passkey_signin_button' ) ) {
+	/**
+	 * Theme contract (SPEC 8.9): prints the default passkey sign-in block for a
+	 * theme template that renders its own login form. Sign-in only; prints
+	 * nothing with the module off or for a signed-in visitor.
+	 *
+	 * @param array<string,mixed> $args redirect_to: the destination after sign-in.
+	 */
+	function magicauth_passkey_signin_button( array $args = [] ): void {
+		if ( ! magicauth_passkeys_enabled() || is_user_logged_in() ) {
+			return;
+		}
+		echo \MagicAuth\Passkeys\Assets::signin_markup( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- every value escaped in signin_markup().
 	}
 }
 

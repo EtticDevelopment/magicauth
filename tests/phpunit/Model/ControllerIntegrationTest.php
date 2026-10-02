@@ -14,9 +14,12 @@ declare( strict_types=1 );
 
 namespace MagicAuth\Tests\Model;
 
+use MagicAuth\Admin\UserProfile;
 use MagicAuth\Auth\Controller;
 use MagicAuth\Auth\Throttle;
 use MagicAuth\Auth\TokenManager;
+use MagicAuth\Passkeys\Clock;
+use MagicAuth\Tests\Stubs\JsonResponseSent;
 use PHPUnit\Framework\TestCase;
 
 final class ControllerIntegrationTest extends TestCase {
@@ -292,7 +295,7 @@ final class ControllerIntegrationTest extends TestCase {
 		$magicauth_test_state['retrieve_password_calls'] = 0;
 
 		$_POST   = [
-			'magicauth_nonce'   => 'test-nonce',
+			'magicauth_nonce'   => wp_create_nonce( 'magicauth_lostpassword' ),
 			'magicauth_website' => '',
 			'magicauth_ts'      => (string) ( time() - 5 ),
 			'user_login'        => self::EMAIL,
@@ -337,5 +340,482 @@ final class ControllerIntegrationTest extends TestCase {
 		$this->assertFalse( get_transient( 'magicauth_throttle_link_email_cd_' . $email_hmac ) );
 
 		$this->assertSame( 0, $this->token_count() );
+	}
+
+	/* ------------------------------------------------------------------
+	 * T-CTRL (SPEC 15 step 3, 4.4): Controller completes every sign-in
+	 * through Auth\Login. B2 (no session swap on code, password, reset),
+	 * B3 (per-user disable at consume), hook $method arguments.
+	 * ---------------------------------------------------------------- */
+
+	private const OTHER_ID    = 701;
+	private const OTHER_EMAIL = 'someone-else@example.test';
+
+	/** Issues a token and primes the state-B session; returns the plaintext code and selector. */
+	private function prime_code( string $sid ): array {
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL );
+		$this->assertIsArray( $issued );
+		set_transient(
+			'magicauth_session_' . $sid,
+			[ 'email' => self::EMAIL, 'selector' => (string) $issued['selector'], 'attempts' => 0 ],
+			1800
+		);
+		$_COOKIE['magicauth_session'] = $sid;
+		return [ (string) $issued['code_plaintext'], (string) $issued['selector'] ];
+	}
+
+	/** @return array{consumed_at:?string,use_count:int} */
+	private function row_state( string $selector ): array {
+		global $wpdb;
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT consumed_at, use_count FROM ' . TokenManager::table() . ' WHERE selector = %s', $selector ) );
+		$this->assertNotNull( $row );
+		return [
+			'consumed_at' => null === $row->consumed_at ? null : (string) $row->consumed_at,
+			'use_count'   => (int) $row->use_count,
+		];
+	}
+
+	private function last_location(): string {
+		global $magicauth_test_state;
+		$last = end( $magicauth_test_state['redirects'] );
+		$this->assertIsArray( $last );
+		return (string) $last['location'];
+	}
+
+	private function auth_cookie_count(): int {
+		global $magicauth_test_state;
+		return count( $magicauth_test_state['auth_cookies'] ?? [] );
+	}
+
+	/** @return array<int,array<string,mixed>> */
+	private function sessions(): array {
+		global $magicauth_test_state;
+		return array_values( $magicauth_test_state['sessions'][ self::USER_ID ] ?? [] );
+	}
+
+	public function test_code_post_signed_in_as_another_account_does_not_consume(): void {
+		magicauth_test_register_user( self::OTHER_ID, self::OTHER_EMAIL );
+		[ $code, $selector ] = $this->prime_code( 'ctrl1' );
+		magicauth_test_login_as( self::OTHER_ID );
+
+		Controller::handle_code_submit( $code, 'https://example.test/sign-in', magicauth_hash_ip( '203.0.113.80' ) );
+
+		$this->assertSame( [ 'consumed_at' => null, 'use_count' => 0 ], $this->row_state( $selector ), 'row untouched, still usable by its owner' );
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertSame( self::OTHER_ID, get_current_user_id(), 'no session swap (B2)' );
+		$location = $this->last_location();
+		$this->assertStringContainsString( 'magicauth_step=code', $location );
+		$this->assertStringContainsString( 'magicauth_error=1', $location, 'same envelope as a wrong code' );
+		$this->assertStringContainsString( 'magicauth_sid=ctrl1', $location );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	public function test_code_post_signed_in_as_the_same_account_redirects_without_new_cookie(): void {
+		[ $code, $selector ] = $this->prime_code( 'ctrl2' );
+		magicauth_test_login_as( self::USER_ID );
+		global $magicauth_test_state;
+		$magicauth_test_state['users'][ self::USER_ID ]->user_email = strtoupper( self::EMAIL ); // Case-insensitive match.
+
+		Controller::handle_code_submit( $code, 'https://example.test/course/', magicauth_hash_ip( '203.0.113.81' ) );
+
+		$this->assertNotNull( $this->row_state( $selector )['consumed_at'] );
+		$this->assertSame( 0, $this->auth_cookie_count(), 'ALREADY: no second session' );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	public function test_code_post_for_a_disabled_user_signs_nobody_in(): void {
+		[ $code ] = $this->prime_code( 'ctrl3' );
+		update_user_meta( self::USER_ID, 'magicauth_disabled', '1' ); // Disabled after the code was sent (B3).
+
+		Controller::handle_code_submit( $code, 'https://example.test/sign-in', magicauth_hash_ip( '203.0.113.82' ) );
+
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertFalse( is_user_logged_in() );
+		$this->assertStringContainsString( 'magicauth_error=1', $this->last_location(), 'same envelope as a wrong code' );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	public function test_code_sign_in_stamps_the_session_and_passes_code_to_hooks(): void {
+		Clock::set_for_tests( 1790000000 );
+		$calls = [];
+		add_action(
+			'magicauth_pre_set_auth_cookie',
+			static function ( ...$args ) use ( &$calls ): void {
+				$calls['pre'][] = $args;
+			},
+			10,
+			3
+		);
+		add_filter(
+			'magicauth_redirect_to',
+			static function ( ...$args ) use ( &$calls ) {
+				$calls['redirect'][] = array_slice( $args, 2 );
+				return $args[0];
+			},
+			10,
+			4
+		);
+		add_action(
+			'magicauth_login_completed',
+			static function ( ...$args ) use ( &$calls ): void {
+				$calls['completed'][] = $args;
+			},
+			10,
+			2
+		);
+		[ $code ] = $this->prime_code( 'ctrl4' );
+
+		Controller::handle_code_submit( $code, 'https://example.test/course/', magicauth_hash_ip( '203.0.113.83' ) );
+
+		$this->assertSame( [ [ self::USER_ID, 'shortcode', 'code' ] ], $calls['pre'] ?? null );
+		$this->assertSame( [ [ 'shortcode', 'code' ] ], $calls['redirect'] ?? null );
+		$this->assertSame( [ [ self::USER_ID, 'code' ] ], $calls['completed'] ?? null );
+		$sessions = $this->sessions();
+		$this->assertCount( 1, $sessions );
+		$this->assertSame( 'code', $sessions[0]['magicauth_method'] );
+		$this->assertSame( 1790000000, $sessions[0]['magicauth_auth_at'] );
+		$this->assertArrayNotHasKey( 'magicauth_fresh_hash', $sessions[0] );
+		$this->assertSame( 1790000000, get_user_meta( self::USER_ID, 'magicauth_email_verified_at', true ) );
+		global $magicauth_test_state;
+		$this->assertSame( [], $magicauth_test_state['cookies'] ?? [], 'no magicauth_pk_fresh with the module off' );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	public function test_code_sign_in_cookie_failure_redirects_to_retry_once(): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['auth_cookie_throws'] = new \RuntimeException( 'headers already sent' );
+		[ $code ] = $this->prime_code( 'ctrl5' );
+
+		Controller::handle_code_submit( $code, 'https://example.test/sign-in', magicauth_hash_ip( '203.0.113.84' ) );
+
+		$this->assertCount( 1, $magicauth_test_state['redirects'], 'no second redirect after the retry' );
+		$this->assertSame( 'https://example.test/sign-in?magicauth_retry=1', $this->last_location() );
+		$this->assertFalse( is_user_logged_in() );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	public function test_refused_code_sign_in_honours_the_allow_login_filter(): void {
+		add_filter(
+			'magicauth_allow_login',
+			static function ( $allowed, $user, $method ) {
+				return 'code' === $method ? false : $allowed;
+			},
+			10,
+			3
+		);
+		[ $code ] = $this->prime_code( 'ctrl6' );
+
+		Controller::handle_code_submit( $code, 'https://example.test/sign-in', magicauth_hash_ip( '203.0.113.85' ) );
+
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertStringContainsString( 'magicauth_error=1', $this->last_location() );
+
+		unset( $_COOKIE['magicauth_session'] );
+	}
+
+	/** Valid password-form POST and server for handle_password_post / handle_resetpass_post. */
+	private function prime_form_post( string $action, array $fields ): void {
+		$_POST   = array_merge(
+			[
+				'magicauth_nonce'   => wp_create_nonce( $action ),
+				'magicauth_website' => '',
+				'magicauth_ts'      => (string) ( time() - 5 ),
+				'redirect_to'       => 'https://example.test/course/',
+			],
+			$fields
+		);
+		$_SERVER = [
+			'HTTP_ORIGIN' => 'https://example.test',
+			'REMOTE_ADDR' => '203.0.113.90',
+		];
+	}
+
+	public function test_password_post_signed_in_as_another_account_is_refused(): void {
+		global $magicauth_test_state;
+		magicauth_test_register_user( self::OTHER_ID, self::OTHER_EMAIL );
+		$magicauth_test_state['passwords']['learner'] = [ 'correct horse', self::USER_ID ];
+		magicauth_test_login_as( self::OTHER_ID );
+		$this->prime_form_post( 'magicauth_password', [ 'log' => 'learner', 'pwd' => 'correct horse' ] );
+
+		Controller::handle_password_post();
+
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertSame( self::OTHER_ID, get_current_user_id(), 'no session swap (B2)' );
+		$location = $this->last_location();
+		$this->assertStringContainsString( 'magicauth_step=password', $location );
+		$this->assertStringContainsString( 'magicauth_error=1', $location );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	public function test_password_post_signs_in_with_method_password(): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['passwords']['learner'] = [ 'correct horse', self::USER_ID ];
+		update_user_meta( self::USER_ID, 'magicauth_disabled', '1' ); // Does not block passwords.
+		$this->prime_form_post( 'magicauth_password', [ 'log' => 'learner', 'pwd' => 'correct horse' ] );
+
+		Controller::handle_password_post();
+
+		$this->assertSame( 1, $this->auth_cookie_count() );
+		$this->assertSame( 'password', $this->sessions()[0]['magicauth_method'] );
+		$this->assertSame( '', get_user_meta( self::USER_ID, 'magicauth_email_verified_at', true ) );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	public function test_resetpass_post_signed_in_as_another_account_is_refused(): void {
+		global $magicauth_test_state;
+		magicauth_test_register_user( self::OTHER_ID, self::OTHER_EMAIL );
+		$magicauth_test_state['reset_keys']['learner'] = [ 'k3y', self::USER_ID ];
+		magicauth_test_login_as( self::OTHER_ID );
+		$this->prime_form_post( 'magicauth_resetpass', [ 'key' => 'k3y', 'login' => 'learner', 'pass1' => 'n3w-pass', 'pass2' => 'n3w-pass' ] );
+
+		Controller::handle_resetpass_post();
+
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertSame( self::OTHER_ID, get_current_user_id() );
+		$this->assertStringContainsString( 'magicauth_error=1', $this->last_location() );
+		$this->assertSame( [], $magicauth_test_state['password_resets'] ?? [], 'r1-regress-02: a refused reset leaves the password unchanged' );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	/** r1-regress-02: the same user signed in gets a fresh cookie, as in 1.0.5, not ALREADY. */
+	public function test_resetpass_post_by_the_signed_in_user_issues_a_fresh_cookie(): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['reset_keys']['learner'] = [ 'k3y', self::USER_ID ];
+		magicauth_test_login_as( self::USER_ID );
+		$this->prime_form_post( 'magicauth_resetpass', [ 'key' => 'k3y', 'login' => 'learner', 'pass1' => 'n3w-pass', 'pass2' => 'n3w-pass' ] );
+
+		Controller::handle_resetpass_post();
+
+		$this->assertSame( [ self::USER_ID ], $magicauth_test_state['password_resets'] ?? [] );
+		$this->assertSame( 1, $this->auth_cookie_count(), 'reset_password voided the old cookie, so a new one is set' );
+		$this->assertSame( self::USER_ID, $magicauth_test_state['auth_cookie_set_for'] ?? null );
+		$this->assertSame( 'reset', $this->sessions()[0]['magicauth_method'] );
+		$this->assertSame( self::USER_ID, get_current_user_id() );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	/** r1-regress-02: a sign-in the allow_login filter refuses changes nothing. */
+	public function test_resetpass_post_refused_by_filter_leaves_the_password_unchanged(): void {
+		global $magicauth_test_state;
+		add_filter(
+			'magicauth_allow_login',
+			static function ( $allowed, $user, $method ) {
+				return 'reset' === $method ? false : $allowed;
+			},
+			10,
+			3
+		);
+		$magicauth_test_state['reset_keys']['learner'] = [ 'k3y', self::USER_ID ];
+		$this->prime_form_post( 'magicauth_resetpass', [ 'key' => 'k3y', 'login' => 'learner', 'pass1' => 'n3w-pass', 'pass2' => 'n3w-pass' ] );
+
+		Controller::handle_resetpass_post();
+
+		$this->assertSame( [], $magicauth_test_state['password_resets'] ?? [] );
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertStringContainsString( 'magicauth_error=1', $this->last_location() );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	public function test_resetpass_post_signs_in_with_method_reset(): void {
+		global $magicauth_test_state;
+		$magicauth_test_state['reset_keys']['learner'] = [ 'k3y', self::USER_ID ];
+		$this->prime_form_post( 'magicauth_resetpass', [ 'key' => 'k3y', 'login' => 'learner', 'pass1' => 'n3w-pass', 'pass2' => 'n3w-pass' ] );
+
+		Controller::handle_resetpass_post();
+
+		$this->assertSame( [ self::USER_ID ], $magicauth_test_state['password_resets'] ?? [] );
+		$this->assertSame( 'reset', $this->sessions()[0]['magicauth_method'] );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+
+		$_POST   = [];
+		$_SERVER = [];
+	}
+
+	/**
+	 * Link click, logged out. Separate process: the handler sends headers,
+	 * which PHP refuses once PHPUnit has printed.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_link_click_signs_in_with_method_link(): void {
+		Clock::set_for_tests( 1790000000 );
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL, 'https://example.test/course/' );
+		$this->assertIsArray( $issued );
+		parse_str( (string) wp_parse_url( (string) $issued['link_url'], PHP_URL_QUERY ), $_GET );
+
+		Controller::maybe_handle_verify_get();
+
+		$sessions = $this->sessions();
+		$this->assertCount( 1, $sessions );
+		$this->assertSame( 'link', $sessions[0]['magicauth_method'] );
+		$this->assertSame( 1790000000, get_user_meta( self::USER_ID, 'magicauth_email_verified_at', true ) );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_link_click_for_a_disabled_user_is_an_invalid_link(): void {
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL );
+		$this->assertIsArray( $issued );
+		update_user_meta( self::USER_ID, 'magicauth_disabled', '1' ); // Disabled after the link was sent (B3).
+		parse_str( (string) wp_parse_url( (string) $issued['link_url'], PHP_URL_QUERY ), $_GET );
+
+		Controller::maybe_handle_verify_get();
+
+		$this->assertSame( 0, $this->auth_cookie_count() );
+		$this->assertFalse( is_user_logged_in() );
+		$this->assertStringContainsString( 'magicauth_link_invalid=1', $this->last_location() );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_link_click_cookie_failure_redirects_to_retry_once(): void {
+		global $magicauth_test_state;
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL );
+		$this->assertIsArray( $issued );
+		parse_str( (string) wp_parse_url( (string) $issued['link_url'], PHP_URL_QUERY ), $_GET );
+		$_SERVER['HTTP_HOST']                       = 'example.test';
+		$_SERVER['REQUEST_URI']                     = '/?magicauth=verify';
+		$magicauth_test_state['auth_cookie_throws'] = new \RuntimeException( 'headers already sent' );
+
+		Controller::maybe_handle_verify_get();
+
+		$this->assertCount( 1, $magicauth_test_state['redirects'] );
+		$this->assertSame( 'http://example.test/?magicauth=verify&magicauth_retry=1', $this->last_location() );
+	}
+
+	/* ------------------------------------------------------------------
+	 * T-CTRL issued_by (SPEC 15 step 8, 4.4, 5.8): a token an administrator
+	 * created ("Create magic-link") signs in as admin_link, by link and by
+	 * code; the public flow and "Send link" store 0.
+	 * ---------------------------------------------------------------- */
+
+	private const ADMIN_ID = 900;
+
+	private function issued_by_of( string $selector ): string {
+		global $wpdb;
+		return (string) $wpdb->get_var( $wpdb->prepare( 'SELECT issued_by FROM ' . TokenManager::table() . ' WHERE selector = %s', $selector ) );
+	}
+
+	public function test_public_issue_stores_issued_by_0(): void {
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL );
+		$this->assertIsArray( $issued );
+		$this->assertSame( '0', $this->issued_by_of( (string) $issued['selector'] ) );
+
+		Controller::handle_email_request( self::EMAIL, 'https://example.test/sign-in', magicauth_hash_ip( '203.0.113.90' ) );
+		global $wpdb;
+		$this->assertSame( [ '0', '0' ], array_map( 'strval', $wpdb->get_col( 'SELECT issued_by FROM ' . TokenManager::table() ) ) );
+	}
+
+	public function test_code_from_an_admin_created_token_signs_in_as_admin_link(): void {
+		Clock::set_for_tests( 1790000000 );
+		$methods = [];
+		add_filter(
+			'magicauth_redirect_to',
+			static function ( $target, $user, $context, $method ) use ( &$methods ) {
+				$methods[] = $method;
+				return $target;
+			},
+			10,
+			4
+		);
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL, '', self::ADMIN_ID );
+		$this->assertIsArray( $issued );
+		$this->assertSame( (string) self::ADMIN_ID, $this->issued_by_of( (string) $issued['selector'] ) );
+		set_transient( 'magicauth_session_adm1', [ 'email' => self::EMAIL, 'selector' => (string) $issued['selector'], 'attempts' => 0 ], 1800 );
+
+		Controller::handle_code_submit( (string) $issued['code_plaintext'], 'https://example.test/course/', magicauth_hash_ip( '203.0.113.91' ), 'adm1' );
+
+		$sessions = $this->sessions();
+		$this->assertCount( 1, $sessions );
+		$this->assertSame( 'admin_link', $sessions[0]['magicauth_method'], 'never an email sign-in' );
+		$this->assertSame( '', get_user_meta( self::USER_ID, 'magicauth_email_verified_at', true ), 'does not prove the mailbox' );
+		$this->assertSame( [ 'admin_link' ], $methods );
+		$this->assertSame( 'https://example.test/course/', $this->last_location() );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_link_from_an_admin_created_token_signs_in_as_admin_link(): void {
+		$issued = TokenManager::issue( self::USER_ID, self::EMAIL, '', self::ADMIN_ID );
+		$this->assertIsArray( $issued );
+		parse_str( (string) wp_parse_url( (string) $issued['link_url'], PHP_URL_QUERY ), $_GET );
+
+		Controller::maybe_handle_verify_get();
+
+		$sessions = $this->sessions();
+		$this->assertCount( 1, $sessions );
+		$this->assertSame( 'admin_link', $sessions[0]['magicauth_method'] );
+		$this->assertSame( '', get_user_meta( self::USER_ID, 'magicauth_email_verified_at', true ) );
+	}
+
+	/**
+	 * Calls a UserProfile AJAX handler as ADMIN_ID for USER_ID; returns the JSON payload.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function profile_ajax( string $handler ): array {
+		magicauth_test_register_user( self::ADMIN_ID, 'admin@example.test', [ 'administrator' ] );
+		magicauth_test_login_as( self::ADMIN_ID );
+		// B17 (open, SPEC Appendix D): the 1.0.5 rank helper refuses administrators
+		// on other roles, so the test widens it through its filter as a site would.
+		add_filter(
+			'magicauth_current_user_can_control_user',
+			static function ( $can ) {
+				return $can || current_user_can( 'manage_options' );
+			}
+		);
+		$_POST    = [
+			'user_id'     => (string) self::USER_ID,
+			'_ajax_nonce' => wp_create_nonce( 'magicauth-user-profile' ),
+		];
+		$_REQUEST = $_POST;
+		try {
+			UserProfile::$handler();
+			$this->fail( 'no JSON response' );
+		} catch ( JsonResponseSent $e ) {
+			$payload = $e->payload;
+		} finally {
+			$_POST    = [];
+			$_REQUEST = [];
+		}
+		$this->assertIsArray( $payload );
+		$this->assertTrue( $payload['success'] ?? false );
+		return $payload;
+	}
+
+	public function test_admin_create_link_stores_the_actor_and_send_link_stores_0(): void {
+		global $wpdb;
+		$this->profile_ajax( 'ajax_create_link' );
+		$this->assertSame( [ (string) self::ADMIN_ID ], array_map( 'strval', $wpdb->get_col( 'SELECT issued_by FROM ' . TokenManager::table() ) ), 'the link and code are shown to the administrator' );
+
+		$this->profile_ajax( 'ajax_send_link' );
+		$this->assertSame( [ '0' ], array_map( 'strval', $wpdb->get_col( 'SELECT issued_by FROM ' . TokenManager::table() . ' WHERE consumed_at IS NULL' ) ), 'the token reaches only the mailbox' );
 	}
 }

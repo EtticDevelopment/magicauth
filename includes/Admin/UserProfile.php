@@ -53,10 +53,10 @@ final class UserProfile {
 				<td>
 					<label>
 						<input type="checkbox" name="magicauth_disabled" value="1" <?php checked( $disabled, true ); ?> />
-						<?php esc_html_e( 'Disable magic-link sign-in for this user', 'magicauth' ); ?>
+						<?php esc_html_e( 'Disable MagicAuth sign-in for this user (email link, code and passkeys)', 'magicauth' ); ?>
 					</label>
 					<p class="description">
-						<?php esc_html_e( 'Saving with this checked invalidates all outstanding sign-in links for this user immediately.', 'magicauth' ); ?>
+						<?php esc_html_e( 'Saving with this checked cancels all outstanding sign-in links for this user and blocks passkey sign-in. Passkeys are kept and work again when you clear this option.', 'magicauth' ); ?>
 					</p>
 				</td>
 			</tr>
@@ -119,9 +119,10 @@ final class UserProfile {
 
 	// -------- AJAX endpoints --------
 
+	/** The link and code are shown to the administrator, so the row records who issued it (5.8). */
 	public static function ajax_create_link(): void {
 		[ $target, $email ] = self::ajax_resolve_target();
-		$result             = TokenManager::issue( $target, $email );
+		$result             = TokenManager::issue( $target, $email, '', get_current_user_id() );
 		if ( ! is_array( $result ) ) {
 			wp_send_json_error( [ 'message' => __( 'Could not issue link.', 'magicauth' ) ] );
 		}

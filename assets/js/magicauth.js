@@ -152,7 +152,8 @@
 			return;
 		}
 
-		// Loose "x@y.z" check just to enable the button; server's is_email() is the real gate.
+		// The button is rendered enabled (no-JS submit); update() below disables it on init until the value
+		// passes a loose "x@y.z" check. Server's is_email() is the real gate.
 		var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 		function update() {

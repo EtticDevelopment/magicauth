@@ -13,6 +13,7 @@ namespace MagicAuth\Auth;
 defined( 'ABSPATH' ) || exit;
 
 use MagicAuth\Email\Mailer;
+use MagicAuth\Passkeys\Clock;
 use WP_Error;
 use WP_User;
 
@@ -106,9 +107,9 @@ final class Controller {
 		header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
 		header( 'X-Content-Type-Options: nosniff' );
 
-		$selector    = isset( $_GET['s'] ) ? (string) wp_unslash( (string) $_GET['s'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$verifier    = isset( $_GET['v'] ) ? (string) wp_unslash( (string) $_GET['v'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$redirect_to = isset( $_GET['redirect_to'] ) ? self::sanitize_redirect( (string) wp_unslash( (string) $_GET['redirect_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$selector    = isset( $_GET['s'] ) ? (string) wp_unslash( (string) $_GET['s'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- format checked by TokenManager::validate_link().
+		$verifier    = isset( $_GET['v'] ) ? (string) wp_unslash( (string) $_GET['v'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- format checked by TokenManager::validate_link().
+		$redirect_to = isset( $_GET['redirect_to'] ) ? Login::sanitize_redirect( (string) wp_unslash( (string) $_GET['redirect_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by Login::sanitize_redirect().
 
 		// Already-logged-in branches (plan §6.D).
 		if ( is_user_logged_in() ) {
@@ -116,11 +117,24 @@ final class Controller {
 			return;
 		}
 
-		$result = TokenManager::validate_link( $selector, $verifier );
+		// Proof time: before the current-address check (7.6 rule M).
+		$proven_at = Clock::now();
+		$issued_by = 0;
+		$result    = TokenManager::validate_link( $selector, $verifier, $issued_by );
 		magicauth_jitter();
 
-		if ( $result instanceof WP_Error ) {
-			// Bounce to styled login + toast instead of theme-wrapped terminal notice.
+		// A token created by an administrator never proves the mailbox (5.8).
+		$method    = $issued_by > 0 ? 'admin_link' : 'link';
+		$signed_in = $result instanceof WP_Error ? $result : Login::establish( $result, $method, $proven_at );
+
+		if ( $signed_in instanceof WP_Error ) {
+			if ( 'magicauth_cookie_failed' === $signed_in->get_error_code() ) {
+				// Token already counted, no rollback: retry the same link.
+				self::redirect_safe( add_query_arg( 'magicauth_retry', '1', self::current_request_url() ) );
+				return;
+			}
+			// Invalid link, or account refused (disabled, denied): same bounce,
+			// styled login + toast instead of theme-wrapped terminal notice.
 			self::redirect_safe(
 				add_query_arg(
 					[
@@ -133,8 +147,7 @@ final class Controller {
 			return;
 		}
 
-		self::set_auth_cookie_or_retry( $result, self::current_request_url() );
-		self::redirect_after_login( $result, $redirect_to );
+		self::redirect_safe( Login::redirect_target( $result, $redirect_to, $method ) );
 	}
 
 	/**
@@ -147,7 +160,7 @@ final class Controller {
 
 		$gates_ok = self::pre_throttle_gates( (array) $_POST, (array) $_SERVER );
 
-		$redirect_to = self::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' );
+		$redirect_to = Login::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by Login::sanitize_redirect().
 
 		if ( ! $nonce_ok || ! $gates_ok ) {
 			self::end_with_generic_envelope( $redirect_to, 'b' );
@@ -158,7 +171,7 @@ final class Controller {
 		$session_id = isset( $_POST['magicauth_sid'] ) ? sanitize_key( wp_unslash( (string) $_POST['magicauth_sid'] ) ) : '';
 
 		if ( isset( $_POST['magicauth_code'] ) ) {
-			self::handle_code_submit( (string) wp_unslash( $_POST['magicauth_code'] ), $redirect_to, $ip_hmac, $session_id );
+			self::handle_code_submit( (string) wp_unslash( $_POST['magicauth_code'] ), $redirect_to, $ip_hmac, $session_id ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- normalised and format checked by TokenManager::validate_code().
 			return;
 		}
 
@@ -268,14 +281,35 @@ final class Controller {
 			return;
 		}
 
-		$result = TokenManager::validate_code( $session_email, $code_raw, $session_id );
+		// Signed in as another account: refuse before consuming (B2).
+		if ( is_user_logged_in() && strtolower( $session_email ) !== strtolower( (string) wp_get_current_user()->user_email ) ) {
+			self::end_with_generic_envelope( $redirect_to, 'b', true, $session_id );
+			return;
+		}
+
+		// Proof time: before the current-address check (7.6 rule M).
+		$proven_at = Clock::now();
+		$issued_by = 0;
+		$result    = TokenManager::validate_code( $session_email, $code_raw, $session_id, $issued_by );
 		if ( $result instanceof WP_Error ) {
 			self::end_with_generic_envelope( $redirect_to, 'b', true, $session_id );
 			return;
 		}
 
-		self::set_auth_cookie_or_retry( $result, $redirect_to );
-		self::redirect_after_login( $result, $redirect_to );
+		// A code created by an administrator never proves the mailbox (5.8).
+		$method    = $issued_by > 0 ? 'admin_link' : 'code';
+		$signed_in = Login::establish( $result, $method, $proven_at );
+		if ( $signed_in instanceof WP_Error ) {
+			if ( 'magicauth_cookie_failed' === $signed_in->get_error_code() ) {
+				self::redirect_safe( add_query_arg( 'magicauth_retry', '1', $redirect_to ) );
+				return;
+			}
+			// Account refused: same envelope as a wrong code.
+			self::end_with_generic_envelope( $redirect_to, 'b', true, $session_id );
+			return;
+		}
+
+		self::redirect_safe( Login::redirect_target( $result, $redirect_to, $method ) );
 	}
 
 	/**
@@ -289,7 +323,7 @@ final class Controller {
 			&& wp_verify_nonce( sanitize_key( wp_unslash( (string) $_POST['magicauth_nonce'] ) ), 'magicauth_password' );
 
 		$gates_ok    = self::pre_throttle_gates( (array) $_POST, (array) $_SERVER );
-		$redirect_to = self::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' );
+		$redirect_to = Login::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by Login::sanitize_redirect().
 
 		// Defense in depth: form hides the link when disabled, but crafted POST could still arrive.
 		$pw_enabled = (bool) magicauth_get_setting( 'allow_password_login', true );
@@ -305,9 +339,9 @@ final class Controller {
 			return;
 		}
 
-		$username = isset( $_POST['log'] ) ? trim( (string) wp_unslash( $_POST['log'] ) ) : '';
+		$username = isset( $_POST['log'] ) ? trim( (string) wp_unslash( $_POST['log'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wp_authenticate() sanitizes the username.
 		// Password not sanitized — wp_authenticate handles it.
-		$password = isset( $_POST['pwd'] ) ? (string) wp_unslash( $_POST['pwd'] ) : '';
+		$password = isset( $_POST['pwd'] ) ? (string) wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- passwords are never altered.
 
 		if ( '' === $username || '' === $password ) {
 			self::end_with_generic_envelope( $redirect_to, 'c', true );
@@ -328,8 +362,7 @@ final class Controller {
 			return;
 		}
 
-		self::set_auth_cookie_or_retry( $user, $redirect_to );
-		self::redirect_after_login( $user, $redirect_to );
+		self::complete_password_sign_in( $user, 'password', $redirect_to );
 	}
 
 	/**
@@ -342,7 +375,7 @@ final class Controller {
 			&& wp_verify_nonce( sanitize_key( wp_unslash( (string) $_POST['magicauth_nonce'] ) ), 'magicauth_lostpassword' );
 
 		$gates_ok    = self::pre_throttle_gates( (array) $_POST, (array) $_SERVER );
-		$redirect_to = self::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' );
+		$redirect_to = Login::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by Login::sanitize_redirect().
 
 		$pw_enabled = (bool) magicauth_get_setting( 'allow_password_login', true );
 
@@ -358,7 +391,7 @@ final class Controller {
 			return;
 		}
 
-		$user_login = isset( $_POST['user_login'] ) ? trim( (string) wp_unslash( $_POST['user_login'] ) ) : '';
+		$user_login = isset( $_POST['user_login'] ) ? trim( (string) wp_unslash( $_POST['user_login'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- retrieve_password() sanitizes the login.
 
 		if ( '' !== $user_login ) {
 			// Defer to after-response so SMTP latency can't leak whether the
@@ -374,18 +407,22 @@ final class Controller {
 	}
 
 	/**
-	 * Reset-password POST (state E → authenticated). reset_password destroys
-	 * all existing sessions, so we issue a fresh auth cookie afterwards.
+	 * Reset-password POST (state E → authenticated). The account checks run
+	 * before reset_password(), so a refusal (another account signed in, B2,
+	 * or a denied sign-in) leaves the password and the reset key untouched.
+	 * reset_password destroys all existing sessions and changes user_pass,
+	 * which voids a same-user auth cookie, so we issue a fresh auth cookie
+	 * afterwards, also when that user was already signed in (as 1.0.5 did).
 	 */
 	public static function handle_resetpass_post(): void {
 		$nonce_ok = isset( $_POST['magicauth_nonce'] )
 			&& wp_verify_nonce( sanitize_key( wp_unslash( (string) $_POST['magicauth_nonce'] ) ), 'magicauth_resetpass' );
 
 		$gates_ok    = self::pre_throttle_gates( (array) $_POST, (array) $_SERVER );
-		$redirect_to = self::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' );
+		$redirect_to = Login::sanitize_redirect( isset( $_POST['redirect_to'] ) ? (string) wp_unslash( $_POST['redirect_to'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated by Login::sanitize_redirect().
 
-		$key   = isset( $_POST['key'] ) ? trim( (string) wp_unslash( $_POST['key'] ) ) : '';
-		$login = isset( $_POST['login'] ) ? trim( (string) wp_unslash( $_POST['login'] ) ) : '';
+		$key   = isset( $_POST['key'] ) ? trim( (string) wp_unslash( $_POST['key'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- checked by check_password_reset_key().
+		$login = isset( $_POST['login'] ) ? trim( (string) wp_unslash( $_POST['login'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- checked by check_password_reset_key().
 
 		if ( ! $nonce_ok || ! $gates_ok ) {
 			self::redirect_to_resetpass_with_error( $key, $login, $redirect_to );
@@ -399,7 +436,8 @@ final class Controller {
 			return;
 		}
 
-		$user = check_password_reset_key( $key, $login );
+		$proven_at = Clock::now(); // Before the key check (7.6 rule M).
+		$user      = check_password_reset_key( $key, $login );
 		if ( $user instanceof WP_Error || ! ( $user instanceof WP_User ) ) {
 			// Bad/expired key — bounce to state D (fresh link) instead of dead-end retry.
 			self::redirect_safe(
@@ -414,18 +452,46 @@ final class Controller {
 			return;
 		}
 
-		$pass1 = isset( $_POST['pass1'] ) ? (string) wp_unslash( $_POST['pass1'] ) : '';
-		$pass2 = isset( $_POST['pass2'] ) ? (string) wp_unslash( $_POST['pass2'] ) : '';
+		$pass1 = isset( $_POST['pass1'] ) ? (string) wp_unslash( $_POST['pass1'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- passwords are never altered.
+		$pass2 = isset( $_POST['pass2'] ) ? (string) wp_unslash( $_POST['pass2'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- passwords are never altered.
 
 		if ( '' === $pass1 || $pass1 !== $pass2 ) {
 			self::redirect_to_resetpass_with_error( $key, $login, $redirect_to );
 			return;
 		}
 
+		if ( is_wp_error( Login::preflight( $user, 'reset' ) ) ) {
+			self::end_with_generic_envelope( $redirect_to, 'c', true );
+			return;
+		}
+
 		reset_password( $user, $pass1 );
 
-		self::set_auth_cookie_or_retry( $user, $redirect_to );
-		self::redirect_after_login( $user, $redirect_to );
+		// Same user signed in (preflight refused any other): the old cookie
+		// is void now, so sign in again instead of establish() returning ALREADY.
+		if ( is_user_logged_in() ) {
+			wp_set_current_user( 0 );
+		}
+
+		self::complete_password_sign_in( $user, 'reset', $redirect_to, $proven_at );
+	}
+
+	/**
+	 * Sign-in after a password or reset POST. Another account signed in, or a
+	 * refusal: password envelope with error (B2). Cookie throw: retry.
+	 */
+	private static function complete_password_sign_in( WP_User $user, string $method, string $redirect_to, ?int $proven_at = null ): void {
+		$signed_in = Login::establish( $user, $method, $proven_at );
+		if ( $signed_in instanceof WP_Error ) {
+			if ( 'magicauth_cookie_failed' === $signed_in->get_error_code() ) {
+				self::redirect_safe( add_query_arg( 'magicauth_retry', '1', $redirect_to ) );
+				return;
+			}
+			self::end_with_generic_envelope( $redirect_to, 'c', true );
+			return;
+		}
+
+		self::redirect_safe( Login::redirect_target( $user, $redirect_to, $method ) );
 	}
 
 	/**
@@ -475,69 +541,10 @@ final class Controller {
 			return;
 		}
 
-		$result = TokenManager::validate_link( $selector, $verifier );
+		$issued_by = 0;
+		$result    = TokenManager::validate_link( $selector, $verifier, $issued_by );
 		magicauth_jitter();
-		self::redirect_after_login( $result instanceof WP_User ? $result : null, $redirect_to );
-	}
-
-	/**
-	 * wp_set_auth_cookie in try/catch; on throw, redirect to retry URL.
-	 * Plan §0 #3 + §5: token already counted, no rollback.
-	 * Clears the A→B session cookie for both auth paths — stale past sign-in.
-	 */
-	private static function set_auth_cookie_or_retry( WP_User $user, string $retry_url ): void {
-		self::end_session();
-
-		try {
-			do_action( 'magicauth_pre_set_auth_cookie', (int) $user->ID, 'shortcode' );
-			$remember = (bool) apply_filters( 'magicauth_remember_default', true );
-			wp_set_auth_cookie( (int) $user->ID, $remember, is_ssl() );
-			wp_set_current_user( (int) $user->ID );
-			do_action( 'wp_login', $user->user_login, $user );
-		} catch ( \Throwable $e ) {
-			magicauth_debug_log( 'wp_set_auth_cookie threw: ' . $e->getMessage() );
-			self::redirect_safe( add_query_arg( 'magicauth_retry', '1', $retry_url ) );
-		}
-	}
-
-	/**
-	 * Post-login redirect. Preference: validated form `redirect_to` →
-	 * `redirect_to_default` setting → `magicauth_redirect_to` filter (final).
-	 */
-	private static function redirect_after_login( ?WP_User $user, string $redirect_to = '' ): void {
-		$default = self::default_redirect_target( $user );
-		$target  = $default;
-
-		if ( '' !== $redirect_to ) {
-			$validated = wp_validate_redirect( $redirect_to, $default );
-			// Reject wp-login.php targets — would re-render the form post-auth.
-			if ( '' !== $validated && false === stripos( $validated, '/wp-login.php' ) ) {
-				$target = $validated;
-			}
-		}
-
-		$target = (string) apply_filters( 'magicauth_redirect_to', $target, $user, 'shortcode' );
-		self::redirect_safe( $target );
-	}
-
-	/** Default per redirect_to_default setting; 'auto' = admin if user_can read, else home. */
-	private static function default_redirect_target( ?WP_User $user ): string {
-		$choice = (string) magicauth_get_setting( 'redirect_to_default', 'auto' );
-		$home   = home_url( '/' );
-		$admin  = function_exists( 'admin_url' ) ? admin_url() : $home;
-
-		switch ( $choice ) {
-			case 'home':
-				return $home;
-			case 'admin':
-				return $admin;
-			case 'auto':
-			default:
-				if ( $user instanceof WP_User && function_exists( 'user_can' ) && user_can( $user, 'read' ) ) {
-					return $admin;
-				}
-				return $home;
-		}
+		self::redirect_safe( Login::redirect_target( $result instanceof WP_User ? $result : null, $redirect_to, $issued_by > 0 ? 'admin_link' : 'link' ) );
 	}
 
 	/**
@@ -601,8 +608,12 @@ final class Controller {
 		return (string) $payload['email'];
 	}
 
-	/** Drop session transient + expire cookie. */
-	private static function end_session(): void {
+	/**
+	 * Drop session transient + expire cookie. Called by Login::establish().
+	 *
+	 * @internal
+	 */
+	public static function end_session(): void {
 		if ( ! empty( $_COOKIE[ self::SESSION_COOKIE ] ) ) {
 			$session_id = sanitize_key( wp_unslash( (string) $_COOKIE[ self::SESSION_COOKIE ] ) );
 			if ( '' !== $session_id ) {
@@ -692,21 +703,10 @@ final class Controller {
 		self::redirect_safe( $url );
 	}
 
-	/** Sanitize form redirect_to; fall back to home. */
-	private static function sanitize_redirect( string $candidate ): string {
-		$candidate = trim( $candidate );
-		$default   = home_url( '/' );
-		if ( '' === $candidate ) {
-			return $default;
-		}
-		$validated = wp_validate_redirect( $candidate, '' );
-		return '' !== $validated ? $validated : $default;
-	}
-
 	/** URL of the current request; used for retry round-trip. */
 	private static function current_request_url(): string {
-		$host = isset( $_SERVER['HTTP_HOST'] ) ? (string) $_SERVER['HTTP_HOST'] : '';
-		$req  = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '/';
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? (string) $_SERVER['HTTP_HOST'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- only reaches wp_safe_redirect(), which validates the host.
+		$req  = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- only reaches wp_safe_redirect(), which validates the host.
 		$scheme = is_ssl() ? 'https://' : 'http://';
 		return $host ? $scheme . $host . $req : home_url( '/' );
 	}

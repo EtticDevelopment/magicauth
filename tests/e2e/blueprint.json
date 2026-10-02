@@ -1,0 +1,16 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"steps": [
+		{
+			"step": "defineWpConfigConsts",
+			"consts": {
+				"MAGICAUTH_E2E": true,
+				"WP_DEBUG": true,
+				"WP_DEBUG_LOG": true,
+				"WP_DEBUG_DISPLAY": false
+			}
+		},
+		{ "step": "activatePlugin", "pluginPath": "magicauth/magicauth.php" },
+		{ "step": "runPHP", "code": "<?php require '/e2e/setup.php';" }
+	]
+}

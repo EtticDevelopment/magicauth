@@ -13,6 +13,8 @@ namespace MagicAuth\Auth;
 
 defined( 'ABSPATH' ) || exit;
 
+use MagicAuth\Passkeys\Clock;
+
 /** Transient-backed throttle counters. */
 final class Throttle {
 
@@ -25,6 +27,40 @@ final class Throttle {
 	public const ACTION_PASSWORD_IP       = 'password_ip';
 	public const ACTION_PASSWORD_RESET_IP = 'password_reset_ip';
 	public const ACTION_DISABLED_NOTICE   = 'disabled_notice';
+
+	// Passkey buckets (SPEC 6.9). IP keys are magicauth_hash_ip( magicauth_ip_bucket( $ip ) ).
+	public const ACTION_PASSKEY_OPTS_GLOBAL      = 'passkey_opts_global';
+	public const ACTION_PASSKEY_OPTS_IP          = 'passkey_opts_ip';
+	public const ACTION_PASSKEY_FAIL_IP          = 'passkey_fail_ip';
+	public const ACTION_PASSKEY_REG_USER         = 'passkey_reg_user';
+	public const ACTION_PASSKEY_STALE_USER       = 'passkey_stale_user';
+	public const ACTION_PASSKEY_REGFAIL_USER     = 'passkey_regfail_user';
+	public const ACTION_PASSKEY_MANAGE_USER      = 'passkey_manage_user';
+	public const ACTION_PASSKEY_REAUTH_CD        = 'passkey_reauth_cd';
+	public const ACTION_PASSKEY_REAUTH_MAIL_USER = 'passkey_reauth_mail_user';
+	public const ACTION_PASSKEY_REAUTH_TRY_USER  = 'passkey_reauth_try_user';
+	public const ACTION_PASSKEY_REAUTH_OPTS_USER = 'passkey_reauth_opts_user';
+
+	/** Per-user passkey buckets: [ max, window in seconds ] for allow_passkey_user(). */
+	public const PASSKEY_USER_LIMITS = [
+		self::ACTION_PASSKEY_REG_USER         => [ 20, 3600 ],
+		self::ACTION_PASSKEY_STALE_USER       => [ 60, 3600 ],
+		self::ACTION_PASSKEY_REGFAIL_USER     => [ 10, 3600 ],
+		self::ACTION_PASSKEY_MANAGE_USER      => [ 60, 3600 ],
+		self::ACTION_PASSKEY_REAUTH_MAIL_USER => [ 5, 3600 ],
+		self::ACTION_PASSKEY_REAUTH_TRY_USER  => [ 20, 3600 ],
+		self::ACTION_PASSKEY_REAUTH_OPTS_USER => [ 30, 3600 ],
+	];
+
+	/** signin_options issuance window, global and per network. */
+	private const PASSKEY_OPTS_WINDOW = 600;
+
+	private const PASSKEY_OPTS_GLOBAL_MAX = 5000;
+
+	private const PASSKEY_OPTS_IP_MAX = 300;
+
+	/** Step-up email cooldown (passkey_reauth_cd). */
+	private const PASSKEY_REAUTH_COOLDOWN = 60;
 
 	/**
 	 * Registry option. Object-cache backends (Redis, Memcached) hold transient
@@ -144,6 +180,113 @@ final class Throttle {
 		return true;
 	}
 
+	/**
+	 * Global signin_options ceiling: 5000 per 10 minutes (filter
+	 * magicauth_passkey_options_global_max, clamped to [500, 100000]). Not in
+	 * the registry: anonymous traffic, expires on its own.
+	 */
+	public static function allow_passkey_options_global(): bool {
+		$max   = self::filtered_max( 'magicauth_passkey_options_global_max', self::PASSKEY_OPTS_GLOBAL_MAX, 500, 100000 );
+		$count = self::bump( self::ACTION_PASSKEY_OPTS_GLOBAL, 'all', self::PASSKEY_OPTS_WINDOW, $max, false );
+		return $count <= $max;
+	}
+
+	/**
+	 * signin_options per network bucket: 300 per 10 minutes (filter
+	 * magicauth_passkey_options_ip_max, clamped to [30, 5000]). Not in the
+	 * registry: one key per network would rewrite it on every new visitor.
+	 *
+	 * @param string $bucket_hmac magicauth_hash_ip( magicauth_ip_bucket( $ip ) ).
+	 */
+	public static function allow_passkey_options_ip( string $bucket_hmac ): bool {
+		$max   = self::filtered_max( 'magicauth_passkey_options_ip_max', self::PASSKEY_OPTS_IP_MAX, 30, 5000 );
+		$count = self::bump( self::ACTION_PASSKEY_OPTS_IP, $bucket_hmac, self::PASSKEY_OPTS_WINDOW, $max, false );
+		return $count <= $max;
+	}
+
+	/**
+	 * Peek, no increment: true once per_ip_passkey_max failed passkey sign-ins
+	 * were recorded for the network bucket inside the window.
+	 *
+	 * @param string $bucket_hmac magicauth_hash_ip( magicauth_ip_bucket( $ip ) ).
+	 */
+	public static function passkey_signin_blocked( string $bucket_hmac ): bool {
+		$limits = self::passkey_fail_limits();
+		return self::peek( self::PREFIX . self::ACTION_PASSKEY_FAIL_IP . '_' . $bucket_hmac ) >= $limits['max'];
+	}
+
+	/**
+	 * Count one failed passkey sign-in. Callers count only failures after a
+	 * bound signin challenge was consumed (6.3), never database errors.
+	 *
+	 * @param string $bucket_hmac magicauth_hash_ip( magicauth_ip_bucket( $ip ) ).
+	 */
+	public static function record_passkey_signin_failure( string $bucket_hmac ): void {
+		$limits = self::passkey_fail_limits();
+		self::bump( self::ACTION_PASSKEY_FAIL_IP, $bucket_hmac, $limits['window'], $limits['max'], true );
+	}
+
+	/**
+	 * Per-user passkey bucket (key u{ID}); limits in PASSKEY_USER_LIMITS.
+	 * Unknown bucket or user: denied.
+	 *
+	 * @param string $bucket  One of the PASSKEY_USER_LIMITS keys.
+	 * @param int    $user_id Signed-in user.
+	 * @param int    $max     Calls allowed in the window.
+	 * @param int    $window  Window in seconds.
+	 */
+	public static function allow_passkey_user( string $bucket, int $user_id, int $max, int $window ): bool {
+		if ( ! isset( self::PASSKEY_USER_LIMITS[ $bucket ] ) || $user_id <= 0 ) {
+			return false;
+		}
+		$max   = max( 1, $max );
+		$count = self::bump( $bucket, 'u' . $user_id, max( 1, $window ), $max, true );
+		return $count <= $max;
+	}
+
+	/**
+	 * Peek, no increment: true once $max calls were counted in the per-user
+	 * bucket (passkey_regfail_user is checked before a register and counted
+	 * only when it fails). Unknown bucket or user: true (denied).
+	 *
+	 * @param string $bucket  One of the PASSKEY_USER_LIMITS keys.
+	 * @param int    $user_id Signed-in user.
+	 * @param int    $max     Calls allowed in the window.
+	 */
+	public static function passkey_user_exhausted( string $bucket, int $user_id, int $max ): bool {
+		if ( ! isset( self::PASSKEY_USER_LIMITS[ $bucket ] ) || $user_id <= 0 ) {
+			return true;
+		}
+		return self::peek( self::PREFIX . $bucket . '_u' . $user_id ) >= max( 1, $max );
+	}
+
+	/**
+	 * Step-up email cooldown, one per 60 s per user. The value is the absolute
+	 * expiry, for passkey_reauth_cooldown_remaining().
+	 */
+	public static function allow_passkey_reauth_cooldown( int $user_id ): bool {
+		if ( $user_id <= 0 ) {
+			return false;
+		}
+		$key = self::PREFIX . self::ACTION_PASSKEY_REAUTH_CD . '_u' . $user_id;
+		if ( false !== get_transient( $key ) ) {
+			return false;
+		}
+		set_transient( $key, Clock::now() + self::PASSKEY_REAUTH_COOLDOWN, self::PASSKEY_REAUTH_COOLDOWN );
+		self::register_key( $key );
+		return true;
+	}
+
+	/** Seconds left on the step-up email cooldown, or 0. */
+	public static function passkey_reauth_cooldown_remaining( int $user_id ): int {
+		$existing = get_transient( self::PREFIX . self::ACTION_PASSKEY_REAUTH_CD . '_u' . $user_id );
+		if ( false === $existing ) {
+			return 0;
+		}
+		$remaining = (int) $existing - Clock::now();
+		return max( 0, min( self::PASSKEY_REAUTH_COOLDOWN, $remaining ) );
+	}
+
 	/** Eraser hook: drop email-keyed counters. No stable IP HMAC for a former user, so IP-side counters expire naturally. */
 	public static function reset_for_email( string $email_hmac ): void {
 		self::reset( self::ACTION_LINK_EMAIL, $email_hmac );
@@ -151,12 +294,20 @@ final class Throttle {
 		self::reset( self::ACTION_DISABLED_NOTICE, $email_hmac );
 	}
 
-	/** Drop IP-side counters for a known IP HMAC (when caller can compute it at eraser time). */
-	public static function reset_for_ip( string $ip_hmac ): void {
+	/**
+	 * Drop IP-side counters for a known IP HMAC (when caller can compute it at eraser time).
+	 * The passkey IP buckets are keyed by network: pass the address as $ip so
+	 * an IPv6 /64 is found; without it the IP HMAC is used (equal for IPv4).
+	 */
+	public static function reset_for_ip( string $ip_hmac, string $ip = '' ): void {
 		self::reset( self::ACTION_LINK_IP, $ip_hmac );
 		self::reset( self::ACTION_CODE_IP, $ip_hmac );
 		self::reset( self::ACTION_PASSWORD_IP, $ip_hmac );
 		self::reset( self::ACTION_PASSWORD_RESET_IP, $ip_hmac );
+
+		$bucket_hmac = '' !== $ip ? magicauth_hash_ip( magicauth_ip_bucket( $ip ) ) : $ip_hmac;
+		self::reset( self::ACTION_PASSKEY_OPTS_IP, $bucket_hmac );
+		self::reset( self::ACTION_PASSKEY_FAIL_IP, $bucket_hmac );
 	}
 
 	/**
@@ -278,6 +429,134 @@ final class Throttle {
 			self::register_key( $name );
 		}
 		return $count;
+	}
+
+	/**
+	 * Passkey bucket counter (SPEC 6.9): a fixed window that opens with the
+	 * bucket's first call and is never extended by later calls, so a limit
+	 * means N per window, not N per gap-free run. The increment is atomic, so
+	 * parallel requests cannot lose counts: wp_cache_add()/wp_cache_incr() on
+	 * a persistent object cache (the transient group, so get_transient(),
+	 * delete_transient() and the admin flush see the same value), otherwise
+	 * one UPDATE option_value = option_value + 1 on the transient row, read
+	 * back. A call that finds the bucket past $max writes nothing, so the
+	 * count stops at max+1 and the window drains. $register: add the key to
+	 * the registry (the admin flush); anonymous buckets stay out of it, since
+	 * one key per network would rewrite the registry on every new visitor.
+	 *
+	 * @return int Count after this call; refused when above $max.
+	 */
+	private static function bump( string $action, string $key, int $ttl, int $max, bool $register ): int {
+		$name  = self::PREFIX . $action . '_' . $key;
+		$count = self::peek( $name );
+		if ( $count > $max ) {
+			return $count;
+		}
+		$after = self::ext_cache() ? self::bump_cache( $name, $ttl, $count ) : self::bump_db( $name, $ttl, $count );
+		if ( 1 === $after && $register ) {
+			self::register_key( $name );
+		}
+		return $after;
+	}
+
+	/**
+	 * Object cache path of bump(): add opens the window, incr keeps its expiry.
+	 *
+	 * Some drop-ins (Redis Object Cache: INCRBY, or GET then SET on its
+	 * igbinary path) do not return false for a missing key: they create it at
+	 * the offset with no expiry. An incr result at or below what peek() saw
+	 * (or 1 after a failed add) means the key expired or was evicted since the
+	 * peek and was recreated that way, so it is written again with the TTL as
+	 * a new window (review r2-endpoints-01); a bucket without an expiry would
+	 * otherwise refuse for good once past its cap.
+	 */
+	private static function bump_cache( string $name, int $ttl, int $count ): int {
+		if ( 0 === $count && wp_cache_add( $name, 1, 'transient', $ttl ) ) {
+			return 1;
+		}
+		$after = wp_cache_incr( $name, 1, 'transient' );
+		if ( false === $after && wp_cache_add( $name, 1, 'transient', $ttl ) ) {
+			// Expired or evicted since the peek: a new window.
+			return 1;
+		}
+		if ( false === $after ) {
+			$after = wp_cache_incr( $name, 1, 'transient' );
+		}
+		if ( false === $after ) {
+			// A cache that cannot increment still counts, as the old read-then-write did.
+			wp_cache_set( $name, $count + 1, 'transient', $ttl );
+			return $count + 1;
+		}
+		$after = (int) $after;
+		if ( $after <= max( 1, $count ) ) {
+			// Recreated without an expiry since the peek: a new window with the TTL.
+			$after = max( 1, $after );
+			wp_cache_set( $name, $after, 'transient', $ttl );
+			return $after;
+		}
+		return max( $count + 1, $after );
+	}
+
+	/**
+	 * Database path of bump(). set_transient() only opens a window; later
+	 * calls touch the value row alone, so the timeout row keeps the window's
+	 * end. The read-back may include a parallel request's increment, which
+	 * only makes the answer stricter.
+	 */
+	private static function bump_db( string $name, int $ttl, int $count ): int {
+		global $wpdb;
+		if ( 0 === $count || ! isset( $wpdb ) ) {
+			set_transient( $name, $count + 1, $ttl );
+			return $count + 1;
+		}
+		$option = '_transient_' . $name;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic increment of our own transient row; the options cache is dropped below.
+		$updated = $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s", $option ) );
+		wp_cache_delete( $option, 'options' );
+		if ( false === $updated ) {
+			return $count + 1;
+		}
+		if ( 1 !== $updated ) {
+			// The row expired or was flushed since the peek: a new window.
+			set_transient( $name, 1, $ttl );
+			return 1;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-back of the increment above.
+		$after = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $option ) );
+		return is_numeric( $after ) ? max( $count + 1, (int) $after ) : $count + 1;
+	}
+
+	/** Current count of a passkey bucket, 0 when absent or expired. */
+	private static function peek( string $name ): int {
+		if ( self::ext_cache() ) {
+			return (int) wp_cache_get( $name, 'transient' );
+		}
+		return (int) get_transient( $name );
+	}
+
+	/** Whether transients live in a persistent object cache (core's own test). */
+	private static function ext_cache(): bool {
+		return function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache();
+	}
+
+	/** Filtered limit; non-numeric -> $default, then clamped to [$min, $max]. */
+	private static function filtered_max( string $filter, int $default, int $min, int $max ): int {
+		$value = apply_filters( $filter, $default );
+		$value = is_numeric( $value ) ? (int) $value : $default;
+		return max( $min, min( $max, $value ) );
+	}
+
+	/**
+	 * passkey_fail_ip limits from the settings (4.7), clamped as sanitize does.
+	 *
+	 * @return array{max:int,window:int}
+	 */
+	private static function passkey_fail_limits(): array {
+		$throttle = self::throttle_settings();
+		return [
+			'max'    => max( 1, min( 1000, (int) ( $throttle['per_ip_passkey_max'] ?? 30 ) ) ),
+			'window' => max( 1, min( 1440, (int) ( $throttle['per_ip_passkey_window_min'] ?? 15 ) ) ) * MINUTE_IN_SECONDS,
+		];
 	}
 
 	/** Drop a single counter. */
