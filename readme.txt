@@ -4,7 +4,7 @@ Tags: login, passwordless, magic link, authentication, security
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -132,6 +132,10 @@ Passkey verification uses a vendored copy of `report-uri/passkeys-php` 2.0.1 (Re
 
 == Changelog ==
 
+= 1.1.1 =
+* Fix: on Safari 26 and later, Apple Passwords no longer reports an updated user name at the start of every session and on every visit of the passkey management page. The browser is now told the account's email address and display name only when one of them changed since it was last told, also when the change was made outside the profile screen. The list of valid passkeys is still sent once per session.
+* Fix: no PHP 8.5 deprecation notice when a logo is uploaded on the settings page.
+
 = 1.1.0 =
 * New: optional passkeys, off by default. Turn them on under Settings > MagicAuth > Passkeys. The sign-in form gets a "Sign in with a passkey" button and passkey autofill; signed-in users create passkeys from a one-time offer after an email sign-in, the new `[magicauth_passkeys]` management page or their wp-admin profile. Creating a passkey needs a recent email or passkey sign-in, or a confirmation code. Email sign-in stays available everywhere.
 * New: passkey settings: "Offer a passkey after email sign-in", "Passkey management page", "Require an email sign-in every (days)" (0 turns it off and is the default; when set, a passkey stops working until the person signs in with email again), the per-IP passkey limits, and diagnostics. Passkeys cannot be turned on where they cannot work safely, for example when the site address is an IP address or is not served over HTTPS (localhost excepted), when the home and site addresses differ, or when another WordPress site shares the address (subfolder install or subdirectory multisite).
@@ -177,6 +181,9 @@ Passkey verification uses a vendored copy of `report-uri/passkeys-php` 2.0.1 (Re
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Optional passkeys, off by default. The database upgrades itself on the first request after the update. Signing in with a code or password, or resetting a password, while signed in as another account is now refused: sign out first. The per-user disable option also stops links and codes already sent.
 
 = 1.1.0 =
 Optional passkeys, off by default. The database upgrades itself on the first request after the update. Signing in with a code or password, or resetting a password, while signed in as another account is now refused: sign out first. The per-user disable option also stops links and codes already sent.

@@ -17,6 +17,7 @@ use MagicAuth\Passkeys\Assets;
 use MagicAuth\Passkeys\ChallengeStore;
 use MagicAuth\Passkeys\CredentialStore;
 use MagicAuth\Passkeys\Module;
+use MagicAuth\Passkeys\Signals;
 use MagicAuth\Tests\Support\Ceremony;
 use MagicAuth\Tests\Support\SoftAuthenticator;
 use PHPUnit\Framework\TestCase;
@@ -240,6 +241,9 @@ final class AccountEndpointsTest extends TestCase {
 		$this->assertArrayHasKey( 'credential_id', $r['data']['passkey'], 'owner response' );
 		$this->assertCount( 2, $r['data']['passkeys'] );
 		$this->assertCount( 2, $r['data']['signal']['allAccepted'] );
+		$this->assertFalse( $r['data']['signal']['details'], 'the list only: details go with a page view (8.7)' );
+		$this->assertTrue( Signals::payload( get_userdata( 7 ) )['details'] ?? null, 'still pending for the next page view' );
+		$this->assertSame( '', get_user_meta( 7, Signals::SENT_META, true ), 'a response records nothing' );
 	}
 
 	public function test_rename_slashed_input_is_unslashed(): void {
@@ -348,6 +352,7 @@ final class AccountEndpointsTest extends TestCase {
 		$this->assertNull( Ceremony::row( $id ) );
 		$this->assertSame( [ $keep ], array_column( $r['data']['passkeys'], 'id' ) );
 		$this->assertSame( [ Ceremony::row( $keep )['credential_id'] ], $r['data']['signal']['allAccepted'] );
+		$this->assertFalse( $r['data']['signal']['details'] );
 		$this->assertSame( 0, $r['data']['signed_out'] );
 		$this->assertSame( [ [ 7, $id, 'user' ] ], $fired );
 

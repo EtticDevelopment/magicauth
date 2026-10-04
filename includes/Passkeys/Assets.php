@@ -48,6 +48,9 @@ final class Assets {
 	/** @var bool A config with a signals payload was enqueued in this request (Prompt commits signals_at). */
 	private static bool $signals_sent = false;
 
+	/** @var array{user:int,payload:array<string,mixed>}|null The page payload enqueued in this request (Prompt records its details). */
+	private static ?array $delivered = null;
+
 	/** @var bool The signals-only core script and inline call were enqueued (a late account enqueue still runs). */
 	private static bool $signals_only = false;
 
@@ -56,15 +59,15 @@ final class Assets {
 
 	/**
 	 * Signals-only page views (8.7, 8.11): after the deferred core script ran,
-	 * signalAllAcceptedCredentials then signalCurrentUserDetails with the
-	 * reduced config captured here; an empty list drops this account's
-	 * haslocal and keeps promptfail (5.3, 2.1 gate). ES5, every rejection
-	 * swallowed by the wrapper.
+	 * signalAllAcceptedCredentials, then signalCurrentUserDetails only when
+	 * the payload says details, with the reduced config captured here; an
+	 * empty list drops this account's haslocal and keeps promptfail (5.3, 2.1
+	 * gate). ES5, every rejection swallowed by the wrapper.
 	 */
 	private const SIGNALS_CALL = '(function(c){function run(){var P=window.MagicAuthPasskeys,s=c&&c.signals;'
 		. 'if(!P||!s||!s.rpId||!s.userId||!Array.isArray(s.allAccepted)){return;}'
 		. 'P.signal("signalAllAcceptedCredentials",{rpId:s.rpId,userId:s.userId,allAcceptedCredentialIds:s.allAccepted})'
-		. '.then(function(){return P.signal("signalCurrentUserDetails",{rpId:s.rpId,userId:s.userId,name:s.name,displayName:s.displayName});});'
+		. '.then(function(){if(s.details===true){return P.signal("signalCurrentUserDetails",{rpId:s.rpId,userId:s.userId,name:s.name,displayName:s.displayName});}});'
 		. 'if(!s.allAccepted.length&&c.account&&c.account.key){try{var k=c.account.key,m=JSON.parse(window.localStorage.getItem("magicauth:pk:acct")||"{}")||{},e=m[k];'
 		. 'if(e&&typeof e==="object"&&typeof e.promptfail==="number"){m[k]={promptfail:e.promptfail};}else{delete m[k];}'
 		. 'window.localStorage.setItem("magicauth:pk:acct",JSON.stringify(m));}catch(x){}}}'
@@ -208,7 +211,15 @@ final class Assets {
 		if ( self::$signals_only ) {
 			$signals = false;
 		}
-		return self::enqueue_account_files( self::account_config( $user, $items, $prompt, $signals ) );
+		$config = self::account_config( $user, $items, $prompt, $signals );
+		$done   = self::enqueue_account_files( $config );
+		if ( $done && is_array( $config['signals'] ) ) {
+			self::$delivered = [
+				'user'    => (int) $user->ID,
+				'payload' => $config['signals'],
+			];
+		}
+		return $done;
 	}
 
 	/**
@@ -243,6 +254,10 @@ final class Assets {
 		}
 		self::$signals_only = true;
 		self::$signals_sent = true;
+		self::$delivered    = [
+			'user'    => (int) $user->ID,
+			'payload' => $payload,
+		];
 		wp_enqueue_script(
 			self::CORE_HANDLE,
 			MAGICAUTH_URL . 'assets/js/magicauth-passkeys-core.js',
@@ -260,6 +275,21 @@ final class Assets {
 	/** A config of this request carried a signals payload (Prompt::render_footer() commits signals_at). */
 	public static function signals_delivered(): bool {
 		return self::$signals_sent;
+	}
+
+	/**
+	 * The signals payload a page config of this request carried for the user
+	 * (signals-only view, prompt page, management page, own profile), or null.
+	 * Prompt::render_footer() hands it to Signals::delivered().
+	 *
+	 * @param int $user_id The signed-in user.
+	 * @return array<string,mixed>|null
+	 */
+	public static function delivered_signals( int $user_id ): ?array {
+		if ( null === self::$delivered || $user_id <= 0 || self::$delivered['user'] !== $user_id ) {
+			return null;
+		}
+		return self::$delivered['payload'];
 	}
 
 	/**
@@ -348,6 +378,7 @@ final class Assets {
 			self::$account_done = false;
 			self::$signals_sent = false;
 			self::$signals_only = false;
+			self::$delivered    = null;
 			self::$render_key   = '';
 		}
 	}

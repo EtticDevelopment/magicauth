@@ -388,7 +388,7 @@ function setup( opts ) {
 
 	const ok = ( data ) => ( { status: 200, body: { success: true, data: data || {} } } );
 	const passkeys = [ { id: 5, name: 'Laptop', label: 'Passkey ending in ABCD', provider: null, synced: true, sync_possible: true, device_bound: false, created: '2026-10-02T10:00:00Z', created_label: 'Added today', last_used: null, last_used_label: null, usable_here: true, blocked: false, is_new: true, credential_id: 'NEWCRED' } ];
-	const signal = { rpId: 'academy.example.com', userId: 'HANDLE', allAccepted: [ 'NEWCRED' ], name: 'learner7@example.test', displayName: 'Learner 7' };
+	const signal = { rpId: 'academy.example.com', userId: 'HANDLE', allAccepted: [ 'NEWCRED' ], name: 'learner7@example.test', displayName: 'Learner 7', details: false };
 	let responder = opts.responder || ( ( action ) => {
 		switch ( action ) {
 			case 'magicauth_passkey_register_options':
@@ -849,12 +849,26 @@ const scenarios = {
 
 	async session_signals_on_a_prompt_page() {
 		const key = fixture.prompt.config.account.key;
-		const s = { rpId: 'academy.example.com', userId: 'HANDLE', allAccepted: [], name: 'n', displayName: 'd' };
+		const s = { rpId: 'academy.example.com', userId: 'HANDLE', allAccepted: [], name: 'n', displayName: 'd', details: false };
 		const t = setup( { caps: {}, uvpa: false, config: { signals: s }, storage: { 'magicauth:pk:acct': JSON.stringify( { [ key ]: { haslocal: 1 } } ) } } );
 		await flush();
-		assert.deepStrictEqual( t.signals.map( ( x ) => x[ 0 ] ), [ 'signalAllAcceptedCredentials', 'signalCurrentUserDetails' ] );
+		assert.deepStrictEqual( t.signals.map( ( x ) => x[ 0 ] ), [ 'signalAllAcceptedCredentials' ], 'details not flagged: the list only' );
 		assert.deepStrictEqual( plain( t.signals[ 0 ][ 1 ] ), { rpId: s.rpId, userId: 'HANDLE', allAcceptedCredentialIds: [] } );
 		assert.strictEqual( t.entry(), null, 'an empty list forgets this account' );
+
+		// 8.7: the details only when the payload says so, after the list.
+		const d = Object.assign( {}, s, { allAccepted: [ 'C1' ], details: true } );
+		const changed = setup( { caps: {}, uvpa: false, config: { signals: d } } );
+		await flush();
+		assert.deepStrictEqual( plain( changed.signals ), [
+			[ 'signalAllAcceptedCredentials', { rpId: d.rpId, userId: 'HANDLE', allAcceptedCredentialIds: [ 'C1' ] } ],
+			[ 'signalCurrentUserDetails', { rpId: d.rpId, userId: 'HANDLE', name: 'n', displayName: 'd' } ],
+		] );
+		for ( const flag of [ undefined, 1, 'true', null ] ) {
+			const odd = setup( { caps: {}, uvpa: false, config: { signals: Object.assign( {}, d, { details: flag } ) } } );
+			await flush();
+			assert.deepStrictEqual( odd.signals.map( ( x ) => x[ 0 ] ), [ 'signalAllAcceptedCredentials' ], 'only details === true: ' + String( flag ) );
+		}
 
 		const quiet = setup( { caps: {}, uvpa: false, config: { signals: null } } );
 		await flush();
@@ -892,7 +906,7 @@ const scenarios = {
 		const s = { rpId: 'academy.example.com', userId: 'HANDLE', allAccepted: [], name: 'n', displayName: 'd' };
 		const t = setup( Object.assign( { storage: { 'magicauth:pk:acct': JSON.stringify( { [ key ]: { promptfail: recent, haslocal: 1 } } ) } }, SHOW, { config: { passkeys: [], signals: s } } ) );
 		await flush();
-		assert.strictEqual( t.signals.length, 2 );
+		assert.strictEqual( t.signals.length, 1 );
 		assert.deepStrictEqual( t.entry(), { promptfail: recent }, 'the empty signals list keeps promptfail too' );
 		assert.strictEqual( t.dlg.open, false );
 	},
@@ -915,6 +929,41 @@ const scenarios = {
 		await flush();
 		assert.ok( typeof JSON.parse( t.store.get( 'magicauth:pk:acct' ) )[ expected ].promptfail === 'number', 'promptfail under the server-side key' );
 		assert.strictEqual( t.creates.length, 1 );
+	},
+
+	async management_page_and_profile_send_details_only_when_flagged() {
+		for ( const page of [ 'manage', 'profile' ] ) {
+			const base = fixture[ page ].config.signals;
+			assert.ok( base && Array.isArray( base.allAccepted ) && base.allAccepted.length === 1, page + ': a payload with the list' );
+			assert.strictEqual( base.details, false, page + ': the prompt page before it delivered the details' );
+			const t = setup( { page } );
+			await flush();
+			assert.deepStrictEqual( t.signals.map( ( x ) => x[ 0 ] ), [ 'signalAllAcceptedCredentials' ], page + ': unchanged details are not signalled' );
+
+			const changed = setup( { page, config: { signals: Object.assign( {}, base, { displayName: 'Renamed', details: true } ) } } );
+			await flush();
+			assert.deepStrictEqual( plain( changed.signals ), [
+				[ 'signalAllAcceptedCredentials', { rpId: base.rpId, userId: base.userId, allAcceptedCredentialIds: base.allAccepted } ],
+				[ 'signalCurrentUserDetails', { rpId: base.rpId, userId: base.userId, name: base.name, displayName: 'Renamed' } ],
+			], page );
+		}
+	},
+
+	async endpoint_responses_send_the_list_only() {
+		const t = setup( { page: 'manage', responder: ( action ) => ( action === 'magicauth_passkey_rename'
+			? { status: 200, body: { success: true, data: { passkey: null, passkeys: [], signal: { rpId: 'r', userId: 'u', allAccepted: [], name: 'n', displayName: 'd', details: false } } } }
+			: { status: 200, body: { success: true, data: {} } } ) } );
+		await flush();
+		t.signals.length = 0;
+		const li = t.q( '[data-magicauth-pk-item]' );
+		li.querySelector( '[data-magicauth-pk-rename]' ).click();
+		await flush();
+		const input = li.querySelector( '[data-magicauth-pk-rename-box] input' );
+		input.value = 'Work laptop';
+		input.key( 'Enter' );
+		await flush();
+		assert.deepStrictEqual( t.actions().filter( ( a ) => a === 'magicauth_passkey_rename' ), [ 'magicauth_passkey_rename' ] );
+		assert.deepStrictEqual( t.signals.map( ( x ) => x[ 0 ] ), [ 'signalAllAcceptedCredentials' ] );
 	},
 
 	async management_add_with_inline_step_up() {
@@ -1019,6 +1068,16 @@ const scenarios = {
 			[ 'signalCurrentUserDetails', { rpId: s.rpId, userId: s.userId, name: s.name, displayName: s.displayName } ],
 		] );
 		assert.deepStrictEqual( t.fetches, [], 'no request' );
+		assert.strictEqual( s.details, true, 'the fixture account has no details record yet' );
+
+		// Details not flagged (8.7): the list only, so Safari has nothing to announce.
+		const same = JSON.parse( m[ 1 ] );
+		same.signals.details = false;
+		const quiet = setup( { page: 'none', inline: 'window.magicauthPasskeysConfig = ' + JSON.stringify( same ) + ';' + m[ 2 ] } );
+		await flush();
+		assert.deepStrictEqual( plain( quiet.signals ), [
+			[ 'signalAllAcceptedCredentials', { rpId: s.rpId, userId: s.userId, allAcceptedCredentialIds: s.allAccepted } ],
+		] );
 
 		// After revoke-all the empty list is sent and this account's browser entry goes.
 		const config = JSON.parse( m[ 1 ] );

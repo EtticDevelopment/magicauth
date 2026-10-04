@@ -37,6 +37,7 @@ final class CredentialStore {
 		self::HANDLE_META,
 		'magicauth_passkey_prompt',
 		'magicauth_passkey_details_at',
+		'magicauth_passkey_details_sent',
 		'magicauth_email_verified_at',
 		'magicauth_email_changed_at',
 	];

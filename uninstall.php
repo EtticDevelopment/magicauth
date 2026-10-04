@@ -87,6 +87,7 @@ $magicauth_meta_keys = [
 	'magicauth_passkey_user_handle',
 	'magicauth_passkey_prompt',
 	'magicauth_passkey_details_at',
+	'magicauth_passkey_details_sent',
 	'magicauth_email_verified_at',
 	'magicauth_email_changed_at',
 ];

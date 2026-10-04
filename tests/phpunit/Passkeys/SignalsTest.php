@@ -2,7 +2,9 @@
 /**
  * T-SIG (SPEC 8.7, 8.11, invariant 7, build steps 11 and 14):
  * Signals::payload() as the responses and configs carry it; the details
- * marker on profile_update; the session-time signals decided by
+ * marker on profile_update; the details record (1.1.1: details only when
+ * they differ from the last delivered ones, as Safari 26 announces every
+ * signalCurrentUserDetails); the session-time signals decided by
  * Prompt::prepare_front() and committed by render_footer(), and the
  * signals-only page view that loads the core script alone.
  *
@@ -59,8 +61,10 @@ final class SignalsTest extends TestCase {
 				'allAccepted' => [ Base64Url::encode( $first->credentialId() ), Base64Url::encode( $second->credentialId() ) ],
 				'name'        => 'learner7@example.test',
 				'displayName' => 'Learner 7',
+				'details'     => true,
 			],
-			Signals::payload( $this->user )
+			Signals::payload( $this->user ),
+			'no record yet (a passkey from before 1.1.1): the details go once'
 		);
 	}
 
@@ -163,6 +167,61 @@ final class SignalsTest extends TestCase {
 		$first_read = array_search( 'get_results', $proxy->calls, true );
 		$this->assertSame( 0, array_search( 'send_reads_to_masters', $proxy->calls, true ) );
 		$this->assertIsInt( $first_read );
+	}
+
+	/* ------------------------------------------------------------- details record (8.7) */
+
+	public function test_details_flag_follows_the_record(): void {
+		$this->enrolled();
+		$payload = Signals::payload( $this->user );
+		$this->assertTrue( $payload['details'] ?? null );
+		$this->assertTrue( Signals::details_pending( $this->user ) );
+		$this->assertFalse( Signals::payload( $this->user, false )['details'] ?? null, 'endpoint responses: never' );
+
+		Signals::delivered( 7, $payload );
+		$this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', (string) get_user_meta( 7, Signals::SENT_META, true ) );
+		$this->assertFalse( Signals::payload( $this->user )['details'] ?? null, 'unchanged details are not sent again' );
+		$this->assertFalse( Signals::details_pending( $this->user ) );
+
+		// A change that bypasses profile_update (a direct table write, a sync plugin) differs from the record too.
+		$this->user->display_name = 'Learner Seven';
+		$this->assertTrue( Signals::details_pending( $this->user ) );
+		$this->assertTrue( Signals::payload( $this->user )['details'] ?? null );
+		$this->assertSame( '', get_user_meta( 7, Signals::DETAILS_META, true ), 'no marker involved' );
+
+		// Changed back to what the authenticators hold: nothing to send.
+		$this->user->display_name = 'Learner 7';
+		$this->assertFalse( Signals::payload( $this->user )['details'] ?? null );
+		$this->assertFalse( Signals::details_pending( $this->user ) );
+
+		// user.name is the email.
+		$this->user->user_email = 'other7@example.test';
+		$this->assertTrue( Signals::payload( $this->user )['details'] ?? null );
+		$this->assertTrue( Signals::details_pending( $this->user ) );
+	}
+
+	public function test_a_payload_without_details_records_nothing(): void {
+		$this->enrolled();
+		Signals::delivered( 7, (array) Signals::payload( $this->user, false ) );
+		$this->assertSame( '', get_user_meta( 7, Signals::SENT_META, true ) );
+		$this->assertTrue( Signals::details_pending( $this->user ) );
+	}
+
+	public function test_an_empty_list_never_flags_details_and_settles_the_record(): void {
+		$this->enrolled();
+		CredentialStore::delete_all_for_user( 7 );
+		$this->assertTrue( Signals::details_pending( $this->user ), 'a handle and no record' );
+		$payload = Signals::payload( $this->user );
+		$this->assertSame( [], $payload['allAccepted'] ?? null );
+		$this->assertFalse( $payload['details'] ?? null, 'no authenticator holds anything to update' );
+		Signals::delivered( 7, (array) $payload );
+		$this->assertFalse( Signals::details_pending( $this->user ), 'settled, or every page view would be a signals view' );
+	}
+
+	public function test_no_handle_is_never_pending(): void {
+		$this->assertFalse( Signals::details_pending( $this->user ) );
+		Signals::record( 0, [] );
+		$this->assertSame( '', get_user_meta( 0, Signals::SENT_META, true ) );
 	}
 
 	/* ------------------------------------------------------------- details marker (8.7) */
@@ -327,7 +386,118 @@ final class SignalsTest extends TestCase {
 
 		self::next_request();
 		Prompt::prepare_front();
-		$this->assertArrayNotHasKey( 'enqueued_scripts', $magicauth_test_state, 'details_at is not after signals_at any more' );
+		$this->assertArrayNotHasKey( 'enqueued_scripts', $magicauth_test_state, 'the details match the record again' );
+	}
+
+	/**
+	 * The Safari 26 report (1.1.1): every new session and every visit of the
+	 * management page sent signalCurrentUserDetails with unchanged values,
+	 * and Apple Passwords announced each one as a username update.
+	 */
+	public function test_a_new_session_sends_the_list_without_unchanged_details(): void {
+		global $magicauth_test_state;
+		$this->enrolled();
+		$this->signed_in();
+		Prompt::prepare_front();
+		$this->assertTrue( self::signals_config()['signals']['details'], 'no record yet: once' );
+		self::footer();
+		$this->assertFalse( Signals::details_pending( $this->user ), 'recorded in the footer' );
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			\MagicAuth\Tests\Support\Ceremony::sign_in( $this->user, 'password' );
+			self::next_request();
+			Prompt::prepare_front();
+			$signals = self::signals_config()['signals'];
+			$this->assertCount( 1, $signals['allAccepted'], 'the list once per session, as before' );
+			$this->assertFalse( $signals['details'], 'unchanged details: not sent' );
+			self::footer();
+			$this->assertSame( \MagicAuth\Tests\Support\Ceremony::NOW, self::signals_at() );
+
+			self::next_request();
+			Prompt::prepare_front();
+			$this->assertArrayNotHasKey( 'enqueued_scripts', $magicauth_test_state, 'later pages of the session: nothing' );
+		}
+	}
+
+	public function test_details_not_printed_are_not_recorded(): void {
+		$this->enrolled();
+		$this->signed_in();
+		Prompt::prepare_front();
+		$this->assertTrue( self::signals_config()['signals']['details'] );
+		// The request redirects or exits: no footer.
+		self::next_request();
+		Prompt::prepare_front();
+		$this->assertTrue( self::signals_config()['signals']['details'], 'still due' );
+		$this->assertSame( '', get_user_meta( 7, Signals::SENT_META, true ) );
+		self::footer();
+		$this->assertFalse( Signals::details_pending( $this->user ) );
+	}
+
+	public function test_the_footer_records_only_the_current_users_payload(): void {
+		$this->enrolled();
+		$this->signed_in();
+		Prompt::prepare_front();
+		magicauth_test_login_as( 0 );
+		self::footer();
+		$this->assertSame( '', get_user_meta( 7, Signals::SENT_META, true ) );
+	}
+
+	public function test_management_page_sends_the_details_only_after_a_change(): void {
+		global $post, $magicauth_test_state;
+		$this->enrolled();
+		$this->signed_in();
+		$post = new \WP_Post( '[magicauth_passkeys]' );
+		$page = static function () use ( $post ): void {
+			global $magicauth_test_state;
+			$magicauth_test_state['queried'] = [
+				'id'   => 50,
+				'type' => 'page',
+				'post' => $post,
+			];
+			Prompt::prepare_front();
+			Assets::enqueue_front();
+		};
+		$page();
+		$this->assertTrue( self::account_config()['signals']['details'], 'no record yet' );
+		self::footer();
+
+		for ( $i = 0; $i < 3; $i++ ) {
+			self::next_request();
+			$page();
+			$signals = self::account_config()['signals'];
+			$this->assertCount( 1, $signals['allAccepted'], 'the list on every load' );
+			$this->assertFalse( $signals['details'], 'repeat visits: no details' );
+			self::footer();
+		}
+
+		Module::setup();
+		wp_update_user( [ 'ID' => 7, 'display_name' => 'Learner Seven' ] );
+		self::next_request();
+		$page();
+		$signals = self::account_config()['signals'];
+		$this->assertTrue( $signals['details'], 'changed: once' );
+		$this->assertSame( 'Learner Seven', $signals['displayName'] );
+		self::footer();
+
+		self::next_request();
+		$page();
+		$this->assertFalse( self::account_config()['signals']['details'] );
+		self::footer();
+		$this->assertArrayHasKey( Assets::ACCOUNT_HANDLE, $magicauth_test_state['enqueued_scripts'] ?? [] );
+	}
+
+	public function test_own_profile_records_delivered_details_in_the_admin_footer(): void {
+		$this->enrolled();
+		$this->signed_in();
+		Assets::enqueue_admin( 'profile.php' );
+		$this->assertTrue( self::account_config()['signals']['details'] );
+		self::footer();
+		$this->assertFalse( Signals::details_pending( $this->user ) );
+
+		self::next_request();
+		\MagicAuth\Passkeys\ProfileSection::reset_for_tests();
+		Assets::enqueue_admin( 'profile.php' );
+		$this->assertFalse( self::account_config()['signals']['details'] );
 	}
 
 	public function test_no_signals_without_a_handle_logged_out_or_off_html(): void {
@@ -435,6 +605,15 @@ final class SignalsTest extends TestCase {
 			unlink( $file );
 		}
 		$this->assertSame( "ok\n", $out );
+	}
+
+	/** @return array<string,mixed> The reduced config of a signals-only page view. */
+	private static function signals_config(): array {
+		global $magicauth_test_state;
+		$inline = $magicauth_test_state['inline_scripts'][ Assets::CORE_HANDLE ] ?? [];
+		self::assertCount( 1, $inline );
+		self::assertSame( 1, preg_match( '/^window\.magicauthPasskeysConfig = (\{.*?\});\(function\(c\)/s', $inline[0][0], $m ) );
+		return (array) json_decode( $m[1], true );
 	}
 
 	/** @return array<string,mixed> */

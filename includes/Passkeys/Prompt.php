@@ -200,12 +200,19 @@ final class Prompt {
 	 * wp_footer 20 and admin_footer 20: prints the prompt dialog, then commits
 	 * prompt_done (a printed prompt counts as shown, whatever the client
 	 * decides); commits signals_at once a config carried the signals. Runs
-	 * once per request.
+	 * once per request. First, on any page (management page and own profile
+	 * included), a config that carried the user's details makes them the
+	 * record (Signals::delivered()).
 	 */
 	public static function render_footer(): void {
 		$pending       = self::$pending;
 		self::$pending = null;
-		if ( null === $pending || get_current_user_id() !== $pending['user'] ) {
+		$uid           = get_current_user_id();
+		$delivered     = Assets::delivered_signals( $uid );
+		if ( null !== $delivered ) {
+			Signals::delivered( $uid, $delivered );
+		}
+		if ( null === $pending || $uid !== $pending['user'] ) {
 			return;
 		}
 		if ( $pending['prompt'] ) {
@@ -399,8 +406,9 @@ final class Prompt {
 
 	/**
 	 * Signals due (8.7): the user has a handle, and this session has not had
-	 * them yet, or the account details changed since (details_at >
-	 * signals_at). A failed read is not due.
+	 * them yet, or the authenticators may lack the current account details
+	 * (Signals::details_pending(), a difference from the record of the last
+	 * delivered ones). A failed read is not due.
 	 *
 	 * @param WP_User $user The signed-in user.
 	 */
@@ -409,14 +417,13 @@ final class Prompt {
 			return false;
 		}
 		$state = self::state_row();
-		if ( $state['error'] || null === $state['row'] ) {
-			return ! $state['error'];
+		if ( $state['error'] ) {
+			return false;
 		}
-		$signals_at = (int) $state['row']->signals_at;
-		if ( 0 === $signals_at ) {
+		if ( null === $state['row'] || 0 === (int) $state['row']->signals_at ) {
 			return true;
 		}
-		return (int) get_user_meta( (int) $user->ID, 'magicauth_passkey_details_at', true ) > $signals_at;
+		return Signals::details_pending( $user );
 	}
 
 	/**

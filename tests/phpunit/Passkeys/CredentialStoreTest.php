@@ -669,7 +669,7 @@ final class CredentialStoreTest extends TestCase {
 		$wpdb->insert( SessionState::table(), [ 'session_hash' => hash( 'sha256', (string) $user_id ), 'user_id' => $user_id, 'expires_at' => '2030-01-01 00:00:00' ] );
 		$issued = TokenManager::issue( $user_id, "u{$user_id}@example.test" );
 		$this->assertIsArray( $issued );
-		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_email_verified_at', 'magicauth_email_changed_at', 'first_name' ] as $key ) {
+		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_passkey_details_sent', 'magicauth_email_verified_at', 'magicauth_email_changed_at', 'first_name' ] as $key ) {
 			update_user_meta( $user_id, $key, '1' );
 		}
 	}
@@ -692,7 +692,7 @@ final class CredentialStoreTest extends TestCase {
 
 		$this->assertSame( [ 0, 0, 0, 0 ], array_values( self::rows_of( 5 ) ) );
 		$this->assertSame( [ 1, 1, 1, 1 ], array_values( self::rows_of( 6 ) ), 'other users untouched' );
-		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_email_verified_at', 'magicauth_email_changed_at' ] as $key ) {
+		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_passkey_details_sent', 'magicauth_email_verified_at', 'magicauth_email_changed_at' ] as $key ) {
 			$this->assertSame( [], get_user_meta( 5, $key ), $key );
 			$this->assertSame( '1', get_user_meta( 6, $key, true ), $key );
 		}
@@ -711,7 +711,7 @@ final class CredentialStoreTest extends TestCase {
 		$this->assertSame( '1', get_user_meta( 5, 'magicauth_email_verified_at', true ) );
 
 		CredentialStore::on_wpmu_delete_user( 5 );
-		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_email_verified_at', 'magicauth_email_changed_at' ] as $key ) {
+		foreach ( [ CredentialStore::HANDLE_META, 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_passkey_details_sent', 'magicauth_email_verified_at', 'magicauth_email_changed_at' ] as $key ) {
 			$this->assertSame( [], get_user_meta( 5, $key ), $key );
 		}
 		$this->assertSame( '1', get_user_meta( 5, 'first_name', true ) );

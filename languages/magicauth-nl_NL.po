@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: MagicAuth 1.1.0\n"
+"Project-Id-Version: MagicAuth 1.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/MagicAuth\n"
 "POT-Creation-Date: 2026-10-02T09:14:17+00:00\n"
 "PO-Revision-Date: 2026-10-02\n"

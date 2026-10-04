@@ -141,11 +141,17 @@ final class AccountEndpoints {
 			$item = Presenter::item( self::stored_row( $record, $id ), true );
 		}
 
+		// create() gave the new passkey the details 7.2 sends, the payload's own (8.7).
+		$signal = Signals::payload( $user, false );
+		if ( null !== $signal ) {
+			Signals::record( $uid, $signal );
+		}
+
 		Http::ok(
 			array_merge(
 				[ 'passkey' => $item ],
 				self::list_fields( $items ),
-				[ 'signal' => Signals::payload( $user ) ]
+				[ 'signal' => $signal ]
 			)
 		);
 	}
@@ -367,7 +373,7 @@ final class AccountEndpoints {
 			array_merge(
 				[ 'passkey' => $item ],
 				self::list_fields( $items ),
-				[ 'signal' => Signals::payload( $user ) ]
+				[ 'signal' => Signals::payload( $user, false ) ]
 			)
 		);
 	}
@@ -404,7 +410,7 @@ final class AccountEndpoints {
 			array_merge(
 				self::list_fields( self::items( $user, true ) ),
 				[
-					'signal'     => Signals::payload( $user ),
+					'signal'     => Signals::payload( $user, false ),
 					'signed_out' => $signed_out,
 				]
 			)

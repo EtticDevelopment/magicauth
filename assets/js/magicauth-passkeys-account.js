@@ -218,12 +218,14 @@
 		} );
 	}
 
-	async function signals( s, details ) {
+	// The details only when the server says the authenticators lack them (8.7): Safari 26 tells the user about
+	// every signalCurrentUserDetails, changed or not. Endpoint responses never carry details.
+	async function signals( s ) {
 		if ( ! s || ! s.rpId || ! s.userId || ! Array.isArray( s.allAccepted ) ) {
 			return; // Never with an incomplete list (invariant 7).
 		}
 		await P.signal( 'signalAllAcceptedCredentials', { rpId: s.rpId, userId: s.userId, allAcceptedCredentialIds: s.allAccepted } );
-		if ( details ) {
+		if ( s.details === true ) {
 			await P.signal( 'signalCurrentUserDetails', { rpId: s.rpId, userId: s.userId, name: s.name, displayName: s.displayName } );
 		}
 		if ( s.allAccepted.length === 0 ) {
@@ -648,7 +650,7 @@
 			}
 		}
 		if ( ! admin ) {
-			signals( cfg.signals, true );
+			signals( cfg.signals );
 		}
 
 		/* -------------------------------------------- rename (inline, no <form>: Enter handled here) */
@@ -711,7 +713,7 @@
 				const again = list.querySelector( '[data-id="' + id + '"] [data-magicauth-pk-rename]' );
 				focus( again || title );
 				P.liveRegion( statusEl, S.M23 );
-				signals( r.data.signal, false );
+				signals( r.data.signal );
 			};
 			input.addEventListener( 'keydown', function ( e ) {
 				if ( e.key === 'Enter' ) {
@@ -780,7 +782,7 @@
 			focus( rest[ at ] || rest[ at - 1 ] || title );
 			P.liveRegion( statusEl, S.M22 );
 			if ( ! admin ) {
-				signals( r.data.signal, false );
+				signals( r.data.signal );
 			}
 		}
 
@@ -925,7 +927,7 @@
 				done: function ( r ) {
 					render( r.data.passkeys );
 					P.liveRegion( statusEl, S.M24 );
-					signals( r.data.signal, false );
+					signals( r.data.signal );
 				},
 			} ) );
 		}
@@ -1069,7 +1071,7 @@
 					show( 'success' );
 					focus( success );
 					P.liveRegion( statusEl, success.textContent );
-					signals( r.data.signal, false );
+					signals( r.data.signal );
 				},
 			} ) );
 		} );
@@ -1155,7 +1157,7 @@
 			init( sec );
 		} );
 		if ( sections.length === 0 && cfg.signals ) {
-			signals( cfg.signals, true ); // Session-time signals on a prompt page (8.7).
+			signals( cfg.signals ); // Session-time signals on a prompt page (8.7).
 		}
 		const dlg = ownRoots( '[data-magicauth-pk-prompt]' )[ 0 ] || null;
 		if ( dlg && cfg.prompt && cfg.prompt.show === true && typeof dlg.showModal === 'function' ) {

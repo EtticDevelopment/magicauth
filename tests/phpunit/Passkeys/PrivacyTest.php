@@ -59,6 +59,7 @@ final class PrivacyTest extends TestCase {
 		'magicauth_passkey_user_handle',
 		'magicauth_passkey_prompt',
 		'magicauth_passkey_details_at',
+		'magicauth_passkey_details_sent',
 		'magicauth_email_verified_at',
 		'magicauth_email_changed_at',
 	];
@@ -314,6 +315,8 @@ final class PrivacyTest extends TestCase {
 		$ids = array_keys( self::items( $this->export() ) );
 		$this->assertNotContains( 'magicauth-passkey-settings', $ids, 'the handle alone is its own item' );
 		$this->assertContains( 'magicauth-passkey-user-handle', $ids );
+		update_user_meta( 7, 'magicauth_passkey_details_sent', str_repeat( 'a', 64 ) );
+		$this->assertNotContains( 'magicauth-passkey-settings', array_keys( self::items( $this->export() ) ), 'the details record is erased, not exported' );
 
 		foreach ( [ 'magicauth_passkey_prompt', 'magicauth_passkey_details_at', 'magicauth_email_verified_at', 'magicauth_email_changed_at' ] as $key ) {
 			magicauth_test_reset_state();

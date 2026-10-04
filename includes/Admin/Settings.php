@@ -697,7 +697,10 @@ final class Settings {
 			$finfo = finfo_open( FILEINFO_MIME_TYPE );
 			if ( $finfo ) {
 				$mime = finfo_file( $finfo, $path );
-				finfo_close( $finfo );
+				// A no-op since PHP 8.1 (finfo is an object) and deprecated in 8.5.
+				if ( PHP_VERSION_ID < 80100 ) {
+					finfo_close( $finfo );
+				}
 				if ( ! is_string( $mime ) || ! in_array( $mime, self::LOGO_MIMES, true ) ) {
 					add_settings_error( self::OPTION_NAME, 'magicauth_logo_bad_mime', __( 'Logo: file content does not match a supported image format.', 'magicauth' ), 'error' );
 					return 0;

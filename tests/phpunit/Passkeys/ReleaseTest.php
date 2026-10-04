@@ -1,6 +1,6 @@
 <?php
 /**
- * Release prep (SPEC 15 step 17): version 1.1.0 in the header, the constant
+ * Release prep (SPEC 15 step 17): version 1.1.1 in the header, the constant
  * and the readme (the CI version-consistency job's extraction), the changelog,
  * the catalogue headers, and the zip that tools/build-release.sh makes from
  * this tree: one magicauth/ folder with the allowlist only, the vendored
@@ -18,7 +18,10 @@ use PHPUnit\Framework\TestCase;
 
 final class ReleaseTest extends TestCase {
 
-	private const VERSION = '1.1.0';
+	private const VERSION = '1.1.1';
+
+	/** The passkeys release: its changelog entry stays complete under the newer ones. */
+	private const PASSKEYS_VERSION = '1.1.0';
 
 	private const ROOT = __DIR__ . '/../../..';
 
@@ -72,7 +75,9 @@ final class ReleaseTest extends TestCase {
 		$this->assertSame( count( $versions[1] ), count( array_unique( $versions[1] ) ) );
 
 		$this->assertSame( 1, preg_match( '/^= ' . preg_quote( self::VERSION, '/' ) . ' =\n((?:\* .+\n)+)/m', $section[1], $entry ) );
-		$this->assertGreaterThanOrEqual( 10, preg_match_all( '/^\* /m', $entry[1] ) );
+		$this->assertGreaterThanOrEqual( 1, preg_match_all( '/^\* /m', $entry[1] ) );
+		$this->assertSame( 1, preg_match( '/^= ' . preg_quote( self::PASSKEYS_VERSION, '/' ) . ' =\n((?:\* .+\n)+)/m', $section[1], $passkeys ) );
+		$this->assertGreaterThanOrEqual( 10, preg_match_all( '/^\* /m', $passkeys[1] ), 'the passkeys release keeps its entry' );
 
 		$this->assertSame( 1, preg_match( '/^Tested up to:\s*(\d+\.\d+)$/m', $readme, $tested ) );
 		$this->assertSame( 1, preg_match( '/^Requires at least:\s*(\d+\.\d+)$/m', $readme, $requires ) );

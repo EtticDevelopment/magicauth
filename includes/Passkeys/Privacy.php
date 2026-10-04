@@ -40,12 +40,17 @@ final class Privacy {
 	/** Rule M change time (7.6), kept by the eraser on multisite. */
 	private const CHANGED_META = 'magicauth_email_changed_at';
 
-	/** User meta erased with the passkeys (12.2), in export order. */
+	/**
+	 * User meta erased with the passkeys (12.2), in export order. SENT_META is
+	 * erased, not exported: a hash of the email and display name the export
+	 * already holds.
+	 */
 	private const META = [
 		Prompt::META,
 		'magicauth_email_verified_at',
 		self::CHANGED_META,
 		Signals::DETAILS_META,
+		Signals::SENT_META,
 		CredentialStore::HANDLE_META,
 	];
 
@@ -300,7 +305,7 @@ final class Privacy {
 	 */
 	private static function has_settings_meta( int $uid ): bool {
 		foreach ( self::META as $key ) {
-			if ( CredentialStore::HANDLE_META !== $key && [] !== (array) get_user_meta( $uid, $key, false ) ) {
+			if ( ! in_array( $key, [ CredentialStore::HANDLE_META, Signals::SENT_META ], true ) && [] !== (array) get_user_meta( $uid, $key, false ) ) {
 				return true;
 			}
 		}

@@ -27,6 +27,7 @@ use MagicAuth\Passkeys\CredentialStore;
 use MagicAuth\Passkeys\Freshness;
 use MagicAuth\Passkeys\Module;
 use MagicAuth\Passkeys\SessionState;
+use MagicAuth\Passkeys\Signals;
 use MagicAuth\Tests\Support\Cbor;
 use MagicAuth\Tests\Support\Ceremony;
 use MagicAuth\Tests\Support\SoftAuthenticator;
@@ -427,6 +428,11 @@ final class RegistrationTest extends TestCase {
 		$this->assertSame( [ Base64Url::encode( $auth->credentialId() ) ], $signal['allAccepted'] );
 		$this->assertSame( 'learner7@example.test', $signal['name'] );
 		$this->assertSame( 'Learner 7', $signal['displayName'] );
+		$this->assertFalse( $signal['details'], 'an endpoint response never carries the details (8.7)' );
+		$this->assertSame( '', get_user_meta( 7, Signals::DETAILS_META, true ) );
+		$this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', (string) get_user_meta( 7, Signals::SENT_META, true ), 'create() gave the authenticator the details: recorded' );
+		$this->assertFalse( Signals::details_pending( get_userdata( 7 ) ), 'the next page view does not send them again' );
+		$this->assertFalse( Signals::payload( get_userdata( 7 ) )['details'] ?? null );
 
 		// R-14: the added email once, after the response; cadence reset; action.
 		$this->assertSame( 1, $magicauth_test_state['after_response_calls'] ?? 0 );
