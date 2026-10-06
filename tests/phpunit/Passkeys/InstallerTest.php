@@ -1165,8 +1165,10 @@ final class InstallerTest extends TestCase {
 		$like = array_values( array_filter( $wpdb->query_log, static fn( string $q ): bool => false !== stripos( $q, ' LIKE ' ) ) );
 		$this->assertCount( 1, $like, 'one statement for both prefixes' );
 		$bs = chr( 92 );
-		$this->assertStringContainsString( "'{$bs}_transient{$bs}_magicauth{$bs}_%'", $like[0], 'esc_like() pattern' );
-		$this->assertStringContainsString( "'{$bs}_transient{$bs}_timeout{$bs}_magicauth{$bs}_%'", $like[0] );
+		// A real MySQL connection escapes the backslash once more inside the literal ('\\_'), which is the same pattern.
+		$sql = str_replace( $bs . $bs, $bs, $like[0] );
+		$this->assertStringContainsString( "'{$bs}_transient{$bs}_magicauth{$bs}_%'", $sql, 'esc_like() pattern' );
+		$this->assertStringContainsString( "'{$bs}_transient{$bs}_timeout{$bs}_magicauth{$bs}_%'", $sql );
 
 		$this->assertNull( self::cron_event(), 'cron cleared' );
 	}
