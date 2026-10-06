@@ -36,6 +36,28 @@ async function waitSignedIn( c, timeout = 30000 ) {
 	return false;
 }
 
+/**
+ * Open /login/ with presence off; the user picks the passkey from the autofill.
+ * Presence comes back while the options request is out, so before get() runs: a
+ * conditional request that went pending without presence never resolves. The verify
+ * wait starts there too, so a late response of the previous page never counts.
+ * Resolves with that pick's verify response.
+ */
+async function autofillPick( c ) {
+	let verify = null;
+	const unroute = await onNextAction( c.page, 'magicauth_passkey_signin_options', () => {
+		verify = c.page.waitForResponse( isAction( 'magicauth_passkey_signin' ) );
+		return c.auth.presence( true );
+	} );
+	try {
+		await go( c.page, '/login/' );
+		await until( () => null !== verify, 30000 );
+		return await verify;
+	} finally {
+		await unroute();
+	}
+}
+
 for ( const mode of [ 'native', 'nojsonapi' ] ) {
 	test( `E6 autofill sign-in on the wall lands on the deep link (${ mode })`, async () => {
 		const c = await client( { mode } );
@@ -286,12 +308,8 @@ test( 'E11 counter regression blocks a device-bound passkey for good; blocked ma
 		const mark = await mailMark();
 
 		await c.auth.props( row.credential_id, { signCount: 0 } );
-		let verify = c.page.waitForResponse( isAction( 'magicauth_passkey_signin' ) );
 		await c.auth.presence( false );
-		await go( c.page, '/login/' );
-		await c.page.waitForResponse( isAction( 'magicauth_passkey_signin_options' ) );
-		await c.auth.presence( true );
-		assert.equal( ( await verify ).status(), 400, 'lower counter rejected' );
+		assert.equal( ( await autofillPick( c ) ).status(), 400, 'lower counter rejected' );
 		const blocked = await until( async () => ( await fixture.user( user ) ).passkeys[ 0 ].counter_anomaly_at );
 		assert.ok( blocked, 'counter_anomaly_at set' );
 		await waitMail( user.email, { after: mark, subject: /blocked/i } );
@@ -299,11 +317,7 @@ test( 'E11 counter regression blocks a device-bound passkey for good; blocked ma
 		// A later, higher counter is still rejected; no second mail.
 		await c.auth.presence( false );
 		await c.auth.props( row.credential_id, { signCount: 100 } );
-		verify = c.page.waitForResponse( isAction( 'magicauth_passkey_signin' ) );
-		await go( c.page, '/login/' );
-		await c.page.waitForResponse( isAction( 'magicauth_passkey_signin_options' ) );
-		await c.auth.presence( true );
-		assert.equal( ( await verify ).status(), 400, 'blocked credential stays rejected' );
+		assert.equal( ( await autofillPick( c ) ).status(), 400, 'blocked credential stays rejected' );
 		await sleep( 1500 );
 		assert.equal( ( await mailsTo( user.email, mark ) ).filter( ( m ) => /blocked/i.test( m.subject ) ).length, 1, 'blocked mail sent once' );
 		assert.equal( await loggedIn( c.context ), false );
