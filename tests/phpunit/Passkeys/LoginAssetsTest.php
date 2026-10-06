@@ -137,7 +137,15 @@ final class LoginAssetsTest extends TestCase {
 
 		$root = self::node( $xpath, '//*[@data-magicauth-passkey-root]' );
 		$this->assertTrue( $root->hasAttribute( 'hidden' ), 'hidden until G1' );
-		$this->assertTrue( $form->contains( $root ), 'inside the form' );
+		// DOMNode::contains() is PHP 8.3+; walk the ancestors so 8.0 to 8.2 run this too.
+		$inside = false;
+		for ( $n = $root->parentNode; null !== $n; $n = $n->parentNode ) {
+			if ( $n->isSameNode( $form ) ) {
+				$inside = true;
+				break;
+			}
+		}
+		$this->assertTrue( $inside, 'inside the form' );
 
 		$button = self::node( $xpath, '//button[@data-magicauth-passkey-signin]' );
 		$this->assertSame( 'button', $button->getAttribute( 'type' ), 'never submits the email form' );

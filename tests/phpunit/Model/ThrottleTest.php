@@ -244,7 +244,7 @@ final class ThrottleTest extends TestCase {
 		$key = 'magicauth_throttle_link_ip_legacy_hmac';
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT OR REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				"REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
 				'_transient_' . $key,
 				'1'
 			)

@@ -59,7 +59,11 @@ JS;
 		$this->assertSame( 1, substr_count( $source, "const scenarios = {\n" ) );
 		$patched = str_replace( "const scenarios = {\n", "const scenarios = {\n" . self::SCENARIO, $source );
 
-		$data = ( new \ReflectionMethod( AccountScriptTest::class, 'fixture' ) )->invoke( new AccountScriptTest( 'k1' ) );
+		$fixture = new \ReflectionMethod( AccountScriptTest::class, 'fixture' );
+		if ( PHP_VERSION_ID < 80100 ) {
+			$fixture->setAccessible( true ); // Needed on 8.0 only; deprecated in 8.5.
+		}
+		$data = $fixture->invoke( new AccountScriptTest( 'k1' ) );
 
 		$base = (string) tempnam( sys_get_temp_dir(), 'magicauth-k1-' );
 		$js   = $base . '.js';

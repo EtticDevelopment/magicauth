@@ -344,7 +344,7 @@ if ( ! function_exists( 'set_transient' ) ) {
 		if ( isset( $wpdb ) ) {
 			$wpdb->query(
 				$wpdb->prepare(
-					"INSERT OR REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+					"REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
 					'_transient_' . $key,
 					(string) ( is_scalar( $value ) ? $value : serialize( $value ) ) // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 				)
@@ -352,7 +352,7 @@ if ( ! function_exists( 'set_transient' ) ) {
 			if ( $expires > 0 ) {
 				$wpdb->query(
 					$wpdb->prepare(
-						"INSERT OR REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+						"REPLACE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
 						'_transient_timeout_' . $key,
 						(string) $expires
 					)
